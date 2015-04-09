@@ -1,0 +1,14 @@
+C:\Projects\WEB_SolidWebContent_2005\Deneme\bin\Debug\Deneme.dll
+C:\Projects\WEB_SolidWebContent_2005\Deneme\bin\Debug\Deneme.pdb
+C:\Projects\WEB_SolidWebContent_2005\Deneme\bin\Debug\PlugInsHelper.dll
+C:\Projects\WEB_SolidWebContent_2005\Deneme\bin\Debug\PlugInsHelper.pdb
+C:\Projects\WEB_SolidWebContent_2005\Deneme\obj\Debug\ResolveAssemblyReference.cache
+C:\Projects\WEB_SolidWebContent_2005\Deneme\obj\Debug\Deneme.dll
+C:\Projects\WEB_SolidWebContent_2005\Deneme\obj\Debug\Deneme.pdb
+P:\WEB_SolidWebContent_2005\Deneme\bin\Debug\Deneme.dll
+P:\WEB_SolidWebContent_2005\Deneme\bin\Debug\Deneme.pdb
+P:\WEB_SolidWebContent_2005\Deneme\bin\Debug\PlugInsHelper.dll
+P:\WEB_SolidWebContent_2005\Deneme\bin\Debug\PlugInsHelper.pdb
+P:\WEB_SolidWebContent_2005\Deneme\obj\Debug\ResolveAssemblyReference.cache
+P:\WEB_SolidWebContent_2005\Deneme\obj\Debug\Deneme.dll
+P:\WEB_SolidWebContent_2005\Deneme\obj\Debug\Deneme.pdb

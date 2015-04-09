@@ -1,0 +1,7 @@
+bin\Debug\Deneme.dll
+bin\Debug\Deneme.pdb
+bin\Debug\PlugInsHelper.dll
+bin\Debug\PlugInsHelper.pdb
+obj\Debug\ResolveAssemblyReference.cache
+obj\Debug\Deneme.dll
+obj\Debug\Deneme.pdb

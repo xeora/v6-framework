@@ -1,0 +1,5 @@
+P:\XeoraCube\Web.PlugInsHelper\bin\x64\PlugInsHelper.dll
+P:\XeoraCube\Web.PlugInsHelper\bin\x64\PlugInsHelper.pdb
+P:\XeoraCube\Web.PlugInsHelper\obj\x64\Debug\PlugInsHelper.dll
+P:\XeoraCube\Web.PlugInsHelper\obj\x64\Debug\PlugInsHelper.pdb
+P:\XeoraCube\Web.PlugInsHelper\obj\x64\Debug\Web.PlugInsHelper.vbprojResolveAssemblyReference.cache

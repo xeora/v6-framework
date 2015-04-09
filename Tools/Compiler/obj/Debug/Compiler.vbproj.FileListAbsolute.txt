@@ -1,0 +1,9 @@
+P:\XeoraCube\Tools\SWC.Compiler\bin\Debug\Compiler.exe.config
+P:\XeoraCube\Tools\Compiler\bin\Debug\Compiler.exe
+P:\XeoraCube\Tools\Compiler\bin\Debug\Compiler.pdb
+P:\XeoraCube\Tools\Compiler\obj\Debug\Compiler.frmMain.resources
+P:\XeoraCube\Tools\Compiler\obj\Debug\Compiler.frmThemePassword.resources
+P:\XeoraCube\Tools\Compiler\obj\Debug\Compiler.Resources.resources
+P:\XeoraCube\Tools\Compiler\obj\Debug\Compiler.vbproj.GenerateResource.Cache
+P:\XeoraCube\Tools\Compiler\obj\Debug\Compiler.exe
+P:\XeoraCube\Tools\Compiler\obj\Debug\Compiler.pdb

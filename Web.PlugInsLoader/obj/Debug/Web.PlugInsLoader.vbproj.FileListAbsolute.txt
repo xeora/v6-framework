@@ -1,0 +1,43 @@
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsLoader\bin\WebPlugInsLoader.dll
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsLoader\bin\WebPlugInsLoader.pdb
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\ResolveAssemblyReference.cache
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\Resources.resources
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\Web.PlugInsLoader.vbproj.GenerateResource.Cache
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.dll
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.pdb
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\bin\WebPlugInsLoader.dll
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\bin\WebPlugInsLoader.pdb
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\ResolveAssemblyReference.cache
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\Resources.resources
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\Web.PlugInsLoader.vbproj.GenerateResource.Cache
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.dll
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.pdb
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\bin\WebPlugInsLoader.dll
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\bin\WebPlugInsLoader.pdb
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\ResolveAssemblyReference.cache
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\Resources.resources
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\Web.PlugInsLoader.vbproj.GenerateResource.Cache
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.dll
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.pdb
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\bin\WebPlugInsLoader.dll
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\bin\WebPlugInsLoader.pdb
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\ResolveAssemblyReference.cache
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\Resources.resources
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\Web.PlugInsLoader.vbproj.GenerateResource.Cache
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.dll
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.pdb
+P:\WEB_SolidWebContent_2005\Web.PlugInsLoader\bin\WebPlugInsLoader.dll
+P:\WEB_SolidWebContent_2005\Web.PlugInsLoader\bin\WebPlugInsLoader.pdb
+P:\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\ResolveAssemblyReference.cache
+P:\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\Resources.resources
+P:\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\Web.PlugInsLoader.vbproj.GenerateResource.Cache
+P:\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.dll
+P:\WEB_SolidWebContent_2005\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.pdb
+P:\XeoraCube\Web.PlugInsLoader\bin\WebPlugInsLoader.dll
+P:\XeoraCube\Web.PlugInsLoader\bin\WebPlugInsLoader.pdb
+P:\XeoraCube\Web.PlugInsLoader\obj\Debug\Resources.resources
+P:\XeoraCube\Web.PlugInsLoader\obj\Debug\Web.PlugInsLoader.vbproj.GenerateResource.Cache
+P:\XeoraCube\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.dll
+P:\XeoraCube\Web.PlugInsLoader\obj\Debug\WebPlugInsLoader.pdb
+P:\XeoraCube\Web.PlugInsLoader\bin\Any\WebPlugInsLoader.dll
+P:\XeoraCube\Web.PlugInsLoader\bin\Any\WebPlugInsLoader.pdb

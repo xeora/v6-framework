@@ -1,0 +1,7 @@
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\AddInLoader\bin\AddInLoader.dll
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\AddInLoader\bin\AddInLoader.pdb
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\AddInLoader\obj\Release\ResolveAssemblyReference.cache
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\AddInLoader\obj\Release\Resources.resources
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\AddInLoader\obj\Release\AddInLoader.vbproj.GenerateResource.Cache
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\AddInLoader\obj\Release\AddInLoader.dll
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\AddInLoader\obj\Release\AddInLoader.pdb

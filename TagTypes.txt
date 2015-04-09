@@ -1,0 +1,110 @@
+Security Settings in the Registry:
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Eventlog
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Eventlog\Security
+Give proper write access to the application pool user.
+
+SpecialTags:
+	$ThemePublicContents$ << To point Current language public content path
+	$PageRenderDuration$ << output for page rendering duration
+	
+OperatorTags:
+	$SearchKey$  << VariablePool
+	$^SearchKey$  << QueryString
+	$~SearchKey$  << Form Post
+	$-SearchKey$  << Session
+	$+SearchKey$  << Cookie
+	$=SearchKey$  << Returns Value Ex: $=Something$ Output: Something
+	$#SearchKey$  << Data(Block) Variable. This can be parented $##SearchKey$ one level upper parent value searching
+
+	$*SearchKey$  << Search All. Search Order: VariablePool, InData(Block), Session, Form Post, QueryString, Cookie
+
+	$SearchKey@SearchLocation$  << SearchLocation is a serializable class, SearchKey is Readable Property Name. SearchLocation Class must be registered to VariablePool
+
+ControlTags:
+	All Control Tags has parenting specification;
+		$[ControlTagType][ParentControlID]:[ControlID]...
+
+		Ex: $C[Control1]:Control2$
+		
+		    or
+
+		    $C[Control2]:Control3:{ <!-- Something --> }:Control3$
+
+		    or
+
+		    $C[Control2]:Control3:{ <!-- Something --> }:Control3:{ <!-- Something (Alternative) --> }:Control3$
+
+
+	$T:TemplateID$ << Include Template with specified TemplateID
+	$L:LanguageID$ << Insert Translation result using current specified language xml
+
+	Control parsing specified in ControlsMap.xml
+	
+	$C:ControlID$
+
+	or
+
+	$C:ControlID:{ <!-- Something --> }:ControlID$
+
+	or
+
+	$C:ControlID:{ <!-- Something --> }:ControlID:{ <!-- Something (Alternative) --> }:ControlID$	
+
+	$P:TemplateID$ << create text with Currentpage's hashcode. Ex: $P:TemplateID$  Output: hc-1252482,TemplateID
+
+	Immediate CallFunction Execution	
+
+	$F:[ThemeID|AddonID]?[ControlClass].[FunctionName]$
+
+	or
+
+	$F:[ThemeID|AddonID]?[ControlClass].[FunctionName],SomeOperatorTags(seperated with |)$
+
+	Ex: $F:Addon1?GlobalControls.PrintOutSums$
+
+	    or
+
+	    $F:Addon1?GlobalControls.PrintOut,~FormField$
+
+	    or
+
+	    $F:Addon1?GlobalControls.SumNumbers,~FormField|=5$
+
+	Immediate Statement calling for current user request. Do not prefer for repeting actions
+
+	$S:StatementID:{ <!-- C# based Statement --> }:StatementID$
+
+	or
+
+	For Caching Disabled
+	$S:StatementID.NOCACHE:{ <!-- C# based Statement --> }:StatementID.NOCACHE$
+	
+	Ex: $S:Statement1:{
+		int intvalue1 = 5;
+		int intvalue2 = Integer.Parse("0" + $~FormValue$);
+
+		return intvalue1 * intvalue2;
+	    }:Statement1$
+
+	Do Request in this surrounded block with HTTPRequest
+
+	$H:RequestBlockID:{ <!-- Something --> }:RequestBlockID$
+
+	Create encoded javascript url for CallFunction. This can be used in everywhere that is supporting javascript call.
+
+	$XF:{[ThemeID|AddonID]?[ControlClass].[FunctionName]}:XF$
+
+	or
+
+	$XF:{[ThemeID|AddonID]?[ControlClass].[FunctionName],SomeOperatorTags(seperated with |)}:XF$
+
+	Use this for outputing Error Information
+
+	$MessageInformation:{ <!-- Message Output Content --> }:MessageInformation$
+	MessageInformation must contain $#Message$ Specialtag to show the error output text.
+	MessageInformation can be handled MessageType using $#MessageType$ Specialtag.
+
+	MessageTypes;
+		Error, Success, Warning
+
+	

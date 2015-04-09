@@ -1,0 +1,88 @@
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\bin\WebManagers.dll
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\bin\WebManagers.pdb
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\bin\PlugInsHelper.dll
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\bin\SolidAssist.dll
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\bin\WebPlugInsLoader.dll
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\bin\WebPlugInsLoader.pdb
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\bin\PlugInsHelper.pdb
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\obj\Debug\ResolveAssemblyReference.cache
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\obj\Debug\Resources.resources
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\obj\Debug\Web.Managers.vbproj.GenerateResource.Cache
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\obj\Debug\WebManagers.dll
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.Managers\obj\Debug\WebManagers.pdb
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.dll
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.pdb
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\PlugInsHelper.dll
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebPlugInsLoader.dll
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebPlugInsLoader.pdb
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\PlugInsHelper.pdb
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\ResolveAssemblyReference.cache
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\Resources.resources
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\Web.Managers.vbproj.GenerateResource.Cache
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\WebManagers.dll
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\WebManagers.pdb
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\SolidAssist.dll
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\SolidAssist.pdb
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.dll.config
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.dll.config
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.dll
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.pdb
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\PlugInsHelper.dll
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\SolidAssist.dll
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebPlugInsLoader.dll
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebPlugInsLoader.pdb
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\PlugInsHelper.pdb
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\bin\SolidAssist.pdb
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\ResolveAssemblyReference.cache
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\Resources.resources
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\Web.Managers.vbproj.GenerateResource.Cache
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\WebManagers.dll
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\WebManagers.pdb
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.dll
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.pdb
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\bin\PlugInsHelper.dll
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\bin\SolidAssist.dll
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebPlugInsLoader.dll
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\bin\WebPlugInsLoader.pdb
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\bin\PlugInsHelper.pdb
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\bin\SolidAssist.pdb
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\ResolveAssemblyReference.cache
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\Resources.resources
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\Web.Managers.vbproj.GenerateResource.Cache
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\WebManagers.dll
+C:\Projects\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\WebManagers.pdb
+P:\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.dll
+P:\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.pdb
+P:\WEB_SolidWebContent_2005\Web.Managers\bin\PlugInsHelper.dll
+P:\WEB_SolidWebContent_2005\Web.Managers\bin\SolidAssist.dll
+P:\WEB_SolidWebContent_2005\Web.Managers\bin\WebPlugInsLoader.dll
+P:\WEB_SolidWebContent_2005\Web.Managers\bin\WebPlugInsLoader.pdb
+P:\WEB_SolidWebContent_2005\Web.Managers\bin\PlugInsHelper.pdb
+P:\WEB_SolidWebContent_2005\Web.Managers\bin\SolidAssist.pdb
+P:\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\ResolveAssemblyReference.cache
+P:\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\Resources.resources
+P:\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\Web.Managers.vbproj.GenerateResource.Cache
+P:\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\WebManagers.dll
+P:\WEB_SolidWebContent_2005\Web.Managers\obj\Debug\WebManagers.pdb
+P:\WEB_SolidWebContent_2005\Web.Managers\bin\WebManagers.dll.config
+P:\XeoraCube\Web.Managers\bin\WebManagers.dll.config
+P:\XeoraCube\Web.Managers\bin\WebManagers.dll
+P:\XeoraCube\Web.Managers\bin\WebManagers.pdb
+P:\XeoraCube\Web.Managers\bin\PlugInsHelper.dll
+P:\XeoraCube\Web.Managers\bin\SolidAssist.dll
+P:\XeoraCube\Web.Managers\bin\WebPlugInsLoader.dll
+P:\XeoraCube\Web.Managers\bin\PlugInsHelper.pdb
+P:\XeoraCube\Web.Managers\bin\WebPlugInsLoader.pdb
+P:\XeoraCube\Web.Managers\bin\SolidAssist.pdb
+P:\XeoraCube\Web.Managers\obj\Debug\Web.Managers.vbprojResolveAssemblyReference.cache
+P:\XeoraCube\Web.Managers\obj\Debug\Resources.resources
+P:\XeoraCube\Web.Managers\obj\Debug\Web.Managers.vbproj.GenerateResource.Cache
+P:\XeoraCube\Web.Managers\obj\Debug\WebManagers.dll
+P:\XeoraCube\Web.Managers\obj\Debug\WebManagers.pdb
+P:\XeoraCube\Web.Managers\bin\Any\WebManagers.dll.config
+P:\XeoraCube\Web.Managers\bin\Any\WebManagers.dll
+P:\XeoraCube\Web.Managers\bin\Any\WebManagers.pdb
+P:\XeoraCube\Web.Managers\bin\Any\PlugInsHelper.dll
+P:\XeoraCube\Web.Managers\bin\Any\WebPlugInsLoader.dll
+P:\XeoraCube\Web.Managers\bin\Any\PlugInsHelper.pdb
+P:\XeoraCube\Web.Managers\bin\Any\WebPlugInsLoader.pdb

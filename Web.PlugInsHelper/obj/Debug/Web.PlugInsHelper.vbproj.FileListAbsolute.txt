@@ -1,0 +1,31 @@
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsHelper\bin\PlugInsHelper.dll
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsHelper\bin\PlugInsHelper.pdb
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\ResolveAssemblyReference.cache
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\PlugInsHelper.dll
+E:\My Settings\Documents\My Projects\WEB_VB.NET_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\PlugInsHelper.pdb
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\bin\PlugInsHelper.dll
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\bin\PlugInsHelper.pdb
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\ResolveAssemblyReference.cache
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\PlugInsHelper.dll
+E:\My Settings\Documents\My Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\PlugInsHelper.pdb
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\bin\PlugInsHelper.dll
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\bin\PlugInsHelper.pdb
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\ResolveAssemblyReference.cache
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\PlugInsHelper.dll
+E:\My Settings\Specials\My Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\PlugInsHelper.pdb
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\bin\PlugInsHelper.dll
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\bin\PlugInsHelper.pdb
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\ResolveAssemblyReference.cache
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\PlugInsHelper.dll
+C:\Projects\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\PlugInsHelper.pdb
+P:\WEB_SolidWebContent_2005\Web.PlugInsHelper\bin\PlugInsHelper.dll
+P:\WEB_SolidWebContent_2005\Web.PlugInsHelper\bin\PlugInsHelper.pdb
+P:\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\ResolveAssemblyReference.cache
+P:\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\PlugInsHelper.dll
+P:\WEB_SolidWebContent_2005\Web.PlugInsHelper\obj\Debug\PlugInsHelper.pdb
+P:\XeoraCube\Web.PlugInsHelper\bin\PlugInsHelper.dll
+P:\XeoraCube\Web.PlugInsHelper\bin\PlugInsHelper.pdb
+P:\XeoraCube\Web.PlugInsHelper\obj\Debug\PlugInsHelper.dll
+P:\XeoraCube\Web.PlugInsHelper\obj\Debug\PlugInsHelper.pdb
+P:\XeoraCube\Web.PlugInsHelper\bin\Any\PlugInsHelper.dll
+P:\XeoraCube\Web.PlugInsHelper\bin\Any\PlugInsHelper.pdb

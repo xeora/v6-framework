@@ -1,0 +1,61 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Web.Managers", "Web.Managers\Web.Managers.vbproj", "{E5BC4E6F-03C4-4804-9D6E-74A1A01E5EC2}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Web.PlugInsHelper", "Web.PlugInsHelper\Web.PlugInsHelper.vbproj", "{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Web.RequestHandler", "Web.RequestHandler\Web.RequestHandler.vbproj", "{A79D310C-9C81-475A-8A9B-88EF9D3CB40A}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Web.PlugInsLoader", "Web.PlugInsLoader\Web.PlugInsLoader.vbproj", "{AD2730EE-4EC3-4371-83E3-67D71D1E3EE6}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Web.SecurityTest", "Web.SecurityTest\Web.SecurityTest.vbproj", "{72370B82-BA93-401F-BC26-5241D5485EFA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any = Debug|Any
+		Debug|x64 = Debug|x64
+		Release|Any = Release|Any
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E5BC4E6F-03C4-4804-9D6E-74A1A01E5EC2}.Debug|Any.ActiveCfg = Debug|Any CPU
+		{E5BC4E6F-03C4-4804-9D6E-74A1A01E5EC2}.Debug|Any.Build.0 = Debug|Any CPU
+		{E5BC4E6F-03C4-4804-9D6E-74A1A01E5EC2}.Debug|x64.ActiveCfg = Debug|x64
+		{E5BC4E6F-03C4-4804-9D6E-74A1A01E5EC2}.Debug|x64.Build.0 = Debug|x64
+		{E5BC4E6F-03C4-4804-9D6E-74A1A01E5EC2}.Release|Any.ActiveCfg = Release|Any CPU
+		{E5BC4E6F-03C4-4804-9D6E-74A1A01E5EC2}.Release|Any.Build.0 = Release|Any CPU
+		{E5BC4E6F-03C4-4804-9D6E-74A1A01E5EC2}.Release|x64.ActiveCfg = Release|Any CPU
+		{E5BC4E6F-03C4-4804-9D6E-74A1A01E5EC2}.Release|x64.Build.0 = Release|Any CPU
+		{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}.Debug|Any.ActiveCfg = Debug|Any CPU
+		{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}.Debug|Any.Build.0 = Debug|Any CPU
+		{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}.Debug|x64.ActiveCfg = Debug|x64
+		{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}.Debug|x64.Build.0 = Debug|x64
+		{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}.Release|Any.ActiveCfg = Release|Any CPU
+		{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}.Release|Any.Build.0 = Release|Any CPU
+		{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}.Release|x64.ActiveCfg = Release|Any CPU
+		{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}.Release|x64.Build.0 = Release|Any CPU
+		{A79D310C-9C81-475A-8A9B-88EF9D3CB40A}.Debug|Any.ActiveCfg = Debug|Any CPU
+		{A79D310C-9C81-475A-8A9B-88EF9D3CB40A}.Debug|Any.Build.0 = Debug|Any CPU
+		{A79D310C-9C81-475A-8A9B-88EF9D3CB40A}.Debug|x64.ActiveCfg = Debug|x64
+		{A79D310C-9C81-475A-8A9B-88EF9D3CB40A}.Debug|x64.Build.0 = Debug|x64
+		{A79D310C-9C81-475A-8A9B-88EF9D3CB40A}.Release|Any.ActiveCfg = Release|Any CPU
+		{A79D310C-9C81-475A-8A9B-88EF9D3CB40A}.Release|Any.Build.0 = Release|Any CPU
+		{A79D310C-9C81-475A-8A9B-88EF9D3CB40A}.Release|x64.ActiveCfg = Release|Any CPU
+		{A79D310C-9C81-475A-8A9B-88EF9D3CB40A}.Release|x64.Build.0 = Release|Any CPU
+		{AD2730EE-4EC3-4371-83E3-67D71D1E3EE6}.Debug|Any.ActiveCfg = Debug|Any CPU
+		{AD2730EE-4EC3-4371-83E3-67D71D1E3EE6}.Debug|Any.Build.0 = Debug|Any CPU
+		{AD2730EE-4EC3-4371-83E3-67D71D1E3EE6}.Debug|x64.ActiveCfg = Debug|x64
+		{AD2730EE-4EC3-4371-83E3-67D71D1E3EE6}.Debug|x64.Build.0 = Debug|x64
+		{AD2730EE-4EC3-4371-83E3-67D71D1E3EE6}.Release|Any.ActiveCfg = Release|Any CPU
+		{AD2730EE-4EC3-4371-83E3-67D71D1E3EE6}.Release|Any.Build.0 = Release|Any CPU
+		{AD2730EE-4EC3-4371-83E3-67D71D1E3EE6}.Release|x64.ActiveCfg = Release|Any CPU
+		{AD2730EE-4EC3-4371-83E3-67D71D1E3EE6}.Release|x64.Build.0 = Release|Any CPU
+		{72370B82-BA93-401F-BC26-5241D5485EFA}.Debug|Any.ActiveCfg = Debug|Any CPU
+		{72370B82-BA93-401F-BC26-5241D5485EFA}.Debug|x64.ActiveCfg = Debug|x64
+		{72370B82-BA93-401F-BC26-5241D5485EFA}.Release|Any.ActiveCfg = Release|Any CPU
+		{72370B82-BA93-401F-BC26-5241D5485EFA}.Release|x64.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

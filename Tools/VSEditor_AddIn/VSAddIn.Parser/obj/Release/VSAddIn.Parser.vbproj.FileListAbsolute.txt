@@ -1,0 +1,14 @@
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\bin\SolidWebContentVSEditor.dll
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\ResolveAssemblyReference.cache
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\VSAddIn.Parser.vbproj.ResolveComReference.cache
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\CommandBar.resources
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\VSAddIn.Parser.vbproj.GenerateResource.Cache
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\SolidWebContentVSEditor.dll
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\SolidDevelopment.VSAddIn.Forms.ISFormBase.resources
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\SolidDevelopment.VSAddIn.Forms.ControlSearch.resources
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\SolidDevelopment.VSAddIn.Forms.ClassSearch.resources
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\SolidDevelopment.VSAddIn.Forms.AssemblySearch.resources
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\SolidDevelopment.VSAddIn.Forms.FunctionSearch.resources
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\obj\Release\SolidDevelopment.VSAddIn.Forms.TemplateSearch.resources
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\bin\AddInLoader.dll
+E:\My Settings\Documents\My Projects\DIN_SolidWebContent_VSEditor_AddIn\VSAddIn.Parser\bin\AddInLoader.pdb

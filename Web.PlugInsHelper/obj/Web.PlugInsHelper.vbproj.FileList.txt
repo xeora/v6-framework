@@ -1,0 +1,7 @@
+obj\Release\ResolveAssemblyReference.cache
+obj\Release\PlugInsHelper.dll
+bin\PlugInsHelper.dll
+bin\PlugInsHelper.pdb
+obj\Debug\ResolveAssemblyReference.cache
+obj\Debug\PlugInsHelper.dll
+obj\Debug\PlugInsHelper.pdb
