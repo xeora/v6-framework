@@ -54,7 +54,11 @@ RETRYREMOTEBIND:
                     ')
                     Me._IsScheduledTasksHost = True
                 Catch ex As Exception
-                    System.Diagnostics.EventLog.WriteEntry("XeoraCube", ex.ToString(), EventLogEntryType.Error)
+                    Try
+                        System.Diagnostics.EventLog.WriteEntry("XeoraCube", ex.ToString(), EventLogEntryType.Error)
+                    Catch exSub As Exception
+                        ' Just Handle Request
+                    End Try
 
                     Threading.Thread.Sleep(1000)
 

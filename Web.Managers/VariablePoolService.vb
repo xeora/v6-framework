@@ -23,6 +23,8 @@ Namespace SolidDevelopment.Web.Managers
         Private _SynchronizedObjects As Hashtable
         Private _VariableRegistrationAsyncResultsContainer As Hashtable
 
+        Private _VariableTimeout As Integer
+
         Public Sub New()
             Me._VariablePoolTypeStatus = VariablePoolTypeStatus.None
             Me._VariablePoolID = String.Format("VP_{0}", SolidDevelopment.Web.Configurations.WorkingPath.WorkingPathID)
@@ -73,7 +75,11 @@ Namespace SolidDevelopment.Web.Managers
                     ')
                     Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Host
                 Catch ex As Exception
-                    System.Diagnostics.EventLog.WriteEntry("XeoraCube", ex.ToString(), EventLogEntryType.Error)
+                    Try
+                        System.Diagnostics.EventLog.WriteEntry("XeoraCube", ex.ToString(), EventLogEntryType.Error)
+                    Catch exSub As Exception
+                        ' Just Handle Request
+                    End Try
 
                     Me._VariablePoolTypeStatus = VariablePoolTypeStatus.None
                 End Try
@@ -84,6 +90,17 @@ Namespace SolidDevelopment.Web.Managers
 
         Private Sub CreateVariablePoolHostForRemoteConnectionsEnd(ByVal aR As IAsyncResult)
             CType(aR.AsyncState, Action).EndInvoke(aR)
+
+            If Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Host Then
+                ' Get the configuration section and set timeout and CookieMode values.
+                Dim cfg As System.Configuration.Configuration = _
+                    System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration( _
+                                System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
+                Dim wConfig As System.Web.Configuration.SessionStateSection = _
+                    CType(cfg.GetSection("system.web/sessionState"), System.Web.Configuration.SessionStateSection)
+
+                Me._VariableTimeout = CInt(wConfig.Timeout.TotalMinutes)
+            End If
         End Sub
 
         Private Function CreateConnectionToRemoteVariablePool(ByVal SkipSleep As Boolean, ByRef RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel) As PGlobals.Execution.IVariablePool
@@ -284,6 +301,48 @@ Namespace SolidDevelopment.Web.Managers
             End Try
         End Sub
 
+        Private Function IsVariableExpired(ByRef vpsFS As IO.FileStream) As Boolean
+            Dim rBoolean As Boolean = True
+
+            If Not vpsFS Is Nothing AndAlso _
+                vpsFS.CanSeek AndAlso vpsFS.CanRead Then
+
+                ' "Expires: " length is 9
+                ' it's value length is 14 bytes
+                Dim bytes As Byte() = CType(Array.CreateInstance(GetType(Byte), 14), Byte())
+
+                vpsFS.Seek(9, IO.SeekOrigin.Begin)
+                vpsFS.Read(bytes, 0, 14)
+
+                Dim ExpiresDateTimeLong As Long, ExpiresDateTime As Date
+                Long.TryParse( _
+                    System.Text.Encoding.UTF8.GetString(bytes), ExpiresDateTimeLong)
+                ExpiresDateTime = Helpers.DateTime.FormatDateTime(ExpiresDateTimeLong)
+
+                If Date.Compare(ExpiresDateTime, Date.Now) >= 0 Then rBoolean = False
+            Else
+                Throw New Exception("File Access is not suitable to check variable expiration!")
+            End If
+
+            Return rBoolean
+        End Function
+
+        Private Sub ExtendVariableLife(ByRef vpsFS As IO.FileStream)
+            If Not vpsFS Is Nothing AndAlso _
+                vpsFS.CanSeek AndAlso vpsFS.CanWrite Then
+
+                ' "Expires: YYYYMMDDhhmmss" length is 23 + NewLineBytes
+                Dim bytes As Byte() = _
+                    System.Text.Encoding.UTF8.GetBytes( _
+                        String.Format("Expires: {0}{1}", Helpers.DateTime.FormatDateTime(Date.Now.AddMinutes(Me._VariableTimeout), Helpers.DateTime.DateTimeFormat.DateTime), Environment.NewLine))
+
+                vpsFS.Seek(0, IO.SeekOrigin.Begin)
+                vpsFS.Write(bytes, 0, bytes.Length)
+            Else
+                Throw New IO.IOException("File Access is not suitable to extend the variable life!")
+            End If
+        End Sub
+
         Private Function ReadVariableValueFromFile(ByVal SessionKeyID As String, ByVal name As String) As Byte()
             Dim rValue As Byte() = Nothing
 
@@ -312,7 +371,22 @@ Namespace SolidDevelopment.Web.Managers
                 Do While Me.FileAccessQueue(SessionKeyID).TryPeek(QueueKey)
                     If String.Compare(RequestKey, QueueKey) = 0 Then
                         Try
-                            vpsFS = New IO.FileStream(vpService, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                            vpsFS = New IO.FileStream(vpService, IO.FileMode.Open, IO.FileAccess.ReadWrite, IO.FileShare.ReadWrite)
+
+                            If Me.IsVariableExpired(vpsFS) Then
+                                vpsFS.Close()
+
+                                For Each FilePath As String In IO.Directory.GetFiles(IO.Path.GetDirectoryName(vpService))
+                                    If String.Compare(FilePath, vpService) = 0 Then Continue For
+
+                                    IO.File.Delete(FilePath)
+                                Next
+
+                                vpsFS = New IO.FileStream(vpService, IO.FileMode.Create, IO.FileAccess.ReadWrite, IO.FileShare.ReadWrite)
+                            End If
+
+                            Me.ExtendVariableLife(vpsFS)
+
                             vmapSR = New IO.StreamReader(vpsFS, System.Text.Encoding.UTF8)
 
                             Dim SearchLine As String
@@ -390,6 +464,9 @@ Namespace SolidDevelopment.Web.Managers
                 If String.Compare(RequestKey, QueueKey) = 0 Then
                     Try
                         vpsFS = New IO.FileStream(vpService, IO.FileMode.OpenOrCreate, IO.FileAccess.ReadWrite, IO.FileShare.Read)
+
+                        Me.ExtendVariableLife(vpsFS)
+
                         vmapSR = New IO.StreamReader(vpsFS, System.Text.Encoding.UTF8)
 
                         Dim SearchLine As String
@@ -851,54 +928,69 @@ Namespace SolidDevelopment.Web.Managers
             End Select
         End Sub
 
-        Public Sub DestroySessionData(ByVal SessionKeyID As String) Implements PGlobals.Execution.IVariablePool.DestroySessionData
+        Public Sub DoCleanUp() Implements PGlobals.Execution.IVariablePool.DoCleanUp
             Select Case Me._VariablePoolTypeStatus
                 Case VariablePoolTypeStatus.Host
-                    ' First Flush All Registered Variables Then Destroy All
-                    Me.ConfirmRegistrations(SessionKeyID)
+                    Dim vpLocation As String = _
+                        IO.Path.Combine( _
+                            SolidDevelopment.Web.Configurations.TemporaryRoot, _
+                            String.Format( _
+                                "{0}{1}PoolSessions{1}", _
+                                Configurations.WorkingPath.WorkingPathID, _
+                                IO.Path.DirectorySeparatorChar _
+                            ) _
+                        )
 
-                    Dim vpService As String = _
-                            IO.Path.Combine( _
-                                SolidDevelopment.Web.Configurations.TemporaryRoot, _
-                                String.Format( _
-                                    "{0}{2}PoolSessions{2}{1}", _
-                                    Configurations.WorkingPath.WorkingPathID, _
-                                    SessionKeyID, _
-                                    IO.Path.DirectorySeparatorChar _
-                                ) _
-                            )
+                    If IO.Directory.Exists(vpLocation) Then
+                        For Each Path As String In IO.Directory.GetDirectories(vpLocation)
+                            Dim IsExpired As Boolean = False
 
-                    If IO.Directory.Exists(vpService) Then
-                        Try
-                            IO.Directory.Delete(vpService, True)
+                            Dim vpsFS As IO.FileStream = Nothing
+                            Dim vpService As String = _
+                                IO.Path.Combine( _
+                                    vpLocation, _
+                                    String.Format( _
+                                        "{0}{1}vmap.dat", _
+                                        IO.Path.GetFileName(Path), _
+                                        IO.Path.DirectorySeparatorChar _
+                                    ) _
+                                )
 
-                            ' Remove Session Infos From Hash Tables
-                            For Each key As String In Me._SynchronizedObjects
-                                If key.IndexOf(SessionKeyID) > -1 Then
-                                    Dim varName As String = key.Substring(SessionKeyID.Length + 1)
+                            Try
+                                vpsFS = New IO.FileStream(vpService, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
 
-                                    Me.SynchronizedObject(SessionKeyID, varName) = Nothing
-                                End If
-                            Next
-                        Catch ex As Exception
-                            ' Just Handle Exceptions
-                        End Try
+                                IsExpired = Me.IsVariableExpired(vpsFS)
+                            Catch ex As Exception
+                                ' Just Handle Exceptions
+                            Finally
+                                If Not vpsFS Is Nothing Then vpsFS.Close()
+                            End Try
+
+                            If IsExpired Then
+                                Try
+                                    IO.Directory.Delete(Path, True)
+                                Catch ex As Exception
+                                    ' Just Handle Exceptions
+                                    ' If unable to remove, just leave the trash where it is...
+                                End Try
+                            End If
+                        Next
                     End If
                 Case VariablePoolTypeStatus.None
                     Me.CreateVariablePoolHostForRemoteConnectionsAsync()
 
-                    Me.DestroySessionData(SessionKeyID)
+                    Me.DoCleanUp()
                 Case Else
                     Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
                     Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
                         Me.CreateConnectionToRemoteVariablePool(False, RemoteVariablePoolServiceConnection)
 
                     Try
-                        RemoteVariablePool.DestroySessionData(SessionKeyID)
+                        RemoteVariablePool.DoCleanUp()
                     Catch ex As Exception
                         Me._VariablePoolTypeStatus = VariablePoolTypeStatus.None
 
-                        Me.DestroySessionData(SessionKeyID)
+                        Me.DoCleanUp()
                     End Try
 
                     Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)

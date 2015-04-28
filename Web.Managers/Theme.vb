@@ -153,12 +153,12 @@ Namespace SolidDevelopment.Web.Managers
             End Get
         End Property
 
-        Public Function RenderTemplate(ByVal BlockID As String, ByVal TemplateID As String, ByVal Arguments As Globals.ArgumentInfo.ArgumentInfoCollection) As String
+        Public Function RenderTemplate(ByVal TemplateID As String, ByVal BlockID As String, ByVal Arguments As Globals.ArgumentInfo.ArgumentInfoCollection) As String
             Dim ThemeRenderer As New ThemeRenderer(Me)
 
             Dim RRI As Globals.RenderRequestInfo = _
-                New Globals.RenderRequestInfo(BlockID, TemplateID, Arguments)
-            RRI.RequestingBlockRendering = Not BlockID Is Nothing
+                New Globals.RenderRequestInfo(TemplateID, BlockID, Arguments)
+            RRI.RequestingBlockRendering = Not String.IsNullOrEmpty(BlockID)
 
             Return ThemeRenderer.RenderContent(RRI, RRI.MainContent)
         End Function
@@ -878,7 +878,7 @@ TRANSLATEVALUE:
                             Dim controlValueSplitted As String() = _
                                 cI.ClearedValue.Split(":"c)
 
-                            cI.HelperSpace.Space = String.Format("hc-{0},{1}", General.HashCode, controlValueSplitted(1))
+                            cI.HelperSpace.Space = String.Format("{0}/{1}", General.HashCode, controlValueSplitted(1))
 
                         Case "F"c ' Direct Function Call Prefix
                             If Not RRI.RequestingBlockRendering Then
@@ -2115,6 +2115,9 @@ RENDERCONTROL:
                                             If AnchorLinkHref.IndexOf("~/") = 0 Then
                                                 AnchorLinkHref = AnchorLinkHref.Remove(0, 2)
                                                 AnchorLinkHref = AnchorLinkHref.Insert(0, Configurations.ApplicationRoot.BrowserSystemImplementation)
+                                            ElseIf AnchorLinkHref.IndexOf("¨/") = 0 Then
+                                                AnchorLinkHref = AnchorLinkHref.Remove(0, 2)
+                                                AnchorLinkHref = AnchorLinkHref.Insert(0, Configurations.VirtualRoot)
                                             End If
 
                                             Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
@@ -2656,25 +2659,10 @@ SEARCHPARENT:
             End Function
 
             Private Function ParseControlType(ByVal cTString As String) As Globals.Controls.ControlTypes
-                Dim rControlType As Globals.Controls.ControlTypes = Globals.Controls.ControlTypes.Unknown
+                Dim rControlType As Globals.Controls.ControlTypes
 
-                Dim ControlTypeNames As String() = _
-                            [Enum].GetNames(GetType(Globals.Controls.ControlTypes))
-                Dim CompareCulture As New Globalization.CultureInfo("en-US")
-
-                For Each ControlTypeName As String In ControlTypeNames
-                    If CompareCulture.CompareInfo.Compare(ControlTypeName, cTString, Globalization.CompareOptions.IgnoreCase) = 0 Then
-                        rControlType = CType( _
-                                            [Enum].Parse( _
-                                                GetType(Globals.Controls.ControlTypes), _
-                                                ControlTypeName, _
-                                                True _
-                                            ),  _
-                                            Globals.Controls.ControlTypes)
-
-                        Exit For
-                    End If
-                Next
+                If Not [Enum].TryParse(Of Globals.Controls.ControlTypes)(cTString, True, rControlType) Then _
+                    rControlType = Globals.Controls.ControlTypes.Unknown
 
                 Return rControlType
             End Function
@@ -3492,7 +3480,7 @@ SEARCHPARENT:
                             Dim [Overridable] As Boolean = False, Priority As Integer, Priority_t As String, Request As String = String.Empty
 
                             Dim Reverse_ID As String = String.Empty, Reverse_Mapped As String = String.Empty
-                            Dim Reverse_MappedItems As SolidDevelopment.Web.PGlobals.URLMappingInfos.URLMappingItem.ResolveInfos.MappedItem.MappedItemCollection = Nothing
+                            Dim Reverse_MappedItems As SolidDevelopment.Web.PGlobals.URLMappingInfos.ResolveInfos.MappedItem.MappedItemCollection = Nothing
 
                             Do While xPathIter.MoveNext()
                                 Priority_t = xPathIter.Current.GetAttribute("priority", xPathIter.Current.BaseURI)
@@ -3520,7 +3508,7 @@ SEARCHPARENT:
                                                     If Not Boolean.TryParse(xPathIter.Current.GetAttribute("overridable", xPathIter.Current.BaseURI), [Overridable]) Then [Overridable] = False
 
                                                 Reverse_Mapped = xPathIter_in.Current.GetAttribute("mapped", xPathIter_in.Current.BaseURI)
-                                                Reverse_MappedItems = New SolidDevelopment.Web.PGlobals.URLMappingInfos.URLMappingItem.ResolveInfos.MappedItem.MappedItemCollection
+                                                Reverse_MappedItems = New SolidDevelopment.Web.PGlobals.URLMappingInfos.ResolveInfos.MappedItem.MappedItemCollection
 
                                                 If xPathIter_in.Current.MoveToFirstChild() Then
                                                     Do
@@ -3537,7 +3525,7 @@ SEARCHPARENT:
 
                                                                 xPathIter_in.Current.MoveToParent()
 
-                                                                Dim MappedItem As New SolidDevelopment.Web.PGlobals.URLMappingInfos.URLMappingItem.ResolveInfos.MappedItem(MappedItem_ID)
+                                                                Dim MappedItem As New SolidDevelopment.Web.PGlobals.URLMappingInfos.ResolveInfos.MappedItem(MappedItem_ID)
 
                                                                 With MappedItem
                                                                     .DefaultValue = MappedItem_DefaultValue
@@ -3559,7 +3547,7 @@ SEARCHPARENT:
                                     .Priority = Priority
                                     .RequestMap = Request
 
-                                    Dim resInfo As New SolidDevelopment.Web.PGlobals.URLMappingInfos.URLMappingItem.ResolveInfos(Reverse_ID)
+                                    Dim resInfo As New SolidDevelopment.Web.PGlobals.URLMappingInfos.ResolveInfos(Reverse_ID)
 
                                     resInfo.MapFormat = Reverse_Mapped
                                     resInfo.MappedItems.AddRange(Reverse_MappedItems)

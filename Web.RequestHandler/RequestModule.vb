@@ -6,6 +6,8 @@ Namespace SolidDevelopment.Web
         Private Shared _pApplicationID As String = String.Empty
         Private Shared _pApplicationLocation As String = String.Empty
 
+        Private Shared _HttpContextTable As Hashtable
+
         Private Shared _pSessionIDManager As System.Web.SessionState.ISessionIDManager
         Private Shared _pSessionItems As Hashtable
         Private Shared _pTimeout As Integer
@@ -14,95 +16,83 @@ Namespace SolidDevelopment.Web
         Private Shared _pSessionStateMode As System.Web.SessionState.SessionStateMode = _
             System.Web.SessionState.SessionStateMode.Off
 
-        'Private Shared _NextPruning As Date
-        'Private Shared _SessionPruning As Boolean = False
+        Private Shared _VPService As SolidDevelopment.Web.Managers.VariablePoolOperationClass
+        Private Shared _Timer As Timers.Timer = Nothing
+        Private Shared _VariablePruning As Boolean = False
 
-        '
         ' Recursivly remove expired session data from session collection.
-        '
-        'Private Sub RemoveExpiredSessionData()
-        '    RequestModule._SessionPruning = True
+        Private Sub RemoveExpiredVariableData(ByVal sender As Object, ByVal e As EventArgs)
+            If RequestModule._VariablePruning Then Exit Sub
 
-        '    Dim sessionID As String, IsPruningDone As Boolean = True
+            RequestModule._VariablePruning = True
 
-        '    System.Threading.Monitor.Enter(RequestModule._pSessionItems.SyncRoot)
-        '    Try
-        '        ' Create Static VariablePool Service...
-        '        Dim staticVPService As New SolidDevelopment.Web.Managers.VariablePoolOperationClass
+            RequestModule._VPService.DoCleanUp()
 
-        '        Dim Enumerator As System.Collections.IDictionaryEnumerator = _
-        '            RequestModule._pSessionItems.GetEnumerator()
+            RequestModule._VariablePruning = False
+        End Sub
 
-        '        Do While Enumerator.MoveNext()
-        '            Dim item As SessionItem = CType(Enumerator.Value, SessionItem)
-
-        '            If Date.Compare( _
-        '                    item.Expires, _
-        '                    Date.Now.AddMinutes( _
-        '                        RequestModule._pTimeout * -1) _
-        '                ) <= 0 Then
-
-        '                sessionID = Enumerator.Key.ToString()
-
-        '                ' Remove From Hash Table
-        '                RequestModule._pSessionItems.Remove(sessionID)
-
-        '                ' Destroy Session Data using Statick Variable Pool Service Instance
-        '                Dim SessionHashCodeList As String() = _
-        '                    SolidDevelopment.Web.General.UnRegisterSessionHashCodeList(sessionID)
-
-        '                For Each sHC As String In SessionHashCodeList
-        '                    staticVPService.DestroySessionData( _
-        '                        String.Format("{0}_{1}", sessionID, sHC) _
-        '                    )
-        '                Next
-        '                staticVPService.DestroySessionData(sessionID)
-        '                ' !---
-
-        '                Dim stateProvider As System.Web.SessionState.HttpSessionStateContainer = _
-        '                          New System.Web.SessionState.HttpSessionStateContainer(sessionID, _
-        '                                                                                   item.Items, _
-        '                                                                                   item.StaticObjects, _
-        '                                                                                   RequestModule._pTimeout, _
-        '                                                                                   False, _
-        '                                                                                   RequestModule._pCookieMode, _
-        '                                                                                   RequestModule._pSessionStateMode, _
-        '                                                                                   False)
-
-        '                System.Web.SessionState.SessionStateUtility.RaiseSessionEnd(stateProvider, Me, EventArgs.Empty)
-
-        '                IsPruningDone = False
-
-        '                Exit Do
-        '            End If
-        '        Loop
-        '    Finally
-        '        System.Threading.Monitor.Exit(RequestModule._pSessionItems.SyncRoot)
-        '    End Try
-
-        '    If Not IsPruningDone Then Me.RemoveExpiredSessionData()
-
-        '    RequestModule._SessionPruning = False
-        '    RequestModule._NextPruning = Date.Now.AddDays(1)
-        'End Sub
-
-        ' The SessionItem class is used to store data for a particular session along with
-        ' an expiration date and time. SessionItem objects are added to the local Hashtable
-        ' in the OnReleaseRequestState event handler and retrieved from the local Hashtable
-        ' in the OnAcquireRequestState event handler. The ExpireCallback method is called
-        ' periodically by the local Timer to check for all expired SessionItem objects in the
-        ' local Hashtable and remove them. 
         Private Class SessionItem
-            Friend Items As System.Web.SessionState.SessionStateItemCollection
-            Friend StaticObjects As System.Web.HttpStaticObjectsCollection
-            Friend Expires As DateTime
+            Private _Items As System.Web.SessionState.SessionStateItemCollection
+            Private _StaticObjects As System.Web.HttpStaticObjectsCollection
+            Private _Expires As DateTime
+
+            Public Sub New(ByVal Items As System.Web.SessionState.SessionStateItemCollection, ByVal StaticObjects As System.Web.HttpStaticObjectsCollection, ByVal Expires As DateTime)
+                Me._Items = Items
+                Me._StaticObjects = StaticObjects
+                Me._Expires = Expires
+            End Sub
+
+            Public ReadOnly Property Items As System.Web.SessionState.SessionStateItemCollection
+                Get
+                    Return Me._Items
+                End Get
+            End Property
+
+            Public ReadOnly Property StaticObjects As System.Web.HttpStaticObjectsCollection
+                Get
+                    Return Me._StaticObjects
+                End Get
+            End Property
+
+            Public Property Expires As DateTime
+                Get
+                    Return Me._Expires
+                End Get
+                Set(value As DateTime)
+                    Me._Expires = value
+                End Set
+            End Property
         End Class
 
-        Private Shared _ApplicationLoaded As Boolean = False
+        Private Class ContextContainer
+            Private _IsThreadContext As Boolean
+            Private _Context As System.Web.HttpContext
+
+            Public Sub New(ByVal IsThreadContext As Boolean, ByVal Context As System.Web.HttpContext)
+                Me._IsThreadContext = IsThreadContext
+                Me._Context = Context
+            End Sub
+
+            Public ReadOnly Property IsThreadContext As Boolean
+                Get
+                    Return Me._IsThreadContext
+                End Get
+            End Property
+
+            Public ReadOnly Property Context As System.Web.HttpContext
+                Get
+                    Return Me._Context
+                End Get
+            End Property
+        End Class
 
         Public Sub Init(ByVal app As System.Web.HttpApplication) Implements System.Web.IHttpModule.Init
             ' Application Domain UnHandled Exception Event Handling Defination
-            If Not System.Diagnostics.EventLog.SourceExists("XeoraCube") Then System.Diagnostics.EventLog.CreateEventSource("XeoraCube", "XeoraCube")
+            Try
+                If Not System.Diagnostics.EventLog.SourceExists("XeoraCube") Then System.Diagnostics.EventLog.CreateEventSource("XeoraCube", "XeoraCube")
+            Catch ex As Exception
+                ' Just Handle Exceptions
+            End Try
 
             AddHandler AppDomain.CurrentDomain.UnhandledException, New UnhandledExceptionEventHandler(AddressOf Me.OnUnhandledExceptions)
             ' !---
@@ -114,25 +104,19 @@ Namespace SolidDevelopment.Web
             AddHandler app.PostRequestHandlerExecute, New EventHandler(AddressOf Me.OnPostRequestHandlerExecute)
             AddHandler app.ReleaseRequestState, New EventHandler(AddressOf Me.OnReleaseRequestState)
             AddHandler app.EndRequest, New EventHandler(AddressOf Me.OnEndRequest)
-            'AddHandler app.Disposed, New EventHandler(AddressOf Me.OnApplicationDisposed)
             ' !---
 
-            If Not RequestModule._ApplicationLoaded Then RequestModule._pApplicationID = Guid.NewGuid().ToString()
-            RequestModule._pApplicationLocation = _
-                IO.Path.Combine( _
-                    SolidDevelopment.Web.Configurations.TemporaryRoot, _
-                    String.Format("{0}{2}{1}", _
-                        SolidDevelopment.Web.Configurations.WorkingPath.WorkingPathID, _
-                        RequestModule._pApplicationID, _
-                        IO.Path.DirectorySeparatorChar _
-                    ) _
-                )
-            If Not RequestModule._ApplicationLoaded Then Me.LoadApplication()
+            RequestModule._VPService = New SolidDevelopment.Web.Managers.VariablePoolOperationClass()
+
+            Me.LoadApplication(False)
 
             ' If not already initialized, initialize timer and configuration.
             System.Threading.Monitor.Enter(Me)
             Try
                 If Not RequestModule._pInitialized Then
+                    If RequestModule._HttpContextTable Is Nothing Then _
+                        RequestModule._HttpContextTable = Hashtable.Synchronized(New Hashtable())
+
                     ' Get the configuration section and set timeout and CookieMode values.
                     Dim cfg As System.Configuration.Configuration = _
                         System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration( _
@@ -141,26 +125,24 @@ Namespace SolidDevelopment.Web
                         CType(cfg.GetSection("system.web/sessionState"), System.Web.Configuration.SessionStateSection)
 
                     RequestModule._pSessionStateMode = wConfig.Mode
+                    RequestModule._pTimeout = CInt(wConfig.Timeout.TotalMinutes)
 
                     If RequestModule._pSessionStateMode = System.Web.SessionState.SessionStateMode.Off Then
-                        RequestModule._pTimeout = CInt(wConfig.Timeout.TotalMinutes)
                         RequestModule._pCookieMode = wConfig.Cookieless
 
                         RequestModule._pSessionItems = Hashtable.Synchronized(New Hashtable)
-
-                        ' Create a SessionIDManager.
-                        RequestModule._pSessionIDManager = New System.Web.SessionState.SessionIDManager()
-                        RequestModule._pSessionIDManager.Initialize()
                     End If
-
-                    ' Set NextPruning Date For Session Clearance.
-                    'RequestModule._NextPruning = Date.Now.AddDays(1)
 
                     RequestModule._pInitialized = True
                 End If
             Finally
                 System.Threading.Monitor.Exit(Me)
             End Try
+
+            RequestModule._Timer = New Timers.Timer(RequestModule._pTimeout * 60 * 1000)
+            AddHandler RequestModule._Timer.Elapsed, New Timers.ElapsedEventHandler(AddressOf Me.RemoveExpiredVariableData)
+            RequestModule._Timer.AutoReset = True
+            RequestModule._Timer.Start()
         End Sub
 
         '
@@ -195,35 +177,26 @@ Namespace SolidDevelopment.Web
                 app.Context.Request.RawUrl
 
             If RootPath.IndexOf("~/") > -1 Then
-                app.Context.Items.Add("_sys_SkipSessionConfirmation", True)
-
                 RootPath = RootPath.Remove(0, RootPath.IndexOf("~/") + 2)
                 RootPath = RootPath.Insert(0, Configurations.ApplicationRoot.BrowserSystemImplementation)
 
+                app.Context.RewritePath(RootPath)
+            ElseIf RootPath.IndexOf("¨/") > -1 Then
+                ' It search something outside of XeoraCube Handler
+                RootPath = RootPath.Remove(0, RootPath.IndexOf("¨/") + 2)
+                RootPath = RootPath.Insert(0, Configurations.VirtualRoot)
+
                 app.Context.Response.Clear()
                 app.Context.Response.Redirect(RootPath)
-                app.Context.Response.Close()
+                app.Context.Response.End()
 
                 Exit Sub
-                ' BACKUP FOR FUTURE USE (RequestOnFly!)
-                'SolidDevelopment.Web.General.Context.Items.Remove("RedirectLocation")
-                'SolidDevelopment.Web.General.Context.Items.Add( _
-                '        "RedirectLocation", _
-                '        RootPath _
-                '    )
             End If
             ' !--
 
             ' Define a RequestID and ApplicationID for XeoraCube
             app.Context.Items.Add("RequestID", Guid.NewGuid().ToString())
             app.Context.Items.Add("ApplicationID", RequestModule._pApplicationID)
-
-            'If RequestModule._pInitialized AndAlso _
-            '    RequestModule._pSessionStateMode = System.Web.SessionState.SessionStateMode.Off AndAlso _
-            '    Date.Compare(RequestModule._NextPruning, Date.Now) < 0 Then
-
-            '    Me.RemoveExpiredSessionData()
-            'End If
         End Sub
 
         '
@@ -240,15 +213,15 @@ Namespace SolidDevelopment.Web
 
                 System.Threading.Monitor.Enter(RequestModule._pSessionItems.SyncRoot)
                 Try
-                    RequestModule._pSessionIDManager.InitializeRequest(context, False, Nothing)
+                    RequestModule.SessionIDManager.InitializeRequest(context, False, Nothing)
 
-                    sessionID = RequestModule._pSessionIDManager.GetSessionID(context)
+                    sessionID = RequestModule.SessionIDManager.GetSessionID(context)
 
                     If Not sessionID Is Nothing Then
                         sessionData = CType(RequestModule._pSessionItems(sessionID), SessionItem)
 
                         If Not sessionData Is Nothing Then
-                            If Date.Compare(sessionData.Expires, Date.Now) > 0 Then
+                            If Date.Compare(Date.Now, sessionData.Expires) <= 0 Then
                                 sessionData.Expires = Date.Now.AddMinutes(RequestModule._pTimeout)
                             Else
                                 ' Remove Session Data From HashTable
@@ -258,9 +231,9 @@ Namespace SolidDevelopment.Web
                             End If
                         End If
                     Else
-                        sessionID = RequestModule._pSessionIDManager.CreateSessionID(context)
+                        sessionID = RequestModule.SessionIDManager.CreateSessionID(context)
 
-                        RequestModule._pSessionIDManager.SaveSessionID(context, sessionID, redirected, Nothing)
+                        RequestModule.SessionIDManager.SaveSessionID(context, sessionID, redirected, Nothing)
                     End If
 
                     If Not redirected Then
@@ -269,11 +242,11 @@ Namespace SolidDevelopment.Web
                             ' and add it to the local Hashtable.
                             isNew = True
 
-                            sessionData = New SessionItem()
-
-                            sessionData.Items = New System.Web.SessionState.SessionStateItemCollection()
-                            sessionData.StaticObjects = System.Web.SessionState.SessionStateUtility.GetSessionStaticObjects(context)
-                            sessionData.Expires = Date.Now.AddMinutes(RequestModule._pTimeout)
+                            sessionData = New SessionItem( _
+                                                New System.Web.SessionState.SessionStateItemCollection(), _
+                                                System.Web.SessionState.SessionStateUtility.GetSessionStaticObjects(context), _
+                                                Date.Now.AddMinutes(RequestModule._pTimeout) _
+                                            )
 
                             RequestModule._pSessionItems(sessionID) = sessionData
                         End If
@@ -292,11 +265,9 @@ Namespace SolidDevelopment.Web
                 Finally
                     System.Threading.Monitor.Exit(RequestModule._pSessionItems.SyncRoot)
                 End Try
-
-                ' Execute the Session_OnStart event for a new session.
-                If isNew Then RaiseEvent Start(Me, EventArgs.Empty)
             End If
         End Sub
+
 
         '
         ' Event handler for HttpApplication.PreRequestHandlerExecute
@@ -305,8 +276,19 @@ Namespace SolidDevelopment.Web
             Dim context As System.Web.HttpContext = CType(source, System.Web.HttpApplication).Context
 
             ' Prepare Context Variables
-            SolidDevelopment.Web.General.SetRequestHttpContext( _
-                CType(context.Items.Item("RequestID"), String), context)
+            Dim RequestID As String = _
+                CType(context.Items.Item("RequestID"), String)
+
+            System.Threading.Monitor.Enter(RequestModule._HttpContextTable.SyncRoot)
+            Try
+                If RequestModule._HttpContextTable.ContainsKey(RequestID) Then _
+                    RequestModule._HttpContextTable.Remove(RequestID)
+
+                If Not context Is Nothing Then _
+                    RequestModule._HttpContextTable.Add(RequestID, New ContextContainer(False, context))
+            Finally
+                System.Threading.Monitor.Exit(RequestModule._HttpContextTable.SyncRoot)
+            End Try
             ' !--
         End Sub
 
@@ -316,13 +298,27 @@ Namespace SolidDevelopment.Web
         Private Sub OnPostRequestHandlerExecute(ByVal source As Object, ByVal args As EventArgs)
             Dim context As System.Web.HttpContext = CType(source, System.Web.HttpApplication).Context
 
-            ' Confirm Variable Pool Registrations If It's a Template Request
+            Dim RequestID As String = _
+               CType(context.Items.Item("RequestID"), String)
             Dim IsTemplateRequest As Boolean
             Boolean.TryParse( _
                 CType(context.Items.Item("_sys_TemplateRequest"), String), _
                 IsTemplateRequest _
             )
+
             If IsTemplateRequest Then SolidDevelopment.Web.General.ConfirmVariables()
+
+            If Not RequestModule._HttpContextTable Is Nothing AndAlso _
+                Not String.IsNullOrEmpty(RequestID) Then
+
+                System.Threading.Monitor.Enter(RequestModule._HttpContextTable.SyncRoot)
+                Try
+                    If RequestModule._HttpContextTable.ContainsKey(RequestID) Then _
+                        RequestModule._HttpContextTable.Remove(RequestID)
+                Finally
+                    System.Threading.Monitor.Exit(RequestModule._HttpContextTable.SyncRoot)
+                End Try
+            End If
         End Sub
 
         '
@@ -331,13 +327,7 @@ Namespace SolidDevelopment.Web
         Private Sub OnReleaseRequestState(ByVal source As Object, ByVal args As EventArgs)
             Dim context As System.Web.HttpContext = CType(source, System.Web.HttpApplication).Context
 
-            Dim IsSkipSessionConfirmation As Boolean
-            Boolean.TryParse( _
-                CType(context.Items.Item("_sys_SkipSessionConfirmation"), String), _
-                IsSkipSessionConfirmation _
-            )
-            If Not IsSkipSessionConfirmation AndAlso _
-                RequestModule._pSessionStateMode = System.Web.SessionState.SessionStateMode.Off Then
+            If RequestModule._pSessionStateMode = System.Web.SessionState.SessionStateMode.Off Then
                 ' Read the session state from the context
                 Dim stateProvider As System.Web.SessionState.HttpSessionStateContainer = _
                     CType(System.Web.SessionState.SessionStateUtility.GetHttpSessionStateFromContext(context), System.Web.SessionState.HttpSessionStateContainer)
@@ -347,36 +337,17 @@ Namespace SolidDevelopment.Web
                 If stateProvider.IsAbandoned Then
                     System.Threading.Monitor.Enter(RequestModule._pSessionItems.SyncRoot)
                     Try
-                        RequestModule._pSessionItems.Remove(stateProvider.SessionID)
+                        If RequestModule._pSessionItems.ContainsKey(stateProvider.SessionID) Then _
+                            RequestModule._pSessionItems.Remove(stateProvider.SessionID)
                     Finally
                         System.Threading.Monitor.Exit(RequestModule._pSessionItems.SyncRoot)
                     End Try
 
                     System.Web.SessionState.SessionStateUtility.RaiseSessionEnd(stateProvider, Me, EventArgs.Empty)
                     System.Web.SessionState.SessionStateUtility.RemoveHttpSessionStateFromContext(context)
-
-                    ' Create Static VariablePool Service...
-                    Dim staticVPService As New SolidDevelopment.Web.Managers.VariablePoolOperationClass
-
-                    ' Destroy Session Data using Static Variable Pool Service Instance
-                    Dim SessionHashCodeList As String() = _
-                        SolidDevelopment.Web.General.UnRegisterSessionHashCodeList(stateProvider.SessionID)
-
-                    For Each sHC As String In SessionHashCodeList
-                        staticVPService.DestroySessionData( _
-                            String.Format("{0}_{1}", stateProvider.SessionID, sHC) _
-                        )
-                    Next
-                    staticVPService.DestroySessionData(stateProvider.SessionID)
-                    ' !---
                 End If
             End If
         End Sub
-
-        '
-        ' Event for Session_OnStart event in the Global.asax file.
-        '
-        Public Event Start As EventHandler
 
         '
         ' Event handler for HttpApplication.ReleaseRequestState
@@ -385,10 +356,146 @@ Namespace SolidDevelopment.Web
             CType(source, System.Web.HttpApplication).CompleteRequest()
         End Sub
 
-        Private Sub LoadApplication()
-            Try
-                If Not IO.Directory.Exists(RequestModule._pApplicationLocation) Then IO.Directory.CreateDirectory(RequestModule._pApplicationLocation)
+        Public Shared ReadOnly Property Context(ByVal RequestID As String) As System.Web.HttpContext
+            Get
+                If String.IsNullOrEmpty(RequestID) OrElse _
+                    Not RequestModule._HttpContextTable.ContainsKey(RequestID) Then _
+                    Return Nothing
 
+                Return CType(RequestModule._HttpContextTable.Item(RequestID), ContextContainer).Context
+            End Get
+        End Property
+
+        Public Shared Function CreateThreadContext(ByVal RequestID As String) As String
+            Dim rNewRequestID As String = String.Empty
+
+            If Not RequestModule._HttpContextTable Is Nothing AndAlso _
+                Not String.IsNullOrEmpty(RequestID) Then
+
+                System.Threading.Monitor.Enter(RequestModule._HttpContextTable.SyncRoot)
+                Try
+                    If RequestModule._HttpContextTable.ContainsKey(RequestID) Then
+                        rNewRequestID = Guid.NewGuid().ToString()
+
+                        Dim tContext As System.Web.HttpContext = _
+                            CType(RequestModule._HttpContextTable.Item(RequestID), ContextContainer).Context
+
+                        Dim NewContext As System.Web.HttpContext = _
+                            New System.Web.HttpContext(tContext.Request, tContext.Response)
+
+                        For Each Key As Object In tContext.Items.Keys
+                            NewContext.Items.Add(Key, tContext.Items.Item(Key))
+                        Next
+                        NewContext.Items.Item("RequestID") = rNewRequestID
+
+                        RequestModule.SessionIDManager.InitializeRequest(NewContext, False, Nothing)
+
+                        RequestModule._HttpContextTable.Add(rNewRequestID, New ContextContainer(True, NewContext))
+                    End If
+                Finally
+                    System.Threading.Monitor.Exit(RequestModule._HttpContextTable.SyncRoot)
+                End Try
+            End If
+
+            Return rNewRequestID
+        End Function
+
+        Public Shared Sub DestroyThreadContext(ByVal RequestID As String)
+            If Not RequestModule._HttpContextTable Is Nothing AndAlso _
+                Not String.IsNullOrEmpty(RequestID) Then
+
+                System.Threading.Monitor.Enter(RequestModule._HttpContextTable.SyncRoot)
+                Try
+                    If RequestModule._HttpContextTable.ContainsKey(RequestID) Then
+                        Dim ContextItem As ContextContainer = _
+                            CType(RequestModule._HttpContextTable.Item(RequestID), ContextContainer)
+
+                        If ContextItem.IsThreadContext Then _
+                            RequestModule._HttpContextTable.Remove(RequestID)
+                    End If
+                Finally
+                    System.Threading.Monitor.Exit(RequestModule._HttpContextTable.SyncRoot)
+                End Try
+            End If
+        End Sub
+
+        Private Sub LoadApplication(ByVal ForceReload As Boolean)
+            If Not ForceReload AndAlso Not String.IsNullOrEmpty(RequestModule._pApplicationID) Then Exit Sub
+
+            If ForceReload Then
+                RequestModule._VPService.UnRegisterVariableFromPool("000000000000000000000000_00000001", "ApplicationID")
+                RequestModule._VPService.ConfirmRegistrations("000000000000000000000000_00000001")
+            End If
+
+            Dim ApplicationID As Byte() = _
+                RequestModule._VPService.GetVariableFromPool("000000000000000000000000_00000001", "ApplicationID")
+
+            If Not ApplicationID Is Nothing Then
+                RequestModule._pApplicationID = System.Text.Encoding.UTF8.GetString(ApplicationID)
+                RequestModule._pApplicationLocation = _
+                    IO.Path.Combine( _
+                        SolidDevelopment.Web.Configurations.TemporaryRoot, _
+                        String.Format("{0}{2}{1}", _
+                            SolidDevelopment.Web.Configurations.WorkingPath.WorkingPathID, _
+                            RequestModule._pApplicationID, _
+                            IO.Path.DirectorySeparatorChar _
+                        ) _
+                    )
+
+                If Me.IsReloadRequired() Then Me.LoadApplication(True)
+            Else
+                Try
+                    RequestModule._pApplicationID = Guid.NewGuid().ToString()
+                    RequestModule._pApplicationLocation = _
+                        IO.Path.Combine( _
+                            SolidDevelopment.Web.Configurations.TemporaryRoot, _
+                            String.Format("{0}{2}{1}", _
+                                SolidDevelopment.Web.Configurations.WorkingPath.WorkingPathID, _
+                                RequestModule._pApplicationID, _
+                                IO.Path.DirectorySeparatorChar _
+                            ) _
+                        )
+
+                    RequestModule._VPService.RegisterVariableToPool( _
+                        "000000000000000000000000_00000001", "ApplicationID", _
+                        System.Text.Encoding.UTF8.GetBytes(RequestModule._pApplicationID) _
+                    )
+                    RequestModule._VPService.ConfirmRegistrations("000000000000000000000000_00000001")
+
+                    If Not IO.Directory.Exists(RequestModule._pApplicationLocation) Then _
+                        IO.Directory.CreateDirectory(RequestModule._pApplicationLocation)
+
+                    Dim ThemeDllsLocation As String = _
+                            IO.Path.Combine( _
+                                Configurations.PyhsicalRoot, _
+                                Configurations.ApplicationRoot.FileSystemImplementation _
+                            )
+                    ThemeDllsLocation = IO.Path.Combine(ThemeDllsLocation, String.Format("Themes{0}Dlls", IO.Path.DirectorySeparatorChar))
+
+                    Dim DI As New IO.DirectoryInfo(ThemeDllsLocation)
+
+                    For Each fI As IO.FileInfo In DI.GetFiles()
+                        If Not IO.File.Exists( _
+                            IO.Path.Combine(RequestModule._pApplicationLocation, fI.Name)) Then
+
+                            Try
+                                fI.CopyTo( _
+                                    IO.Path.Combine(RequestModule._pApplicationLocation, fI.Name), True)
+                            Catch ex As Exception
+                                ' Just Handle Exceptions
+                            End Try
+                        End If
+                    Next
+                Catch ex As Exception
+                    Throw New Exception(String.Format("{0}!", SolidDevelopment.Web.Globals.SystemMessages.SYSTEM_APPLICATIONLOADINGERROR), ex)
+                End Try
+            End If
+        End Sub
+
+        Private Function IsReloadRequired() As Boolean
+            Dim rBoolean As Boolean = False
+
+            If IO.Directory.Exists(RequestModule._pApplicationLocation) Then
                 Dim ThemeDllsLocation As String = _
                         IO.Path.Combine( _
                             Configurations.PyhsicalRoot, _
@@ -397,28 +504,114 @@ Namespace SolidDevelopment.Web
                 ThemeDllsLocation = IO.Path.Combine(ThemeDllsLocation, String.Format("Themes{0}Dlls", IO.Path.DirectorySeparatorChar))
 
                 Dim DI As New IO.DirectoryInfo(ThemeDllsLocation)
+                Dim MD5 As System.Security.Cryptography.MD5 = _
+                    System.Security.Cryptography.MD5.Create()
 
                 For Each fI As IO.FileInfo In DI.GetFiles()
                     If Not IO.File.Exists( _
                         IO.Path.Combine(RequestModule._pApplicationLocation, fI.Name)) Then
 
+                        rBoolean = True
+
+                        Exit For
+                    Else
+                        Dim RealStream As IO.Stream = Nothing
+                        Dim CacheStream As IO.Stream = Nothing
+
                         Try
-                            fI.CopyTo( _
-                                IO.Path.Combine(RequestModule._pApplicationLocation, fI.Name), True)
+                            RealStream = fI.Open(IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                            CacheStream = New IO.FileStream(IO.Path.Combine(RequestModule._pApplicationLocation, fI.Name), IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+
+                            Dim RealHash As Byte() = MD5.ComputeHash(RealStream)
+                            Dim CacheHash As Byte() = MD5.ComputeHash(CacheStream)
+
+                            If RealHash.Length <> CacheHash.Length Then
+                                rBoolean = True
+                            Else
+                                For bC As Integer = 0 To RealHash.Length - 1
+                                    If RealHash(bC) <> CacheHash(bC) Then
+                                        rBoolean = True
+
+                                        Exit For
+                                    End If
+                                Next
+                            End If
                         Catch ex As Exception
-                            ' Just Handle Exceptions
+                            rBoolean = True
+                        Finally
+                            If Not RealStream Is Nothing Then RealStream.Close()
+                            If Not CacheStream Is Nothing Then CacheStream.Close()
                         End Try
+
+                        If rBoolean Then Exit For
                     End If
                 Next
+            Else
+                rBoolean = True
+            End If
 
-                RequestModule._ApplicationLoaded = True
-            Catch ex As Exception
-                Throw New Exception(String.Format("{0}!", SolidDevelopment.Web.Globals.SystemMessages.SYSTEM_APPLICATIONLOADINGERROR), ex)
-            End Try
+            Return rBoolean
+        End Function
+
+        Private Sub UnLoadApplication()
+            Dim ApplicationsRoot As String = _
+                IO.Path.Combine( _
+                    SolidDevelopment.Web.Configurations.TemporaryRoot, _
+                    SolidDevelopment.Web.Configurations.WorkingPath.WorkingPathID _
+                )
+
+            For Each Path As String In IO.Directory.GetDirectories(ApplicationsRoot)
+                If Path.EndsWith("PoolSessions") OrElse _
+                    Path.Contains(RequestModule._pApplicationID) Then Continue For
+
+                ' Check if all files are in use
+                Dim IsRemovable As Boolean = True
+
+                For Each FilePath As String In IO.Directory.GetFiles(Path)
+                    Dim CheckFS As IO.FileStream = Nothing
+
+                    Try
+                        CheckFS = New IO.FileStream(FilePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.None)
+                    Catch ex As Exception
+                        IsRemovable = False
+
+                        Exit For
+                    Finally
+                        If Not CheckFS Is Nothing Then _
+                            CheckFS.Close()
+                    End Try
+                Next
+
+                If IsRemovable Then
+                    Try
+                        IO.Directory.Delete(Path, True)
+                    Catch ex As Exception
+                        ' Just Handle Exceptions
+                    End Try
+                End If
+            Next
         End Sub
 
+        Private Shared ReadOnly Property SessionIDManager As System.Web.SessionState.ISessionIDManager
+            Get
+                If RequestModule._pSessionIDManager Is Nothing Then
+                    RequestModule._pSessionIDManager = New System.Web.SessionState.SessionIDManager()
+                    RequestModule._pSessionIDManager.Initialize()
+                End If
+
+                Return RequestModule._pSessionIDManager
+            End Get
+        End Property
+
         Public Sub Dispose() Implements System.Web.IHttpModule.Dispose
+            If Not RequestModule._Timer Is Nothing Then
+                RequestModule._Timer.Enabled = False
+                RequestModule._Timer.Dispose()
+            End If
+
             SolidDevelopment.Web.Managers.Assembly.ClearCache()
+
+            Me.UnLoadApplication()
         End Sub
     End Class
 End Namespace

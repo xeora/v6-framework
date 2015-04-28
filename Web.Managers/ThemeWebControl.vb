@@ -194,7 +194,7 @@ Namespace SolidDevelopment.Web.Managers
 
             Select Case Me._ServiceType
                 Case Theme.SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template
-                    Me._RenderedService = Me._Theme.RenderTemplate(Me._BlockRenderingID, Me._ServiceID, Me._ArgumentInfoList)
+                    Me._RenderedService = Me._Theme.RenderTemplate(Me._ServiceID, Me._BlockRenderingID, Me._ArgumentInfoList)
                 Case Theme.SettingsClass.ServicesClass.ServiceItem.ServiceTypes.webservice
                     If Me._IsAuthenticationRequired Then
                         Dim PostedExecuteParameters As New SolidDevelopment.Web.PGlobals.Helpers.WebServiceExecuteParameters

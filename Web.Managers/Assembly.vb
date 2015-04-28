@@ -826,9 +826,8 @@ Namespace SolidDevelopment.Web.Managers
                                 DllName _
                             }, _
                             System.Globalization.CultureInfo.CurrentCulture, _
-                            Nothing, _
                             Nothing _
-                        ), _
+                        ),  _
                         SolidDevelopment.Web.Managers.PlugInsLoader _
                     )
             Catch ex As Exception

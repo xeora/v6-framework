@@ -29,3 +29,4 @@ P:\XeoraCube\Web.PlugInsHelper\obj\Debug\PlugInsHelper.dll
 P:\XeoraCube\Web.PlugInsHelper\obj\Debug\PlugInsHelper.pdb
 P:\XeoraCube\Web.PlugInsHelper\bin\Any\PlugInsHelper.dll
 P:\XeoraCube\Web.PlugInsHelper\bin\Any\PlugInsHelper.pdb
+P:\XeoraCube\Web.PlugInsHelper\obj\Debug\Web.PlugInsHelper.vbprojResolveAssemblyReference.cache

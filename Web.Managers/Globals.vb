@@ -668,7 +668,7 @@ Namespace SolidDevelopment.Web
 
             Private _ParentPendingCommonControlContents As Generic.Dictionary(Of String, Generic.List(Of CommonControlContent))
 
-            Public Sub New(ByVal BlockID As String, ByVal TemplateID As String, ByVal GlobalsArguments As Globals.ArgumentInfo.ArgumentInfoCollection)
+            Public Sub New(ByVal TemplateID As String, ByVal BlockID As String, ByVal GlobalsArguments As Globals.ArgumentInfo.ArgumentInfoCollection)
                 Me._ReturnException = Nothing
 
                 ' Set Block Id Variables
@@ -773,10 +773,9 @@ Namespace SolidDevelopment.Web
                     If OriginalValue Is Nothing Then Throw New Exception("Value can not be null!")
 
                     If Me.ContentType = ContentTypes.Renderless Then
-                        ' Change ~/ values with the exact root path
+                        ' Change ~/ values with the exact application root path
                         Dim RootPathMatches As System.Text.RegularExpressions.MatchCollection = _
                             System.Text.RegularExpressions.Regex.Matches(OriginalValue, "[""']+~/", Text.RegularExpressions.RegexOptions.Multiline)
-
                         Dim wR As String = Configurations.ApplicationRoot.BrowserSystemImplementation
 
                         Dim OriginalValue_temp As New System.Text.StringBuilder, SetTempToOriginal As Boolean = False
@@ -784,6 +783,34 @@ Namespace SolidDevelopment.Web
                         Dim PrevLocIndex As Integer = 0
                         Dim REMEnum As IEnumerator = _
                             RootPathMatches.GetEnumerator()
+                        Do While REMEnum.MoveNext()
+                            SetTempToOriginal = True
+
+                            tMatchItem = CType(REMEnum.Current, System.Text.RegularExpressions.Match)
+
+                            OriginalValue_temp.Append( _
+                                OriginalValue.Substring(PrevLocIndex, tMatchItem.Index - PrevLocIndex) _
+                            )
+                            OriginalValue_temp.AppendFormat( _
+                                "{0}{1}", _
+                                tMatchItem.Value.Substring(0, 1), _
+                                wR _
+                            )
+
+                            PrevLocIndex = tMatchItem.Index + tMatchItem.Length
+                        Loop
+                        ' !---
+                        If SetTempToOriginal Then
+                            OriginalValue_temp.Append(OriginalValue.Substring(PrevLocIndex))
+                            OriginalValue = OriginalValue_temp.ToString()
+                        End If
+
+                        ' Change ¨/ values with the exact site root path
+                        RootPathMatches = System.Text.RegularExpressions.Regex.Matches(OriginalValue, "[""']+¨/", Text.RegularExpressions.RegexOptions.Multiline)
+                        wR = Configurations.VirtualRoot
+
+                        OriginalValue_temp.Clear() : SetTempToOriginal = False : PrevLocIndex = 0
+                        REMEnum = RootPathMatches.GetEnumerator()
                         Do While REMEnum.MoveNext()
                             SetTempToOriginal = True
 

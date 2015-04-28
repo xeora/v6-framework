@@ -299,12 +299,16 @@ Namespace SolidDevelopment.Web
         End Class
 
         Public Class URLMappingInfos
+            Private Shared _CurrentInstance As URLMappingInfos = Nothing
+
             Private _URLMapping As Boolean
             Private _URLMappingItems As PGlobals.URLMappingInfos.URLMappingItem.URLMappingItemCollection
 
             Public Sub New()
                 Me._URLMapping = False
                 Me._URLMappingItems = New URLMappingItem.URLMappingItemCollection
+
+                URLMappingInfos._CurrentInstance = Me
             End Sub
 
             Public Property URLMapping() As Boolean
@@ -322,22 +326,51 @@ Namespace SolidDevelopment.Web
                 End Get
             End Property
 
-            Public Shared ReadOnly Property Current() As URLMappingInfos
+            Public Shared ReadOnly Property Current As URLMappingInfos
                 Get
-                    Dim rURLMI As New URLMappingInfos
-
-                    If Not General.Context.Application.Contents.Item(URLMappingInfos.URLMappingExamString) Is Nothing Then _
-                        rURLMI = CType(General.Context.Application.Contents.Item(URLMappingInfos.URLMappingExamString), URLMappingInfos)
-
-                    Return rURLMI
+                    Return URLMappingInfos._CurrentInstance
                 End Get
             End Property
 
-            Public Shared ReadOnly Property URLMappingExamString() As String
-                Get
-                    Return String.Format("{0}_MappingInfo", Configurations.VirtualRoot.Replace("/"c, "_"c))
-                End Get
-            End Property
+            Public Function ResolveMappedURL(ByVal RequestFilePath As String) As ResolvedMapped
+                Dim rResolvedMapped As ResolvedMapped = Nothing
+
+                If Me.URLMapping Then
+                    Dim TemplateID As String = Nothing, QueryString As New Generic.List(Of PGlobals.URLQueryInfo)
+
+                    Dim IsResolved As Boolean = False
+                    Dim rqMatch As System.Text.RegularExpressions.Match = Nothing
+                    For Each mItem As URLMappingItem In Me.URLMappingItems
+                        rqMatch = System.Text.RegularExpressions.Regex.Match(RequestFilePath, mItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
+
+                        If rqMatch.Success Then
+                            IsResolved = True
+                            TemplateID = mItem.ResolveInfo.TemplateID
+
+                            Dim medItemValue As String
+                            For Each medItem As ResolveInfos.MappedItem In mItem.ResolveInfo.MappedItems
+                                medItemValue = String.Empty
+
+                                If Not String.IsNullOrEmpty(medItem.ID) Then medItemValue = rqMatch.Groups.Item(medItem.ID).Value
+
+                                QueryString.Add( _
+                                    New PGlobals.URLQueryInfo( _
+                                        medItem.QueryStringKey, _
+                                        CType(IIf(String.IsNullOrEmpty(medItemValue), medItem.DefaultValue, medItemValue), String) _
+                                    ) _
+                                )
+                            Next
+
+                            Exit For
+                        End If
+                    Next
+
+                    rResolvedMapped = New ResolvedMapped(IsResolved, TemplateID)
+                    rResolvedMapped.QueryStrings.AddRange(QueryString.ToArray())
+                End If
+
+                Return rResolvedMapped
+            End Function
 
             Public Class URLMappingItem
                 Private _Overridable As Boolean
@@ -387,240 +420,6 @@ Namespace SolidDevelopment.Web
                     End Set
                 End Property
 
-                Public Shared Function ResolveMappedURL(ByVal RequestFilePath As String) As ResolvedMapped
-                    Dim rResolvedMapped As ResolvedMapped = Nothing
-
-                    Dim URLMI As URLMappingInfos = _
-                        URLMappingInfos.Current
-
-                    If URLMI.URLMapping Then
-                        Dim TemplateID As String = Nothing, QueryString As New Generic.List(Of PGlobals.URLQueryInfo)
-                        Dim HashCode As String = General.Context.GetHashCode().ToString()
-                        Dim CachingType As PGlobals.PageCachingTypes = PageCachingTypes.AllContent
-
-                        Dim SHCMatch As System.Text.RegularExpressions.Match = _
-                            System.Text.RegularExpressions.Regex.Match(RequestFilePath, "/hc-\d+(,L\d(XC)?)?/")
-
-                        If SHCMatch.Success Then
-                            ' Search and set request caching variable if it's exists
-                            Dim rCIdx As Integer = SHCMatch.Value.IndexOf(","c)
-                            If rCIdx > -1 Then
-                                Select Case SHCMatch.Value.Substring(rCIdx + 1, SHCMatch.Length - (rCIdx + 2))
-                                    Case "L1"
-                                        CachingType = PGlobals.PageCachingTypes.TextsOnly
-                                    Case "L2"
-                                        CachingType = PGlobals.PageCachingTypes.NoCache
-                                    Case "L0XC"
-                                        CachingType = PGlobals.PageCachingTypes.AllContentCookiless
-                                    Case "L1XC"
-                                        CachingType = PGlobals.PageCachingTypes.TextsOnlyCookiless
-                                    Case "L2XC"
-                                        CachingType = PGlobals.PageCachingTypes.NoCacheCookiless
-                                End Select
-                            End If
-                            ' !--
-
-                            ' Set request hashcode variable
-                            Dim hCEndIdx As Integer = SHCMatch.Value.IndexOf("-"c) + 1
-                            If rCIdx > -1 Then
-                                HashCode = SHCMatch.Value.Substring(hCEndIdx, rCIdx - hCEndIdx)
-                            Else
-                                HashCode = SHCMatch.Value.Substring(hCEndIdx, SHCMatch.Length - (hCEndIdx + 1))
-                            End If
-
-                            ' Clean request spesific xeoracube infos
-                            RequestFilePath = RequestFilePath.Substring(SHCMatch.Index + SHCMatch.Length)
-                        End If
-
-                        Dim IsResolved As Boolean = False
-                        Dim rqMatch As System.Text.RegularExpressions.Match = Nothing
-                        For Each mItem As URLMappingItem In URLMI.URLMappingItems
-                            rqMatch = System.Text.RegularExpressions.Regex.Match(RequestFilePath, mItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
-
-                            If rqMatch.Success Then
-                                IsResolved = True
-                                TemplateID = mItem.ResolveInfo.TemplateID
-
-                                Dim medItemValue As String
-                                For Each medItem As URLMappingItem.ResolveInfos.MappedItem In mItem.ResolveInfo.MappedItems
-                                    medItemValue = String.Empty
-
-                                    If Not String.IsNullOrEmpty(medItem.ID) Then medItemValue = rqMatch.Groups.Item(medItem.ID).Value
-
-                                    QueryString.Add( _
-                                        New PGlobals.URLQueryInfo( _
-                                            medItem.QueryStringKey, _
-                                            CType(IIf(String.IsNullOrEmpty(medItemValue), medItem.DefaultValue, medItemValue), String) _
-                                        ) _
-                                    )
-                                Next
-
-                                Exit For
-                            End If
-                        Next
-
-                        rResolvedMapped = New ResolvedMapped(IsResolved, TemplateID)
-                        With rResolvedMapped
-                            .HashCode = HashCode
-                            .CachingType = CachingType
-
-                            .QueryStrings.AddRange(QueryString.ToArray())
-                        End With
-                    End If
-
-                    Return rResolvedMapped
-                End Function
-
-                Public Class ResolvedMapped
-                    Private _IsResolved As Boolean
-
-                    Private _HashCode As String
-                    Private _CachingType As PGlobals.PageCachingTypes
-
-                    Private _TemplateID As String
-                    Private _QueryString As Generic.List(Of PGlobals.URLQueryInfo)
-
-                    Public Sub New(ByVal IsResolved As Boolean, ByVal TemplateID As String)
-                        Me._IsResolved = IsResolved
-
-                        Me._HashCode = General.Context.GetHashCode().ToString()
-                        Me._CachingType = PageCachingTypes.AllContent
-
-                        Me._TemplateID = TemplateID
-                        Me._QueryString = New Generic.List(Of PGlobals.URLQueryInfo)
-                    End Sub
-
-                    Public ReadOnly Property IsResolved() As Boolean
-                        Get
-                            Return Me._IsResolved
-                        End Get
-                    End Property
-
-                    Public ReadOnly Property TemplateID() As String
-                        Get
-                            Return Me._TemplateID
-                        End Get
-                    End Property
-
-                    Public ReadOnly Property QueryStrings() As Generic.List(Of PGlobals.URLQueryInfo)
-                        Get
-                            Return Me._QueryString
-                        End Get
-                    End Property
-
-                    Public Property HashCode() As String
-                        Get
-                            Return Me._HashCode
-                        End Get
-                        Set(ByVal value As String)
-                            Me._HashCode = value
-                        End Set
-                    End Property
-
-                    Public Property CachingType() As PGlobals.PageCachingTypes
-                        Get
-                            Return Me._CachingType
-                        End Get
-                        Set(ByVal value As PGlobals.PageCachingTypes)
-                            Me._CachingType = value
-                        End Set
-                    End Property
-                End Class
-
-                Public Class ResolveInfos
-                    Private _TemplateID As String
-                    Private _MapFormat As String
-                    Private _MappedItems As MappedItem.MappedItemCollection
-
-                    Public Sub New(ByVal TemplateID As String)
-                        Me._TemplateID = TemplateID
-                        Me._MapFormat = String.Empty
-                        Me._MappedItems = New MappedItem.MappedItemCollection
-                    End Sub
-
-                    Public ReadOnly Property TemplateID() As String
-                        Get
-                            Return Me._TemplateID
-                        End Get
-                    End Property
-
-                    Public Property MapFormat() As String
-                        Get
-                            Return Me._MapFormat
-                        End Get
-                        Set(ByVal value As String)
-                            Me._MapFormat = value
-                        End Set
-                    End Property
-
-                    Public ReadOnly Property MappedItems() As MappedItem.MappedItemCollection
-                        Get
-                            Return Me._MappedItems
-                        End Get
-                    End Property
-
-                    Public Class MappedItem
-                        Private _ID As String
-                        Private _DefaultValue As String
-                        Private _QueryStringKey As String
-
-                        Public Sub New(ByVal ID As String)
-                            Me._ID = ID
-                            Me._DefaultValue = String.Empty
-                            Me._QueryStringKey = ID
-                        End Sub
-
-                        Public ReadOnly Property ID() As String
-                            Get
-                                Return Me._ID
-                            End Get
-                        End Property
-
-                        Public Property DefaultValue() As String
-                            Get
-                                Return Me._DefaultValue
-                            End Get
-                            Set(ByVal value As String)
-                                Me._DefaultValue = value
-                            End Set
-                        End Property
-
-                        Public Property QueryStringKey() As String
-                            Get
-                                Return Me._QueryStringKey
-                            End Get
-                            Set(ByVal value As String)
-                                Me._QueryStringKey = value
-                            End Set
-                        End Property
-
-                        Public Class MappedItemCollection
-                            Inherits Generic.List(Of MappedItem)
-
-                            Public Sub New()
-                                MyBase.New()
-                            End Sub
-
-                            Public Shadows ReadOnly Property Item(ByVal ID As String) As MappedItem
-                                Get
-                                    Dim rMappedItem As MappedItem = _
-                                        New MappedItem(ID)
-
-                                    For Each medItem As MappedItem In Me
-                                        If String.Compare(medItem.ID, ID, True) = 0 Then
-                                            rMappedItem = medItem
-
-                                            Exit For
-                                        End If
-                                    Next
-
-                                    Return rMappedItem
-                                End Get
-                            End Property
-                        End Class
-                    End Class
-                End Class
-
                 Public Class URLMappingItemCollection
                     Inherits Generic.List(Of URLMappingItem)
 
@@ -642,20 +441,6 @@ Namespace SolidDevelopment.Web
                         MyBase.Sort(New PriorityComparer())
                     End Sub
 
-                    Public Function SearchReverseMap(ByVal TemplateID As String) As URLMappingItem
-                        Dim rMappingItem As URLMappingItem = Nothing
-
-                        For Each mI As URLMappingItem In Me
-                            If String.Compare(mI.ResolveInfo.TemplateID, TemplateID, True) = 0 Then
-                                rMappingItem = mI
-
-                                Exit For
-                            End If
-                        Next
-
-                        Return rMappingItem
-                    End Function
-
                     Private Class PriorityComparer
                         Implements System.Collections.Generic.IComparer(Of URLMappingItem)
 
@@ -668,6 +453,132 @@ Namespace SolidDevelopment.Web
 
                             Return rCR
                         End Function
+                    End Class
+                End Class
+            End Class
+
+            Public Class ResolvedMapped
+                Private _IsResolved As Boolean
+
+                Private _TemplateID As String
+                Private _QueryString As Generic.List(Of PGlobals.URLQueryInfo)
+
+                Public Sub New(ByVal IsResolved As Boolean, ByVal TemplateID As String)
+                    Me._IsResolved = IsResolved
+
+                    Me._TemplateID = TemplateID
+                    Me._QueryString = New Generic.List(Of PGlobals.URLQueryInfo)
+                End Sub
+
+                Public ReadOnly Property IsResolved() As Boolean
+                    Get
+                        Return Me._IsResolved
+                    End Get
+                End Property
+
+                Public ReadOnly Property TemplateID() As String
+                    Get
+                        Return Me._TemplateID
+                    End Get
+                End Property
+
+                Public ReadOnly Property QueryStrings() As Generic.List(Of PGlobals.URLQueryInfo)
+                    Get
+                        Return Me._QueryString
+                    End Get
+                End Property
+            End Class
+
+            Public Class ResolveInfos
+                Private _TemplateID As String
+                Private _MapFormat As String
+                Private _MappedItems As MappedItem.MappedItemCollection
+
+                Public Sub New(ByVal TemplateID As String)
+                    Me._TemplateID = TemplateID
+                    Me._MapFormat = String.Empty
+                    Me._MappedItems = New MappedItem.MappedItemCollection
+                End Sub
+
+                Public ReadOnly Property TemplateID() As String
+                    Get
+                        Return Me._TemplateID
+                    End Get
+                End Property
+
+                Public Property MapFormat() As String
+                    Get
+                        Return Me._MapFormat
+                    End Get
+                    Set(ByVal value As String)
+                        Me._MapFormat = value
+                    End Set
+                End Property
+
+                Public ReadOnly Property MappedItems() As MappedItem.MappedItemCollection
+                    Get
+                        Return Me._MappedItems
+                    End Get
+                End Property
+
+                Public Class MappedItem
+                    Private _ID As String
+                    Private _DefaultValue As String
+                    Private _QueryStringKey As String
+
+                    Public Sub New(ByVal ID As String)
+                        Me._ID = ID
+                        Me._DefaultValue = String.Empty
+                        Me._QueryStringKey = ID
+                    End Sub
+
+                    Public ReadOnly Property ID() As String
+                        Get
+                            Return Me._ID
+                        End Get
+                    End Property
+
+                    Public Property DefaultValue() As String
+                        Get
+                            Return Me._DefaultValue
+                        End Get
+                        Set(ByVal value As String)
+                            Me._DefaultValue = value
+                        End Set
+                    End Property
+
+                    Public Property QueryStringKey() As String
+                        Get
+                            Return Me._QueryStringKey
+                        End Get
+                        Set(ByVal value As String)
+                            Me._QueryStringKey = value
+                        End Set
+                    End Property
+
+                    Public Class MappedItemCollection
+                        Inherits Generic.List(Of MappedItem)
+
+                        Public Sub New()
+                            MyBase.New()
+                        End Sub
+
+                        Public Shadows ReadOnly Property Item(ByVal ID As String) As MappedItem
+                            Get
+                                Dim rMappedItem As MappedItem = _
+                                    New MappedItem(ID)
+
+                                For Each medItem As MappedItem In Me
+                                    If String.Compare(medItem.ID, ID, True) = 0 Then
+                                        rMappedItem = medItem
+
+                                        Exit For
+                                    End If
+                                Next
+
+                                Return rMappedItem
+                            End Get
+                        End Property
                     End Class
                 End Class
             End Class
@@ -892,7 +803,7 @@ Namespace SolidDevelopment.Web
                 Sub TransferRegistrations(ByVal FromSessionKeyID As String, ByVal CurrentSessionKeyID As String)
 
                 Sub ConfirmRegistrations(ByVal SessionKeyID As String)
-                Sub DestroySessionData(ByVal SessionKeyID As String)
+                Sub DoCleanUp()
 
                 Function PingToRemoteEndPoint() As Boolean
             End Interface
@@ -1712,109 +1623,42 @@ Namespace SolidDevelopment.Web
             End Function
         End Class
 
-        Public Overloads Shared Function GetPageToRedirect(ByVal TemplateID As String, ByVal CachingType As PGlobals.PageCachingTypes, ByVal ParamArray qSL As PGlobals.URLQueryInfo()) As String
-            Return General.GetPageToRedirect(False, TemplateID, CachingType, qSL)
-        End Function
+        'Public Overloads Shared Function GetPageToRedirect(ByVal TemplateID As String, ByVal CachingType As PGlobals.PageCachingTypes, ByVal ParamArray qSL As PGlobals.URLQueryInfo()) As String
+        '    Return General.GetPageToRedirect(False, TemplateID, CachingType, qSL)
+        'End Function
 
-        Public Overloads Shared Function GetPageToRedirect(ByVal UseNewHash As Boolean, ByVal TemplateID As String, ByVal CachingType As PGlobals.PageCachingTypes, ByVal ParamArray qSL As PGlobals.URLQueryInfo()) As String
+        Public Overloads Shared Function GetPageToRedirect(ByVal UseSameVariablePool As Boolean, ByVal TemplateID As String, ByVal CachingType As PGlobals.PageCachingTypes, ByVal ParamArray qSL As PGlobals.URLQueryInfo()) As String
             Dim rString As String
 
-            Dim URLMI As PGlobals.URLMappingInfos = _
-                PGlobals.URLMappingInfos.Current
+            Dim QueryStrings As New Generic.List(Of String)
 
-            If URLMI.URLMapping Then
-                Dim rMItem As SolidDevelopment.Web.PGlobals.URLMappingInfos.URLMappingItem = _
-                    URLMI.URLMappingItems.SearchReverseMap(TemplateID)
+            Select Case CachingType
+                Case PGlobals.PageCachingTypes.AllContentCookiless
+                    QueryStrings.Add("nocache=L0XC")
+                Case PGlobals.PageCachingTypes.TextsOnly
+                    QueryStrings.Add("nocache=L1")
+                Case PGlobals.PageCachingTypes.TextsOnlyCookiless
+                    QueryStrings.Add("nocache=L1XC")
+                Case PGlobals.PageCachingTypes.NoCache
+                    QueryStrings.Add("nocache=L2")
+                Case PGlobals.PageCachingTypes.NoCacheCookiless
+                    QueryStrings.Add("nocache=L2XC")
+            End Select
 
-                If Not rMItem Is Nothing Then
-                    Dim MappedURLBuilder As New System.Text.StringBuilder
-
-                    If UseNewHash Then
-                        MappedURLBuilder.Append(Configurations.ApplicationRoot.BrowserSystemImplementation)
-                    Else
-                        MappedURLBuilder.AppendFormat("{0}hc-{1}", Configurations.ApplicationRoot.BrowserSystemImplementation, General.HashCode)
-                        Select Case CachingType
-                            Case PGlobals.PageCachingTypes.AllContentCookiless
-                                MappedURLBuilder.Append(",L0XC")
-                            Case PGlobals.PageCachingTypes.TextsOnly
-                                MappedURLBuilder.Append(",L1")
-                            Case PGlobals.PageCachingTypes.TextsOnlyCookiless
-                                MappedURLBuilder.Append(",L1XC")
-                            Case PGlobals.PageCachingTypes.NoCache
-                                MappedURLBuilder.Append(",L2")
-                            Case PGlobals.PageCachingTypes.NoCacheCookiless
-                                MappedURLBuilder.Append(",L2XC")
-                        End Select
-                        MappedURLBuilder.Append("/")
-                    End If
-
-                    Dim MappedURL As String = rMItem.ResolveInfo.MapFormat
-
-                    If Not String.IsNullOrEmpty(MappedURL) Then
-                        For Each medItem As SolidDevelopment.Web.PGlobals.URLMappingInfos.URLMappingItem.ResolveInfos.MappedItem In rMItem.ResolveInfo.MappedItems
-                            Dim medFixed As Boolean = False
-
-                            For Each qS As PGlobals.URLQueryInfo In qSL
-                                If String.Compare(medItem.QueryStringKey, qS.ID, True) = 0 Then
-                                    MappedURL = MappedURL.Replace( _
-                                                    String.Format("{{{0}}}", medItem.ID), _
-                                                    CType(IIf(String.IsNullOrEmpty(qS.Value), medItem.DefaultValue, qS.Value), String) _
-                                                )
-                                    medFixed = True
-
-                                    Exit For
-                                End If
-                            Next
-
-                            If Not medFixed Then
-                                MappedURL = MappedURL.Replace( _
-                                                    String.Format("{{{0}}}", medItem.ID), _
-                                                    medItem.DefaultValue _
-                                                )
-                            End If
-                        Next
-
-                        MappedURLBuilder.Append(MappedURL)
-
-                        rString = MappedURLBuilder.ToString()
-                    Else
-                        GoTo NOMAPPING
-                    End If
-                Else
-                    GoTo NOMAPPING
-                End If
-            Else
-NOMAPPING:
-                Dim QueryStrings As New Generic.List(Of String)
-
-                Select Case CachingType
-                    Case PGlobals.PageCachingTypes.AllContentCookiless
-                        QueryStrings.Add("nocache=L0XC")
-                    Case PGlobals.PageCachingTypes.TextsOnly
-                        QueryStrings.Add("nocache=L1")
-                    Case PGlobals.PageCachingTypes.TextsOnlyCookiless
-                        QueryStrings.Add("nocache=L1XC")
-                    Case PGlobals.PageCachingTypes.NoCache
-                        QueryStrings.Add("nocache=L2")
-                    Case PGlobals.PageCachingTypes.NoCacheCookiless
-                        QueryStrings.Add("nocache=L2XC")
-                End Select
-
-                If Not qSL Is Nothing Then
-                    For Each qS As PGlobals.URLQueryInfo In qSL
-                        QueryStrings.Add(String.Format("{0}={1}", qS.ID, qS.Value))
-                    Next
-                End If
-
-                If UseNewHash Then
-                    rString = String.Format("{0}{1}", Configurations.ApplicationRoot.BrowserSystemImplementation, TemplateID)
-                Else
-                    rString = String.Format("{0}hc-{1},{2}", Configurations.ApplicationRoot.BrowserSystemImplementation, General.HashCode, TemplateID)
-                End If
-
-                If QueryStrings.Count > 0 Then _
-                    rString = String.Concat(rString, "?", String.Join("&", QueryStrings.ToArray()))
+            If Not qSL Is Nothing Then
+                For Each qS As PGlobals.URLQueryInfo In qSL
+                    QueryStrings.Add(String.Format("{0}={1}", qS.ID, qS.Value))
+                Next
             End If
+
+            If Not UseSameVariablePool Then
+                rString = String.Format("{0}{1}", Configurations.ApplicationRoot.BrowserSystemImplementation, TemplateID)
+            Else
+                rString = String.Format("{0}{1}/{2}", Configurations.ApplicationRoot.BrowserSystemImplementation, General.HashCode, TemplateID)
+            End If
+
+            If QueryStrings.Count > 0 Then _
+                rString = String.Concat(rString, "?", String.Join("&", QueryStrings.ToArray()))
 
             Return rString
         End Function
@@ -1862,33 +1706,27 @@ NOMAPPING:
                     ' Manage Query String
                     RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(Configurations.ApplicationRoot.BrowserSystemImplementation) + Configurations.ApplicationRoot.BrowserSystemImplementation.Length)
 
-                    If RequestFilePath.IndexOf("?"c) = -1 AndAlso _
-                        RequestFilePath.IndexOf("/"c) > -1 Then
+                    Dim mR As System.Text.RegularExpressions.Match = _
+                        System.Text.RegularExpressions.Regex.Match(RequestFilePath, "\d+/")
 
-                        RequestedTemplate = Nothing
+                    If mR.Success AndAlso mR.Index = 0 Then _
+                        RequestFilePath = RequestFilePath.Substring(mR.Length)
+
+                    If RequestFilePath.IndexOf("?"c) > -1 Then
+                        RequestFilePath = RequestFilePath.Substring(0, RequestFilePath.IndexOf("?"c))
                     Else
-                        Dim qmIndex As Integer = RequestFilePath.IndexOf("?"c)
-
-                        If qmIndex = -1 Then
-                            RequestedTemplate = RequestFilePath
+                        If RequestFilePath.Length = 0 Then
+                            RequestFilePath = String.Empty
+                        ElseIf RequestFilePath.IndexOf("/"c) > -1 Then
+                            RequestFilePath = Nothing
                         Else
-                            RequestedTemplate = RequestFilePath.Substring(0, qmIndex)
-                        End If
-
-                        If RequestedTemplate.Trim().Length = 0 Then
-                            RequestedTemplate = String.Empty
-                        Else
-                            Dim mR As System.Text.RegularExpressions.Match = _
-                                System.Text.RegularExpressions.Regex.Match(RequestedTemplate, "hc-\d+")
-
-                            If RequestFilePath.Split(","c).Length = 2 AndAlso _
-                                mR.Success Then
-
-                                ' +1 for "," char between hashcode and template 
-                                RequestedTemplate = RequestedTemplate.Substring(mR.Index + mR.Length + 1)
-                            End If
+                            ' If requested path is like this /VDIR/APPPATH/392901
+                            ' it is probably wrong string passed
+                            ' but never the less do not fix
                         End If
                     End If
+
+                    RequestedTemplate = RequestFilePath
                     ' !-- Manage Query String
                 End If
             End If
@@ -2219,17 +2057,15 @@ NOMAPPING:
 
         Public Shared ReadOnly Property Context() As System.Web.HttpContext
             Get
-                Dim rHttpContext As System.Web.HttpContext = Nothing
+                Dim rContext As System.Web.HttpContext
+                Dim RequestAsm As System.Reflection.Assembly, objRequest As System.Type
 
-                If Not General._HttpContext Is Nothing AndAlso _
-                    General._HttpContext.ContainsKey(General.CurrentRequestID) Then
+                RequestAsm = System.Reflection.Assembly.Load("WebHandler")
+                objRequest = RequestAsm.GetType("SolidDevelopment.Web.RequestModule", False, True)
 
-                    rHttpContext = CType(General._HttpContext.Item(General.CurrentRequestID), System.Web.HttpContext)
-                Else
-                    rHttpContext = System.Web.HttpContext.Current
-                End If
+                rContext = CType(objRequest.InvokeMember("Context", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {General.CurrentRequestID}), System.Web.HttpContext)
 
-                Return rHttpContext
+                Return rContext
             End Get
         End Property
 
@@ -2246,17 +2082,28 @@ NOMAPPING:
             End Get
         End Property
 
-        Private Shared _HttpContext As Hashtable = Nothing
-        Public Shared Sub SetRequestHttpContext(ByVal RequestID As String, ByVal context As System.Web.HttpContext)
-            If General._HttpContext Is Nothing Then General._HttpContext = Hashtable.Synchronized(New Hashtable())
+        Public Shared Function CreateThreadContext() As String
+            Dim RequestAsm As System.Reflection.Assembly, objRequest As System.Type
 
-            System.Threading.Monitor.Enter(General._HttpContext.SyncRoot)
-            Try
-                If General._HttpContext.ContainsKey(RequestID) Then General._HttpContext.Remove(RequestID)
-                If Not context Is Nothing Then General._HttpContext.Add(RequestID, context)
-            Finally
-                System.Threading.Monitor.Exit(General._HttpContext.SyncRoot)
-            End Try
+            RequestAsm = System.Reflection.Assembly.Load("WebHandler")
+            objRequest = RequestAsm.GetType("SolidDevelopment.Web.RequestModule", False, True)
+
+            Return CType(objRequest.InvokeMember("CreateThreadContext", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, New Object() {General.CurrentRequestID}), String)
+        End Function
+
+        Public Shared Sub DestroyThreadContext(ByVal ThreadRequestID As String)
+            Dim RequestAsm As System.Reflection.Assembly, objRequest As System.Type
+
+            RequestAsm = System.Reflection.Assembly.Load("WebHandler")
+            objRequest = RequestAsm.GetType("SolidDevelopment.Web.RequestModule", False, True)
+
+            objRequest.InvokeMember("DestroyThreadContext", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, New Object() {ThreadRequestID})
+        End Sub
+
+        Public Shared Sub AssignRequestID(ByVal RequestID As String)
+            System.AppDomain.CurrentDomain.SetData( _
+                    String.Format("RequestID_{0}", _
+                        System.Threading.Thread.CurrentThread.ManagedThreadId), RequestID)
         End Sub
 
         Public Shared ReadOnly Property CurrentRequestID() As String
@@ -2271,12 +2118,6 @@ NOMAPPING:
             End Get
         End Property
 
-        Public Shared Sub AssignRequestID(ByVal RequestID As String)
-            System.AppDomain.CurrentDomain.SetData( _
-                    String.Format("RequestID_{0}", _
-                        System.Threading.Thread.CurrentThread.ManagedThreadId), RequestID)
-        End Sub
-
         Public Shared ReadOnly Property HashCode() As String
             Get
                 Dim _HashCode As String
@@ -2287,12 +2128,12 @@ NOMAPPING:
                 RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(Configurations.ApplicationRoot.BrowserSystemImplementation) + Configurations.ApplicationRoot.BrowserSystemImplementation.Length)
 
                 Dim mR As System.Text.RegularExpressions.Match = _
-                    System.Text.RegularExpressions.Regex.Match(RequestFilePath, "hc-\d+")
+                    System.Text.RegularExpressions.Regex.Match(RequestFilePath, "\d+/")
 
                 If mR.Success AndAlso _
                     mR.Index = 0 Then
 
-                    _HashCode = mR.Value.Substring(3)
+                    _HashCode = mR.Value.Substring(0, mR.Value.Length - 1)
                 Else
                     _HashCode = Context.GetHashCode().ToString()
                 End If
@@ -2311,7 +2152,7 @@ NOMAPPING:
 
                 If URLMI.URLMapping Then
                     Dim SHCMatch As System.Text.RegularExpressions.Match = _
-                        System.Text.RegularExpressions.Regex.Match(Context.Request.FilePath, "/hc-\d+(,L\d(XC)?)?/")
+                        System.Text.RegularExpressions.Regex.Match(Context.Request.FilePath, "\d+(L\d(XC)?)?/")
 
                     If SHCMatch.Success Then
                         ' Search and set request caching variable if it's exists
@@ -2372,51 +2213,9 @@ NOMAPPING:
             Return rCachingTypeText
         End Function
 
-        Private Shared _SessionHashCodeIndex As Hashtable = Hashtable.Synchronized(New Hashtable)
-        Private Shared Sub RegisterHashCodeToSession(ByVal SessionID As String, ByVal HashCode As String)
-            Dim HashCodeList As Generic.List(Of String)
-
-            System.Threading.Monitor.Enter(General._SessionHashCodeIndex.SyncRoot)
-            Try
-                If General._SessionHashCodeIndex.ContainsKey(SessionID) Then
-                    HashCodeList = CType(General._SessionHashCodeIndex.Item(SessionID), Generic.List(Of String))
-                Else
-                    HashCodeList = New Generic.List(Of String)
-                End If
-
-                If HashCodeList.IndexOf(HashCode) = -1 Then HashCodeList.Add(HashCode)
-                General._SessionHashCodeIndex.Item(SessionID) = HashCodeList
-            Finally
-                System.Threading.Monitor.Exit(General._SessionHashCodeIndex.SyncRoot)
-            End Try
-        End Sub
-
-        Public Shared Function UnRegisterSessionHashCodeList(ByVal SessionID As String) As String()
-            Dim rHashCodeList As String() = New String() {}
-
-            System.Threading.Monitor.Enter(General._SessionHashCodeIndex.SyncRoot)
-            Try
-                If General._SessionHashCodeIndex.ContainsKey(SessionID) Then
-                    Dim HashCodeList As Generic.List(Of String) = _
-                        CType(General._SessionHashCodeIndex.Item(SessionID), Generic.List(Of String))
-
-                    If Not HashCodeList Is Nothing Then _
-                        rHashCodeList = HashCodeList.ToArray()
-
-                    General._SessionHashCodeIndex.Remove(SessionID)
-                End If
-            Finally
-                System.Threading.Monitor.Exit(General._SessionHashCodeIndex.SyncRoot)
-            End Try
-
-            Return rHashCodeList
-        End Function
-
         Public Shared Sub SetVariable(ByVal key As String, ByVal value As Object)
             If Not String.IsNullOrWhiteSpace(key) AndAlso key.Length > 128 Then _
                 Throw New Exception("VariableName can not be longer than 128 characters!")
-
-            General.RegisterHashCodeToSession(General.Context.Session.SessionID, General.HashCode)
 
             If value Is Nothing Then
                 General.VariablePool.UnRegisterVariableFromPool(key)
@@ -2685,20 +2484,6 @@ NOMAPPING:
 
             Private Sub _ConfirmRegistrationsResult(ByVal aR As IAsyncResult)
                 CType(aR.AsyncState, _ConfirmRegistrationDelegate).EndInvoke(aR)
-            End Sub
-
-            Public Sub DestroySessionData()
-                If String.IsNullOrEmpty(Me._SessionKeyID) Then Throw New Exception("SessionID must be set!")
-
-                VariablePoolPreCacheClass.CleanCachedVariables(Me._SessionKeyID)
-
-                ' Complete DestroySession in Background
-                Dim DestroyThread As New Threading.Thread( _
-                    Sub()
-                        General._VariablePoolOperationCache.DestroySessionData(Me._SessionKeyID)
-                    End Sub _
-                )
-                DestroyThread.Start()
             End Sub
         End Class
 
