@@ -149,6 +149,7 @@ ControlTags:
 		<Attributes>
 			<Attribute id="[HTMLAttributeName]">[AttributeContent]</Attributes>
 		</Attributes>
+	</Map>
 
 	$P:TemplateID$ << create text with Currentpage's hashcode. Ex: $P:TemplateID$  Output: /1252482/TemplateID
 
