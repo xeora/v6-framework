@@ -796,9 +796,9 @@ Namespace SolidDevelopment.Web
 
                 Sub DoMassRegistration(ByVal SessionKeyID As String, ByVal serializedSerializableDictionary As Byte())
                 Sub RegisterVariableToPool(ByVal SessionKeyID As String, ByVal name As String, ByVal serializedValue As Byte())
-                Sub RegisterVariableToPoolAsync(ByVal SessionKeyID As String, ByVal name As String, ByVal serializedValue As Byte())
+                'Sub RegisterVariableToPoolAsync(ByVal SessionKeyID As String, ByVal name As String, ByVal serializedValue As Byte())
                 Sub UnRegisterVariableFromPool(ByVal SessionKeyID As String, ByVal name As String)
-                Sub UnRegisterVariableFromPoolAsync(ByVal SessionKeyID As String, ByVal name As String)
+                'Sub UnRegisterVariableFromPoolAsync(ByVal SessionKeyID As String, ByVal name As String)
 
                 Sub TransferRegistrations(ByVal FromSessionKeyID As String, ByVal CurrentSessionKeyID As String)
 
@@ -2237,8 +2237,8 @@ Namespace SolidDevelopment.Web
 
         Public Shared Sub ConfirmVariables()
             Try
-                General.VariablePool.ConfirmRegistrations(True)
-                General.VariablePoolForWebService.ConfirmRegistrations(True)
+                General.VariablePool.ConfirmRegistrations()
+                General.VariablePoolForWebService.ConfirmRegistrations()
             Catch ex As Exception
                 ' Just Handle Exceptions
                 '   Null Object Referance
@@ -2324,70 +2324,18 @@ Namespace SolidDevelopment.Web
                 Return rObject
             End Function
 
-            'Private Sub CompleteRegistrationOPInThread(ByVal ObjectList As Object)
-            '    Dim qrThread As New Threading.Thread(AddressOf Me._CompleteRegistrationOPInThread)
-            '    qrThread.Start(ObjectList)
-            'End Sub
-
-            'Private Sub _CompleteRegistrationOPInThread(ByVal ObjectList As Object)
-            '    Dim tWCB As Threading.WaitCallback = _
-            '        CType(CType(ObjectList, Object())(0), Threading.WaitCallback)
-            '    Dim ObjectList_L As Object = _
-            '        CType( _
-            '            Array.CreateInstance( _
-            '                GetType(Object), _
-            '                CType(ObjectList, Object()).Length - 1 _
-            '            ), Object() _
-            '        )
-            '    For iC As Integer = 1 To CType(ObjectList, Object()).Length - 1
-            '        CType(ObjectList_L, Object())(iC - 1) = CType(ObjectList, Object())(iC)
-            '    Next
-
-            '    tWCB.Invoke(ObjectList_L)
-            'End Sub
-
             Public Sub RegisterVariableToPool(ByVal name As String, ByVal value As Object)
                 If String.IsNullOrEmpty(Me._SessionKeyID) Then Throw New Exception("SessionID must be set!")
 
                 VariablePoolPreCacheClass.CacheVariable(Me._SessionKeyID, name, value)
             End Sub
 
-            'Private Sub _RegisterVariableToPool(ByVal state As Object)
-            '    Dim SessionID As String, name As String, value As Object
-
-            '    SessionID = CType(CType(state, Object())(0), String)
-            '    name = CType(CType(state, Object())(1), String)
-            '    value = CType(state, Object())(2)
-
-            '    Dim serializedValue As Byte() = New Byte() {}
-            '    Dim forStream As IO.Stream = Nothing
-
-            '    Try
-            '        forStream = New IO.MemoryStream
-
-            '        Dim binFormater As New System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            '        binFormater.Serialize(forStream, value)
-
-            '        serializedValue = _
-            '            CType(forStream, IO.MemoryStream).ToArray()
-            '    Catch ex As Exception
-            '        ' Just Handle Exceptions
-            '    Finally
-            '        If Not forStream Is Nothing Then
-            '            forStream.Close()
-            '            GC.SuppressFinalize(forStream)
-            '        End If
-            '    End Try
-
-            '    General._VariablePoolOperationCache.RegisterVariableToPoolAsync(SessionID, name, serializedValue)
-            'End Sub
-
             Public Sub UnRegisterVariableFromPool(ByVal name As String)
                 VariablePoolPreCacheClass.CacheVariable(Me._SessionKeyID, name, Nothing)
 
                 ' Unregister Variable From Pool Immidiately. 
                 ' Otherwise it will cause cache reload in the same domain call
-                General._VariablePoolOperationCache.UnRegisterVariableFromPoolAsync(Me._SessionKeyID, name)
+                General._VariablePoolOperationCache.UnRegisterVariableFromPool(Me._SessionKeyID, name)
             End Sub
 
             Public Sub TransferRegistrations(ByVal FromSessionID As String)
@@ -2453,37 +2401,23 @@ Namespace SolidDevelopment.Web
                 Return serializedValue
             End Function
 
-            Public Sub ConfirmRegistrations(ByVal RunAsFireAndForget As Boolean)
+            Public Sub ConfirmRegistrations()
+                ' CONFIRMATION HAS TO RUN ALWAYS ON MAIN THREAD. WE NEED BLOCKAGE!
                 If String.IsNullOrEmpty(Me._SessionKeyID) Then Throw New Exception("SessionID must be set!")
 
-                Dim CRDelegate As New _ConfirmRegistrationDelegate(AddressOf Me._ConfirmRegistrations)
-                If RunAsFireAndForget Then
-                    ' Complete Registration in Background
-                    CRDelegate.BeginInvoke(Me._SessionKeyID, New AsyncCallback(AddressOf Me._ConfirmRegistrationsResult), CRDelegate)
-                Else
-                    CRDelegate.Invoke(Me._SessionKeyID)
-                End If
-            End Sub
-
-            Private Delegate Sub _ConfirmRegistrationDelegate(ByVal SessionKeyID As String)
-            Private Sub _ConfirmRegistrations(ByVal SessionKeyID As String)
                 Dim serializedHashTable As Byte() = Nothing
 
                 SyncLock VariablePoolPreCacheClass.VariablePreCache.SyncRoot
                     serializedHashTable = _
                         Me._SerializeNameValuePairs( _
-                            VariablePoolPreCacheClass.UnsafeGetCachedSession(SessionKeyID) _
+                            VariablePoolPreCacheClass.UnsafeGetCachedSession(Me._SessionKeyID) _
                         )
                 End SyncLock
 
-                General._VariablePoolOperationCache.DoMassRegistration(SessionKeyID, serializedHashTable)
-                General._VariablePoolOperationCache.ConfirmRegistrations(SessionKeyID)
+                General._VariablePoolOperationCache.DoMassRegistration(Me._SessionKeyID, serializedHashTable)
+                General._VariablePoolOperationCache.ConfirmRegistrations(Me._SessionKeyID)
 
                 VariablePoolPreCacheClass.CleanCachedVariables(Me._SessionKeyID)
-            End Sub
-
-            Private Sub _ConfirmRegistrationsResult(ByVal aR As IAsyncResult)
-                CType(aR.AsyncState, _ConfirmRegistrationDelegate).EndInvoke(aR)
             End Sub
         End Class
 
@@ -2492,7 +2426,8 @@ Namespace SolidDevelopment.Web
 
             Friend Shared ReadOnly Property VariablePreCache() As Hashtable
                 Get
-                    If VariablePoolPreCacheClass._VariablePreCache Is Nothing Then VariablePoolPreCacheClass._VariablePreCache = Hashtable.Synchronized(New Hashtable)
+                    If VariablePoolPreCacheClass._VariablePreCache Is Nothing Then _
+                        VariablePoolPreCacheClass._VariablePreCache = Hashtable.Synchronized(New Hashtable)
 
                     Return VariablePoolPreCacheClass._VariablePreCache
                 End Get

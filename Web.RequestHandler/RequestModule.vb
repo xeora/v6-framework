@@ -17,19 +17,7 @@ Namespace SolidDevelopment.Web
             System.Web.SessionState.SessionStateMode.Off
 
         Private Shared _VPService As SolidDevelopment.Web.Managers.VariablePoolOperationClass
-        Private Shared _Timer As Timers.Timer = Nothing
-        Private Shared _VariablePruning As Boolean = False
-
-        ' Recursivly remove expired session data from session collection.
-        Private Sub RemoveExpiredVariableData(ByVal sender As Object, ByVal e As EventArgs)
-            If RequestModule._VariablePruning Then Exit Sub
-
-            RequestModule._VariablePruning = True
-
-            RequestModule._VPService.DoCleanUp()
-
-            RequestModule._VariablePruning = False
-        End Sub
+        Private Const SESSIONKEYID As String = "000000000000000000000000_00000001"
 
         Private Class SessionItem
             Private _Items As System.Web.SessionState.SessionStateItemCollection
@@ -138,11 +126,6 @@ Namespace SolidDevelopment.Web
             Finally
                 System.Threading.Monitor.Exit(Me)
             End Try
-
-            RequestModule._Timer = New Timers.Timer(RequestModule._pTimeout * 60 * 1000)
-            AddHandler RequestModule._Timer.Elapsed, New Timers.ElapsedEventHandler(AddressOf Me.RemoveExpiredVariableData)
-            RequestModule._Timer.AutoReset = True
-            RequestModule._Timer.Start()
         End Sub
 
         '
@@ -193,6 +176,24 @@ Namespace SolidDevelopment.Web
                 Exit Sub
             End If
             ' !--
+
+            ' Check, this worker has the same ApplicationID with the most active one.
+            Dim ApplicationID As Byte() = _
+                RequestModule._VPService.GetVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
+
+            If Not ApplicationID Is Nothing AndAlso _
+                String.Compare(RequestModule._pApplicationID, System.Text.Encoding.UTF8.GetString(ApplicationID)) <> 0 Then
+                RequestModule._pApplicationID = System.Text.Encoding.UTF8.GetString(ApplicationID)
+                RequestModule._pApplicationLocation = _
+                    IO.Path.Combine( _
+                        SolidDevelopment.Web.Configurations.TemporaryRoot, _
+                        String.Format("{0}{2}{1}", _
+                            SolidDevelopment.Web.Configurations.WorkingPath.WorkingPathID, _
+                            RequestModule._pApplicationID, _
+                            IO.Path.DirectorySeparatorChar _
+                        ) _
+                    )
+            End If
 
             ' Define a RequestID and ApplicationID for XeoraCube
             app.Context.Items.Add("RequestID", Guid.NewGuid().ToString())
@@ -299,13 +300,11 @@ Namespace SolidDevelopment.Web
             Dim context As System.Web.HttpContext = CType(source, System.Web.HttpApplication).Context
 
             Dim RequestID As String = _
-               CType(context.Items.Item("RequestID"), String)
-            Dim IsTemplateRequest As Boolean
-            Boolean.TryParse( _
-                CType(context.Items.Item("_sys_TemplateRequest"), String), _
-                IsTemplateRequest _
-            )
+                CType(context.Items.Item("RequestID"), String)
+            Dim IsTemplateRequest As Boolean = _
+                CType(context.Items.Item("_sys_TemplateRequest"), Boolean)
 
+            ' WAIT UNTIL CONFIRMATION FINISHES!
             If IsTemplateRequest Then SolidDevelopment.Web.General.ConfirmVariables()
 
             If Not RequestModule._HttpContextTable Is Nothing AndAlso _
@@ -423,12 +422,12 @@ Namespace SolidDevelopment.Web
             If Not ForceReload AndAlso Not String.IsNullOrEmpty(RequestModule._pApplicationID) Then Exit Sub
 
             If ForceReload Then
-                RequestModule._VPService.UnRegisterVariableFromPool("000000000000000000000000_00000001", "ApplicationID")
-                RequestModule._VPService.ConfirmRegistrations("000000000000000000000000_00000001")
+                RequestModule._VPService.UnRegisterVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
+                RequestModule._VPService.ConfirmRegistrations(RequestModule.SESSIONKEYID)
             End If
 
             Dim ApplicationID As Byte() = _
-                RequestModule._VPService.GetVariableFromPool("000000000000000000000000_00000001", "ApplicationID")
+                RequestModule._VPService.GetVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
 
             If Not ApplicationID Is Nothing Then
                 RequestModule._pApplicationID = System.Text.Encoding.UTF8.GetString(ApplicationID)
@@ -457,10 +456,10 @@ Namespace SolidDevelopment.Web
                         )
 
                     RequestModule._VPService.RegisterVariableToPool( _
-                        "000000000000000000000000_00000001", "ApplicationID", _
+                        RequestModule.SESSIONKEYID, "ApplicationID", _
                         System.Text.Encoding.UTF8.GetBytes(RequestModule._pApplicationID) _
                     )
-                    RequestModule._VPService.ConfirmRegistrations("000000000000000000000000_00000001")
+                    RequestModule._VPService.ConfirmRegistrations(RequestModule.SESSIONKEYID)
 
                     If Not IO.Directory.Exists(RequestModule._pApplicationLocation) Then _
                         IO.Directory.CreateDirectory(RequestModule._pApplicationLocation)
@@ -604,11 +603,6 @@ Namespace SolidDevelopment.Web
         End Property
 
         Public Sub Dispose() Implements System.Web.IHttpModule.Dispose
-            If Not RequestModule._Timer Is Nothing Then
-                RequestModule._Timer.Enabled = False
-                RequestModule._Timer.Dispose()
-            End If
-
             SolidDevelopment.Web.Managers.Assembly.ClearCache()
 
             Me.UnLoadApplication()

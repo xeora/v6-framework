@@ -77,6 +77,8 @@ Namespace SolidDevelopment.Web
                     CType(context.Items.Item("RequestID"), String))
                 ' !--
 
+                General.Context.Items.Add("_sys_TemplateRequest", False)
+
                 Dim IsEO As Boolean = False
 
                 Try
@@ -201,7 +203,7 @@ Namespace SolidDevelopment.Web
                             Me.PostBuildInJavaScriptToClient()
                         Else
                             ' Mark this request is for TemplateRequest
-                            General.Context.Items.Add("_sys_TemplateRequest", True)
+                            General.Context.Items.Item("_sys_TemplateRequest") = True
 
                             ' Set Title Globals
                             General.SiteTitle = Me._ThemeWebControl.Theme.Translation.GetTranslation("SITETITLE")

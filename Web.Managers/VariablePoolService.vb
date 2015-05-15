@@ -21,28 +21,37 @@ Namespace SolidDevelopment.Web.Managers
         Private _FileAccessQueues As Hashtable
 
         Private _SynchronizedObjects As Hashtable
-        Private _VariableRegistrationAsyncResultsContainer As Hashtable
 
         Private _VariableTimeout As Integer
+        Private _Timer As Timers.Timer = Nothing
 
         Public Sub New()
             Me._VariablePoolTypeStatus = VariablePoolTypeStatus.None
             Me._VariablePoolID = String.Format("VP_{0}", SolidDevelopment.Web.Configurations.WorkingPath.WorkingPathID)
 
-            Me.CreateVariablePoolHostForRemoteConnectionsAsync()
-        End Sub
-
-        Private Sub CreateVariablePoolHostForRemoteConnectionsAsync()
             If Me._VariablePoolTypeStatus = VariablePoolTypeStatus.None Then
                 Me._VariablePoolTypeStatus = VariablePoolTypeStatus.InProcess
 
-                Dim RemoteBindDelegate As Action = _
-                    New Action(AddressOf Me.CreateVariablePoolHostForRemoteConnectionsBegin)
-                RemoteBindDelegate.BeginInvoke(New AsyncCallback(AddressOf Me.CreateVariablePoolHostForRemoteConnectionsEnd), RemoteBindDelegate)
+                Me.CreateVariablePoolHostForRemoteConnections()
+
+                If Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Host Then
+                    ' Get the configuration section and set timeout and CookieMode values.
+                    Dim cfg As System.Configuration.Configuration = _
+                        System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration( _
+                                    System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
+                    Dim wConfig As System.Web.Configuration.SessionStateSection = _
+                        CType(cfg.GetSection("system.web/sessionState"), System.Web.Configuration.SessionStateSection)
+
+                    Me._VariableTimeout = CInt(wConfig.Timeout.TotalMinutes)
+                    Me._Timer = New Timers.Timer(Me._VariableTimeout * 60 * 1000)
+                    AddHandler Me._Timer.Elapsed, New Timers.ElapsedEventHandler(AddressOf Me.RemoveExpiredVariableData)
+                    Me._Timer.AutoReset = True
+                    Me._Timer.Start()
+                End If
             End If
         End Sub
 
-        Private Sub CreateVariablePoolHostForRemoteConnectionsBegin()
+        Private Sub CreateVariablePoolHostForRemoteConnections()
             Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
             Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
                 Me.CreateConnectionToRemoteVariablePool(True, RemoteVariablePoolServiceConnection)
@@ -53,7 +62,6 @@ Namespace SolidDevelopment.Web.Managers
                 Me._FileAccessQueues = Hashtable.Synchronized(New Hashtable)
 
                 Me._SynchronizedObjects = Hashtable.Synchronized(New Hashtable)
-                Me._VariableRegistrationAsyncResultsContainer = Hashtable.Synchronized(New Hashtable)
 
                 Try
                     Dim serverProvider As New System.Runtime.Remoting.Channels.BinaryServerFormatterSinkProvider
@@ -85,21 +93,6 @@ Namespace SolidDevelopment.Web.Managers
                 End Try
             Else
                 Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Client
-            End If
-        End Sub
-
-        Private Sub CreateVariablePoolHostForRemoteConnectionsEnd(ByVal aR As IAsyncResult)
-            CType(aR.AsyncState, Action).EndInvoke(aR)
-
-            If Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Host Then
-                ' Get the configuration section and set timeout and CookieMode values.
-                Dim cfg As System.Configuration.Configuration = _
-                    System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration( _
-                                System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
-                Dim wConfig As System.Web.Configuration.SessionStateSection = _
-                    CType(cfg.GetSection("system.web/sessionState"), System.Web.Configuration.SessionStateSection)
-
-                Me._VariableTimeout = CInt(wConfig.Timeout.TotalMinutes)
             End If
         End Sub
 
@@ -235,29 +228,6 @@ Namespace SolidDevelopment.Web.Managers
                     End If
                 Finally
                     System.Threading.Monitor.Exit(Me._SynchronizedObjects.SyncRoot)
-                End Try
-            End Set
-        End Property
-
-        Private Property VariableRegistrationAsyncResult(ByVal SessionKeyID As String, ByVal name As String) As IAsyncResult
-            Get
-                Dim rAsyncResult As IAsyncResult = Nothing
-
-                If Me._VariableRegistrationAsyncResultsContainer.ContainsKey(String.Format("{0}_{1}", SessionKeyID, name)) Then _
-                    rAsyncResult = CType(Me._VariableRegistrationAsyncResultsContainer.Item(String.Format("{0}_{1}", SessionKeyID, name)), IAsyncResult)
-
-                Return rAsyncResult
-            End Get
-            Set(ByVal value As IAsyncResult)
-                System.Threading.Monitor.Enter(Me._VariableRegistrationAsyncResultsContainer.SyncRoot)
-                Try
-                    If value Is Nothing Then
-                        Me._VariableRegistrationAsyncResultsContainer.Remove(String.Format("{0}_{1}", SessionKeyID, name))
-                    Else
-                        Me._VariableRegistrationAsyncResultsContainer.Item(String.Format("{0}_{1}", SessionKeyID, name)) = value
-                    End If
-                Finally
-                    System.Threading.Monitor.Exit(Me._VariableRegistrationAsyncResultsContainer.SyncRoot)
                 End Try
             End Set
         End Property
@@ -524,34 +494,22 @@ Namespace SolidDevelopment.Web.Managers
             Select Case Me._VariablePoolTypeStatus
                 Case VariablePoolTypeStatus.Host
                     If Not String.IsNullOrWhiteSpace(name) Then
-                        Dim aR As IAsyncResult = _
-                            Me.VariableRegistrationAsyncResult(SessionKeyID, name)
+                        Dim syncObject As Object = Me.SynchronizedObject(SessionKeyID, name)
 
-                        ' Check is Finished
-                        If Not aR Is Nothing AndAlso _
-                            Not aR.IsCompleted Then
+                        System.Threading.Monitor.Enter(syncObject)
+                        Try
+                            Me.SynchronizedObject(SessionKeyID, name) = syncObject
 
-                            aR.AsyncWaitHandle.WaitOne()
+                            rBytes = Me.ReadVariableValue(SessionKeyID, name)
 
-                            rBytes = Me.GetVariableFromPool(SessionKeyID, name)
-                        Else
-                            Dim syncObject As Object = Me.SynchronizedObject(SessionKeyID, name)
-
-                            System.Threading.Monitor.Enter(syncObject)
-                            Try
-                                Me.SynchronizedObject(SessionKeyID, name) = syncObject
-
-                                rBytes = Me.ReadVariableValue(SessionKeyID, name)
-
-                                If Not rBytes Is Nothing AndAlso rBytes.Length = 0 Then rBytes = Nothing
-                            Finally
-                                System.Threading.Monitor.Exit(syncObject)
-                                Me.SynchronizedObject(SessionKeyID, name) = syncObject
-                            End Try
-                        End If
+                            If Not rBytes Is Nothing AndAlso rBytes.Length = 0 Then rBytes = Nothing
+                        Finally
+                            System.Threading.Monitor.Exit(syncObject)
+                            Me.SynchronizedObject(SessionKeyID, name) = syncObject
+                        End Try
                     End If
                 Case VariablePoolTypeStatus.None
-                    Me.CreateVariablePoolHostForRemoteConnectionsAsync()
+                    Me.CreateVariablePoolHostForRemoteConnections()
 
                     rBytes = Me.GetVariableFromPool(SessionKeyID, name)
                 Case Else
@@ -572,91 +530,6 @@ Namespace SolidDevelopment.Web.Managers
 
             Return rBytes
         End Function
-
-        Public Sub RegisterVariableToPoolAsync(ByVal SessionKeyID As String, ByVal name As String, ByVal serializedValue As Byte()) Implements PGlobals.Execution.IVariablePool.RegisterVariableToPoolAsync
-            Select Case Me._VariablePoolTypeStatus
-                Case VariablePoolTypeStatus.Host
-                    Dim RVTPDel As New RegisterVariableToPoolDelegate(AddressOf Me.RegisterVariableToPool)
-
-                    Dim aR As IAsyncResult = _
-                        Me.VariableRegistrationAsyncResult(SessionKeyID, name)
-
-                    ' Wait keyPair From Vairable Registration Async Result Hashtable
-                    ' Check is Finished
-                    If Not aR Is Nothing AndAlso _
-                        Not aR.IsCompleted Then
-
-                        aR.AsyncWaitHandle.WaitOne()
-
-                        Me.RegisterVariableToPoolAsync(SessionKeyID, name, serializedValue)
-                    Else
-                        ' Register Variable With Async Call
-                        Dim objList As Object = New Object() {RVTPDel, SessionKeyID, name}
-                        aR = RVTPDel.BeginInvoke( _
-                                                    SessionKeyID, _
-                                                    name, _
-                                                    serializedValue, _
-                                                    New AsyncCallback(AddressOf Me.RegisterVariableToPoolCompleted), _
-                                                    objList _
-                                                )
-
-                        If Not aR.IsCompleted Then Me.VariableRegistrationAsyncResult(SessionKeyID, name) = aR
-
-                        'Dim syncObject As Object = Me.SynchronizedObject(SessionKeyID, name)
-
-                        'System.Threading.Monitor.Enter(syncObject)
-                        'Try
-                        '    Me.SynchronizedObject(SessionKeyID, name) = syncObject
-
-
-                        'Finally
-                        '    System.Threading.Monitor.Exit(syncObject)
-                        '    Me.SynchronizedObject(SessionKeyID, name) = syncObject
-                        'End Try
-                    End If
-                Case VariablePoolTypeStatus.None
-                    Me.CreateVariablePoolHostForRemoteConnectionsAsync()
-
-                    Me.RegisterVariableToPoolAsync(SessionKeyID, name, serializedValue)
-                Case Else
-                    Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                    Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
-                        Me.CreateConnectionToRemoteVariablePool(False, RemoteVariablePoolServiceConnection)
-
-                    Try
-                        RemoteVariablePool.RegisterVariableToPoolAsync(SessionKeyID, name, serializedValue)
-                    Catch ex As Exception
-                        Me._VariablePoolTypeStatus = VariablePoolTypeStatus.None
-
-                        Me.RegisterVariableToPoolAsync(SessionKeyID, name, serializedValue)
-                    End Try
-
-                    Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
-            End Select
-        End Sub
-
-        Private Sub RegisterVariableToPoolCompleted(ByVal aR As IAsyncResult)
-            CType(CType(aR.AsyncState, Object())(0), RegisterVariableToPoolDelegate).EndInvoke(aR)
-
-            ' If there is any Vairable Registration Async Result Entry, Remove From It
-            Dim SessionID As String = CType(CType(aR.AsyncState, Object())(1), String)
-            Dim varName As String = CType(CType(aR.AsyncState, Object())(2), String)
-
-            'Dim syncObject As Object = Me.SynchronizedObject(SessionID, varName)
-
-            ' Remove From HashTable
-            Me.VariableRegistrationAsyncResult(SessionID, varName) = Nothing
-
-            'System.Threading.Monitor.Enter(syncObject)
-            'Try
-            '    Me.SynchronizedObject(SessionID, varName) = syncObject
-
-
-            'Finally
-            '    System.Threading.Monitor.Exit(syncObject)
-            '    Me.SynchronizedObject(SessionID, varName) = syncObject
-            'End Try
-        End Sub
 
         Public Sub DoMassRegistration(ByVal SessionKeyID As String, ByVal serializedSerializableDictionary As Byte()) Implements PGlobals.Execution.IVariablePool.DoMassRegistration
             Select Case Me._VariablePoolTypeStatus
@@ -695,7 +568,7 @@ Namespace SolidDevelopment.Web.Managers
                         End If
                     End If
                 Case VariablePoolTypeStatus.None
-                    Me.CreateVariablePoolHostForRemoteConnectionsAsync()
+                    Me.CreateVariablePoolHostForRemoteConnections()
 
                     Me.DoMassRegistration(SessionKeyID, serializedSerializableDictionary)
                 Case Else
@@ -734,7 +607,7 @@ Namespace SolidDevelopment.Web.Managers
                         Me.SynchronizedObject(SessionKeyID, name) = syncObject
                     End Try
                 Case VariablePoolTypeStatus.None
-                    Me.CreateVariablePoolHostForRemoteConnectionsAsync()
+                    Me.CreateVariablePoolHostForRemoteConnections()
 
                     Me.RegisterVariableToPool(SessionKeyID, name, serializedValue)
                 Case Else
@@ -759,7 +632,7 @@ Namespace SolidDevelopment.Web.Managers
                 Case VariablePoolTypeStatus.Host
                     Me.RegisterVariableToPool(SessionKeyID, name, Nothing)
                 Case VariablePoolTypeStatus.None
-                    Me.CreateVariablePoolHostForRemoteConnectionsAsync()
+                    Me.CreateVariablePoolHostForRemoteConnections()
 
                     Me.UnRegisterVariableFromPool(SessionKeyID, name)
                 Case Else
@@ -773,31 +646,6 @@ Namespace SolidDevelopment.Web.Managers
                         Me._VariablePoolTypeStatus = VariablePoolTypeStatus.None
 
                         Me.UnRegisterVariableFromPool(SessionKeyID, name)
-                    End Try
-
-                    Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
-            End Select
-        End Sub
-
-        Public Sub UnRegisterVariableFromPoolAsync(ByVal SessionKeyID As String, ByVal name As String) Implements PGlobals.Execution.IVariablePool.UnRegisterVariableFromPoolAsync
-            Select Case Me._VariablePoolTypeStatus
-                Case VariablePoolTypeStatus.Host
-                    Me.RegisterVariableToPoolAsync(SessionKeyID, name, Nothing)
-                Case VariablePoolTypeStatus.None
-                    Me.CreateVariablePoolHostForRemoteConnectionsAsync()
-
-                    Me.UnRegisterVariableFromPoolAsync(SessionKeyID, name)
-                Case Else
-                    Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                    Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
-                        Me.CreateConnectionToRemoteVariablePool(False, RemoteVariablePoolServiceConnection)
-
-                    Try
-                        RemoteVariablePool.UnRegisterVariableFromPoolAsync(SessionKeyID, name)
-                    Catch ex As Exception
-                        Me._VariablePoolTypeStatus = VariablePoolTypeStatus.None
-
-                        Me.UnRegisterVariableFromPoolAsync(SessionKeyID, name)
                     End Try
 
                     Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
@@ -845,7 +693,7 @@ Namespace SolidDevelopment.Web.Managers
                         Next
                     End If
                 Case VariablePoolTypeStatus.None
-                    Me.CreateVariablePoolHostForRemoteConnectionsAsync()
+                    Me.CreateVariablePoolHostForRemoteConnections()
 
                     Me.TransferRegistrations(FromSessionKeyID, CurrentSessionKeyID)
                 Case Else
@@ -908,7 +756,7 @@ Namespace SolidDevelopment.Web.Managers
                         System.Threading.Monitor.Exit(Me._VariableCache.SyncRoot)
                     End Try
                 Case VariablePoolTypeStatus.None
-                    Me.CreateVariablePoolHostForRemoteConnectionsAsync()
+                    Me.CreateVariablePoolHostForRemoteConnections()
 
                     Me.ConfirmRegistrations(SessionKeyID)
                 Case Else
@@ -977,7 +825,7 @@ Namespace SolidDevelopment.Web.Managers
                         Next
                     End If
                 Case VariablePoolTypeStatus.None
-                    Me.CreateVariablePoolHostForRemoteConnectionsAsync()
+                    Me.CreateVariablePoolHostForRemoteConnections()
 
                     Me.DoCleanUp()
                 Case Else
@@ -997,6 +845,16 @@ Namespace SolidDevelopment.Web.Managers
             End Select
         End Sub
 
+        ' Recursivly remove expired session data from session collection.
+        Private _VariablePruning As Boolean = False
+        Private Sub RemoveExpiredVariableData(ByVal sender As Object, ByVal e As EventArgs)
+            If Me._VariablePruning Then Exit Sub
+
+            Me._VariablePruning = True
+            Me.DoCleanUp()
+            Me._VariablePruning = False
+        End Sub
+
         Public Function PingToRemoteEndPoint() As Boolean Implements PGlobals.Execution.IVariablePool.PingToRemoteEndPoint
             Return True
         End Function
@@ -1006,6 +864,11 @@ Namespace SolidDevelopment.Web.Managers
         End Function
 
         Protected Overrides Sub Finalize()
+            If Not Me._Timer Is Nothing Then
+                Me._Timer.Enabled = False
+                Me._Timer.Dispose()
+            End If
+
             Try
                 If Not Me._RemoteVariablePoolService Is Nothing Then _
                     System.Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(Me._RemoteVariablePoolService)
