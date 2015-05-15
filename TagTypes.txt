@@ -24,6 +24,9 @@ ControlTags:
 	All Control Tags has parenting specification;
 		$[ControlTagType][ParentControlID]:[ControlID]...
 
+		What is parenting?
+		Parented control will not rendered until its parent has been rendered...
+
 		Ex: $C[Control1]:Control2$
 		
 		    or
@@ -34,7 +37,43 @@ ControlTags:
 
 		    $C[Control2]:Control3:{ <!-- Something --> }:Control3:{ <!-- Something (Alternative) --> }:Control3$
 
+	All Control Tags has leveling specification;
+		$[ControlTagType]<[AccessingLevel]>[ParentControlID]:[ControlID]...
 
+		What is leveling?
+		Let's say that we have to loop inside each other
+
+		$C:LoopControl1:{
+			$#FirstLoopSQLField1$
+
+			$C:ControlID:{ <!-- Something --> }:ControlID$
+
+			$C:LoopControl2:{
+				$##FirstLoopSQLField1$ << if you want to use first loop SQL Field1 value, you should put one more # to access the parent's variable
+				$#SecondLoopSQLField1$			
+
+				if we have a control already on our ControlMaps.xml with some sql fields variables set for only comes from Loop 1 like;
+					<CallFunction>SomePluginDll?SomeClass.SomeFunction,#FirstLoopSQLField1|#FirstLoopSQLField2</CallFunction>
+				it will not be runnable inside of the LoopControl2 because FirstLoopSQLField1 and FirstLoopSQLField2 do not exists
+				in LoopControl 2 but you want to use this control in both loop controls
+
+				$C<1>:ControlID:{ <!-- Something --> }:ControlID$
+
+				this will convert the following
+
+					<CallFunction>SomePluginDll?SomeClass.SomeFunction,#FirstLoopSQLField1|#FirstLoopSQLField2</CallFunction>
+
+				like this
+
+					<CallFunction>SomePluginDll?SomeClass.SomeFunction,##FirstLoopSQLField1|##FirstLoopSQLField2</CallFunction>
+
+			}:LoopControl2$
+		}:LoopControl1$
+
+		When you want to use leveling with parenting
+
+			$C<1>[ParentControlID]:ControlID:{ <!-- Something --> }:ControlID$
+		
 	$T:TemplateID$ << Include Template with specified TemplateID
 	$L:LanguageID$ << Insert Translation result using current specified language xml
 
@@ -50,7 +89,68 @@ ControlTags:
 
 	$C:ControlID:{ <!-- Something --> }:ControlID:{ <!-- Something (Alternative) --> }:ControlID$	
 
-	$P:TemplateID$ << create text with Currentpage's hashcode. Ex: $P:TemplateID$  Output: hc-1252482,TemplateID
+	Control Types in ControlsMap.xml
+
+	--- Block Control Types ---
+	ConditionalStatement	<< creates conditional statement
+	DataList		<< creates loop statement
+	VariableBlock		<< creates a variable block of which variables are available only in
+
+	--- HTML Control Types ---
+	Button			<< creates server call back button
+	CheckBox		<< creates checkbox with server call back
+	Image			<< creates image button with server call back
+	Link			<< creates link button with server call back
+	Password		<< creates password with server call back
+	Radio			<< creates radio button with server call back
+	Textarea		<< creates textarea field with server call back
+	Textbox			<< creates textbox field with server call back
+
+	What is Block Control Types?
+		With this control type, you can create statement run at server side and creates output according to the block content
+		CallFunction will be called while it is rendering
+
+	What is HTML Control Types?
+		With this control type, you can create html output statement with the postback functionality.
+		CallFunction will be called when client need some interaction with server
+
+	ControlsMap.xml Map Formats
+
+	<Map controlid="[ControlID]">
+		<!-- This is a MUST for all Controls -->
+		<Type>[ControlType]</Type>
+
+		<!-- If you want server call use this -->
+		<CallFunction>[ThemeID|AddonID]?[ControlClass].[FunctionName],SomeOperatorTags(seperated with |)</CallFunction>
+
+		<!-- This is for Button, Image and Link Type -->
+		<BlockIDsToUpdate localupdate="True|False">
+			<BlockID>[BlockID]</BlockID>
+			<BlockID>[BlockID]</BlockID>
+			<BlockID>[BlockID]</BlockID>
+		</BlockIDsToUpdate>
+
+		<!-- This is for TextBox and Password Type -->
+		<DefaultButtonID>[ControlID]</DefaultButtonID>
+
+		<!-- This is for TextBox, Password, Link, CheckBox and Radio Type -->
+		<Text>[TextBox, Password value or Button Text]</Text>
+
+		<!-- This is for Textarea Type -->
+		<Content>[Textarea Content]</Content>
+
+		<!-- This is for Image Type -->
+		<Image>[Image URL]</Image>
+
+		<!-- This is for Link Type -->
+		<Url>[Link URL]</Url>
+
+		<!-- This is for all html Types (Other than ConditionalStatement, DataList, VariableBlock) -->
+		<Attributes>
+			<Attribute id="[HTMLAttributeName]">[AttributeContent]</Attributes>
+		</Attributes>
+
+	$P:TemplateID$ << create text with Currentpage's hashcode. Ex: $P:TemplateID$  Output: /1252482/TemplateID
 
 	Immediate CallFunction Execution	
 
