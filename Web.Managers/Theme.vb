@@ -2951,7 +2951,7 @@ SEARCHPARENT:
 
             Private ReadOnly Property VariablePool() As General.VariablePoolOperationsClass
                 Get
-                    Return General.VariablePoolForWebService()
+                    Return General.VariablePoolForWebService
                 End Get
             End Property
 

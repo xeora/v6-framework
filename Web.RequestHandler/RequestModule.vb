@@ -17,7 +17,7 @@ Namespace SolidDevelopment.Web
             System.Web.SessionState.SessionStateMode.Off
 
         Private Shared _VPService As SolidDevelopment.Web.Managers.VariablePoolOperationClass
-        Private Const SESSIONKEYID As String = "000000000000000000000000_00000001"
+        Private Const SESSIONKEYID As String = "000000000000000000000000_00000000"
 
         Private Class SessionItem
             Private _Items As System.Web.SessionState.SessionStateItemCollection
@@ -179,7 +179,7 @@ Namespace SolidDevelopment.Web
 
             ' Check, this worker has the same ApplicationID with the most active one.
             Dim ApplicationID As Byte() = _
-                RequestModule._VPService.GetVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
+                RequestModule.VariablePool.GetVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
 
             If Not ApplicationID Is Nothing AndAlso _
                 String.Compare(RequestModule._pApplicationID, System.Text.Encoding.UTF8.GetString(ApplicationID)) <> 0 Then
@@ -355,6 +355,12 @@ Namespace SolidDevelopment.Web
             CType(source, System.Web.HttpApplication).CompleteRequest()
         End Sub
 
+        Public Shared ReadOnly Property VariablePool() As SolidDevelopment.Web.Managers.VariablePoolOperationClass
+            Get
+                Return RequestModule._VPService
+            End Get
+        End Property
+
         Public Shared ReadOnly Property Context(ByVal RequestID As String) As System.Web.HttpContext
             Get
                 If String.IsNullOrEmpty(RequestID) OrElse _
@@ -422,12 +428,12 @@ Namespace SolidDevelopment.Web
             If Not ForceReload AndAlso Not String.IsNullOrEmpty(RequestModule._pApplicationID) Then Exit Sub
 
             If ForceReload Then
-                RequestModule._VPService.UnRegisterVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
-                RequestModule._VPService.ConfirmRegistrations(RequestModule.SESSIONKEYID)
+                RequestModule.VariablePool.UnRegisterVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
+                RequestModule.VariablePool.ConfirmRegistrations(RequestModule.SESSIONKEYID)
             End If
 
             Dim ApplicationID As Byte() = _
-                RequestModule._VPService.GetVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
+                RequestModule.VariablePool.GetVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
 
             If Not ApplicationID Is Nothing Then
                 RequestModule._pApplicationID = System.Text.Encoding.UTF8.GetString(ApplicationID)
@@ -455,11 +461,11 @@ Namespace SolidDevelopment.Web
                             ) _
                         )
 
-                    RequestModule._VPService.RegisterVariableToPool( _
+                    RequestModule.VariablePool.RegisterVariableToPool( _
                         RequestModule.SESSIONKEYID, "ApplicationID", _
                         System.Text.Encoding.UTF8.GetBytes(RequestModule._pApplicationID) _
                     )
-                    RequestModule._VPService.ConfirmRegistrations(RequestModule.SESSIONKEYID)
+                    RequestModule.VariablePool.ConfirmRegistrations(RequestModule.SESSIONKEYID)
 
                     If Not IO.Directory.Exists(RequestModule._pApplicationLocation) Then _
                         IO.Directory.CreateDirectory(RequestModule._pApplicationLocation)

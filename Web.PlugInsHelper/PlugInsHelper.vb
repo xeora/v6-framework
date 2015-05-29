@@ -2263,7 +2263,7 @@ Namespace SolidDevelopment.Web
 
         Public Shared ReadOnly Property VariablePoolForWebService() As General.VariablePoolOperationsClass
             Get
-                Return New VariablePoolOperationsClass("000000000000000000000000_00000000")
+                Return New VariablePoolOperationsClass("000000000000000000000000_00000001")
             End Get
         End Property
 
@@ -2274,12 +2274,13 @@ Namespace SolidDevelopment.Web
             Public Sub New(ByVal SessionKeyID As String)
                 If General._VariablePoolOperationCache Is Nothing Then
                     Try
-                        Dim ThemeAsm As System.Reflection.Assembly, objTheme As System.Type
+                        Dim RequestAsm As System.Reflection.Assembly, objRequest As System.Type
 
-                        ThemeAsm = System.Reflection.Assembly.Load("WebManagers")
-                        objTheme = ThemeAsm.GetType("SolidDevelopment.Web.Managers.VariablePoolOperationClass", False, True)
+                        RequestAsm = System.Reflection.Assembly.Load("WebHandler")
+                        objRequest = RequestAsm.GetType("SolidDevelopment.Web.RequestModule", False, True)
 
-                        General._VariablePoolOperationCache = CType(Activator.CreateInstance(objTheme), PGlobals.Execution.IVariablePool)
+                        General._VariablePoolOperationCache = _
+                            CType(objRequest.InvokeMember("VariablePool", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, Nothing), PGlobals.Execution.IVariablePool)
                     Catch ex As Exception
                         Throw New Exception("Communication Error! Variable Pool is not accessable...")
                     End Try

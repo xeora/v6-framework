@@ -9,5 +9,3 @@ P:\XeoraCube\Web.RequestHandler\bin\x64\WebManagers.pdb
 P:\XeoraCube\Web.RequestHandler\bin\x64\PlugInsHelper.pdb
 P:\XeoraCube\Web.RequestHandler\obj\x64\Debug\WebHandler.dll
 P:\XeoraCube\Web.RequestHandler\obj\x64\Debug\WebHandler.pdb
-P:\XeoraCube\Web.RequestHandler\bin\x64\WebPlugInsLoader.dll
-P:\XeoraCube\Web.RequestHandler\bin\x64\WebPlugInsLoader.pdb
