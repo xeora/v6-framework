@@ -46,7 +46,7 @@ Namespace SolidDevelopment.Web
                 Get
                     Return Me._Expires
                 End Get
-                Set(value As DateTime)
+                Set(ByVal value As DateTime)
                     Me._Expires = value
                 End Set
             End Property

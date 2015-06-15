@@ -300,6 +300,7 @@ Namespace SolidDevelopment.Web
 
         Public Class URLMappingInfos
             Private Shared _CurrentInstance As URLMappingInfos = Nothing
+            Public Shared InstanceLock As Object = New Object
 
             Private _URLMapping As Boolean
             Private _URLMappingItems As PGlobals.URLMappingInfos.URLMappingItem.URLMappingItemCollection
@@ -308,7 +309,9 @@ Namespace SolidDevelopment.Web
                 Me._URLMapping = False
                 Me._URLMappingItems = New URLMappingItem.URLMappingItemCollection
 
-                URLMappingInfos._CurrentInstance = Me
+                SyncLock URLMappingInfos.InstanceLock
+                    URLMappingInfos._CurrentInstance = Me
+                End SyncLock
             End Sub
 
             Public Property URLMapping() As Boolean
@@ -1685,22 +1688,27 @@ Namespace SolidDevelopment.Web
             If Not String.IsNullOrEmpty(RequestFilePath) Then
                 Dim SearchNotMapped As Boolean = True
 
-                Dim URLMI As PGlobals.URLMappingInfos = _
-                    PGlobals.URLMappingInfos.Current
+                SyncLock PGlobals.URLMappingInfos.InstanceLock
+                    Dim URLMI As PGlobals.URLMappingInfos = _
+                        PGlobals.URLMappingInfos.Current
 
-                If URLMI.URLMapping Then
-                    Dim rqMatch As System.Text.RegularExpressions.Match = Nothing
-                    For Each mItem As SolidDevelopment.Web.PGlobals.URLMappingInfos.URLMappingItem In URLMI.URLMappingItems
-                        rqMatch = System.Text.RegularExpressions.Regex.Match(RequestFilePath, mItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
+                    If URLMI.URLMapping Then
+                        Dim URLMI_C As SolidDevelopment.Web.PGlobals.URLMappingInfos.URLMappingItem() = _
+                            URLMI.URLMappingItems.ToArray()
+                        Dim rqMatch As System.Text.RegularExpressions.Match = Nothing
 
-                        If rqMatch.Success Then
-                            RequestedTemplate = mItem.ResolveInfo.TemplateID
-                            SearchNotMapped = False
+                        For Each mItem As SolidDevelopment.Web.PGlobals.URLMappingInfos.URLMappingItem In URLMI_C
+                            rqMatch = System.Text.RegularExpressions.Regex.Match(RequestFilePath, mItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
 
-                            Exit For
-                        End If
-                    Next
-                End If
+                            If rqMatch.Success Then
+                                RequestedTemplate = mItem.ResolveInfo.TemplateID
+                                SearchNotMapped = False
+
+                                Exit For
+                            End If
+                        Next
+                    End If
+                End SyncLock
 
                 If SearchNotMapped Then
                     ' Manage Query String
@@ -2147,22 +2155,37 @@ Namespace SolidDevelopment.Web
                 Dim _CachingType As PGlobals.PageCachingTypes = _
                     PGlobals.PageCachingTypes.AllContent
 
-                Dim URLMI As PGlobals.URLMappingInfos = _
-                    PGlobals.URLMappingInfos.Current
+                SyncLock PGlobals.URLMappingInfos.InstanceLock
+                    Dim URLMI As PGlobals.URLMappingInfos = _
+                        PGlobals.URLMappingInfos.Current
 
-                If URLMI.URLMapping Then
-                    Dim SHCMatch As System.Text.RegularExpressions.Match = _
-                        System.Text.RegularExpressions.Regex.Match(Context.Request.FilePath, "\d+(L\d(XC)?)?/")
+                    If URLMI.URLMapping Then
+                        Dim SHCMatch As System.Text.RegularExpressions.Match = _
+                            System.Text.RegularExpressions.Regex.Match(Context.Request.FilePath, "\d+(L\d(XC)?)?/")
 
-                    If SHCMatch.Success Then
-                        ' Search and set request caching variable if it's exists
-                        Dim RequestCaching As String = String.Empty
-                        Dim rCIdx As Integer = SHCMatch.Value.IndexOf(","c)
-                        If rCIdx > -1 Then _
-                            RequestCaching = SHCMatch.Value.Substring(rCIdx + 1, SHCMatch.Length - (rCIdx + 2))
-                        ' !--
+                        If SHCMatch.Success Then
+                            ' Search and set request caching variable if it's exists
+                            Dim RequestCaching As String = String.Empty
+                            Dim rCIdx As Integer = SHCMatch.Value.IndexOf(","c)
+                            If rCIdx > -1 Then _
+                                RequestCaching = SHCMatch.Value.Substring(rCIdx + 1, SHCMatch.Length - (rCIdx + 2))
+                            ' !--
 
-                        Select Case RequestCaching
+                            Select Case RequestCaching
+                                Case "L1"
+                                    _CachingType = PGlobals.PageCachingTypes.TextsOnly
+                                Case "L2"
+                                    _CachingType = PGlobals.PageCachingTypes.NoCache
+                                Case "L0XC"
+                                    _CachingType = PGlobals.PageCachingTypes.AllContentCookiless
+                                Case "L1XC"
+                                    _CachingType = PGlobals.PageCachingTypes.TextsOnlyCookiless
+                                Case "L2XC"
+                                    _CachingType = PGlobals.PageCachingTypes.NoCacheCookiless
+                            End Select
+                        End If
+                    Else
+                        Select Case General.Context.Request.QueryString.Item("nocache")
                             Case "L1"
                                 _CachingType = PGlobals.PageCachingTypes.TextsOnly
                             Case "L2"
@@ -2175,20 +2198,7 @@ Namespace SolidDevelopment.Web
                                 _CachingType = PGlobals.PageCachingTypes.NoCacheCookiless
                         End Select
                     End If
-                Else
-                    Select Case General.Context.Request.QueryString.Item("nocache")
-                        Case "L1"
-                            _CachingType = PGlobals.PageCachingTypes.TextsOnly
-                        Case "L2"
-                            _CachingType = PGlobals.PageCachingTypes.NoCache
-                        Case "L0XC"
-                            _CachingType = PGlobals.PageCachingTypes.AllContentCookiless
-                        Case "L1XC"
-                            _CachingType = PGlobals.PageCachingTypes.TextsOnlyCookiless
-                        Case "L2XC"
-                            _CachingType = PGlobals.PageCachingTypes.NoCacheCookiless
-                    End Select
-                End If
+                End SyncLock
 
                 Return _CachingType
             End Get

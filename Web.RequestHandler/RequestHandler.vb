@@ -798,7 +798,7 @@ QUICKFINISH:
                     sW.WriteLine("<body>")
                     sW.WriteLine( _
                         String.Format( _
-                            "<form method=""post"" action=""{0}?{1}"" enctype=""multipart/form-data"">", _
+                            "<form method=""post"" action=""{0}?{1}"" enctype=""multipart/form-data"" style=""margin: 0px; padding: 0px;"">", _
                             CurrentContextCatch.Request.Path, _
                             CurrentContextCatch.Request.ServerVariables.Item("QUERY_STRING") _
                         ) _
