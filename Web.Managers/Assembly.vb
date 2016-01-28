@@ -555,6 +555,14 @@ Namespace SolidDevelopment.Web.Managers
             Else
                 PlugInsLoader = New PlugInsLoader(PlugInsPath, AsDllName)
 
+                If PlugInsLoader.MissingFileException Then
+                    rAssembleResultInfo.MethodResult = Nothing
+                    rAssembleResultInfo.ReloadRequired = True
+                    rAssembleResultInfo.ApplicationPath = PlugInsPath
+
+                    GoTo QUICKEXIT
+                End If
+
                 If Not Assembly._DllObjectLibrary.ContainsKey(AssemblyKey) Then Assembly._DllObjectLibrary.Add(AssemblyKey, PlugInsLoader)
             End If
 
@@ -576,10 +584,10 @@ Namespace SolidDevelopment.Web.Managers
                 Configurations.Debugging Then
 
                 Try
-                    SolidDevelopment.Web.Helpers.EventLogging.WriteToLog( _
-                            CType( _
-                                rAssembleResultInfo.MethodResult, Exception).ToString() _
-                        )
+                    SolidDevelopment.Web.Helpers.EventLogging.WriteToLog(
+                        CType(
+                            rAssembleResultInfo.MethodResult, Exception).ToString()
+                    )
                 Catch exLogging As Exception
                     Try
                         If Not System.Diagnostics.EventLog.SourceExists("XeoraCube") Then System.Diagnostics.EventLog.CreateEventSource("XeoraCube", "XeoraCube")
@@ -594,7 +602,7 @@ Namespace SolidDevelopment.Web.Managers
                     End Try
                 End Try
             End If
-
+QUICKEXIT:
             Return rAssembleResultInfo
         End Function
 

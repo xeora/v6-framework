@@ -10,31 +10,31 @@ Namespace SolidDevelopment.Web.Managers
 #Region " Constructers "
 
         Public Sub New()
-            Me.New( _
-                SolidDevelopment.Web.Configurations.DefaultTheme _
+            Me.New(
+                SolidDevelopment.Web.Configurations.DefaultTheme
             )
         End Sub
 
         Public Sub New(ByVal ThemeID As String)
-            Me.New( _
-                ThemeID, _
-                Nothing _
+            Me.New(
+                ThemeID,
+                Nothing
             )
         End Sub
 
         Public Sub New(ByVal ThemeID As String, ByVal ThemeTranslationID As String)
-            Me.New( _
-                ThemeID, _
-                ThemeTranslationID, _
-                Nothing _
+            Me.New(
+                ThemeID,
+                ThemeTranslationID,
+                Nothing
             )
         End Sub
 
         Public Sub New(ByVal ThemeID As String, ByVal ThemeTranslationID As String, ByVal PrepareAddonID As String)
             Dim ThemePassword As Byte() = Nothing, ThemePasswordBase64 As String
 
-            ThemePasswordBase64 = System.Configuration.ConfigurationManager.AppSettings.Item( _
-                                                                                String.Format("{0}_Password", ThemeID) _
+            ThemePasswordBase64 = System.Configuration.ConfigurationManager.AppSettings.Item(
+                                                                                String.Format("{0}_Password", ThemeID)
                                                                             )
 
             Try
@@ -88,6 +88,10 @@ Namespace SolidDevelopment.Web.Managers
             End Get
         End Property
 
+        Public Sub ClearThemeCache()
+            Me._Deployment.ClearDeploymentCache()
+        End Sub
+
         Public Function CheckTemplateExists(ByVal TemplateID As String) As Boolean
             Return Me._Deployment.CheckTemplateExists(TemplateID)
         End Function
@@ -106,7 +110,7 @@ Namespace SolidDevelopment.Web.Managers
             Get
                 Dim tClass As PGlobals.ITheme.ITranslation
 
-                If Not Me._Deployment.Addons Is Nothing AndAlso _
+                If Not Me._Deployment.Addons Is Nothing AndAlso
                     Not Me._Deployment.Addons.CurrentInstance Is Nothing Then
 
                     tClass = Me._Deployment.Addons.CurrentInstance.Translation
@@ -138,7 +142,7 @@ Namespace SolidDevelopment.Web.Managers
             Get
                 If Me._ControlMapXPathNavigator Is Nothing Then
                     Dim xPathDoc As Xml.XPath.XPathDocument = Nothing
-                    Dim ControlMapContent As String = _
+                    Dim ControlMapContent As String =
                             Me._Deployment.ProvideControlMapContent()
 
                     If Not Me._xPathStream Is Nothing Then Me._xPathStream.Close() : GC.SuppressFinalize(Me._xPathStream)
@@ -156,7 +160,7 @@ Namespace SolidDevelopment.Web.Managers
         Public Function RenderTemplate(ByVal TemplateID As String, ByVal BlockID As String, ByVal Arguments As Globals.ArgumentInfo.ArgumentInfoCollection) As String
             Dim ThemeRenderer As New ThemeRenderer(Me)
 
-            Dim RRI As Globals.RenderRequestInfo = _
+            Dim RRI As Globals.RenderRequestInfo =
                 New Globals.RenderRequestInfo(TemplateID, BlockID, Arguments)
             RRI.RequestingBlockRendering = Not String.IsNullOrEmpty(BlockID)
 
@@ -179,10 +183,10 @@ Namespace SolidDevelopment.Web.Managers
 #Region " Template Rendering Procedures "
             Public Function RenderContent(ByRef RRI As Globals.RenderRequestInfo, ByRef cI As Globals.RenderRequestInfo.ContentInfo) As String
                 ' Define Control SecurityInfo Map
-                Dim ControlSIM As Hashtable = _
-                    CType( _
-                        SolidDevelopment.Web.General.GetVariable("_sys_ControlSIM"),  _
-                        Hashtable _
+                Dim ControlSIM As Hashtable =
+                    CType(
+                        SolidDevelopment.Web.General.GetVariable("_sys_ControlSIM"),
+                        Hashtable
                     )
                 If ControlSIM Is Nothing Then _
                     ControlSIM = Hashtable.Synchronized(New Hashtable)
@@ -194,7 +198,7 @@ Namespace SolidDevelopment.Web.Managers
                 Me.PrepareRenderedContent(RRI, cI)
 
                 ' Save Control SecurityInfo Map to VariablePool
-                SolidDevelopment.Web.General.SetVariable( _
+                SolidDevelopment.Web.General.SetVariable(
                     "_sys_ControlSIM", RRI.GlobalArguments.Item("_sys_ControlSIM").Value)
                 ' !---
 
@@ -212,14 +216,14 @@ Namespace SolidDevelopment.Web.Managers
                 Dim tMatchItem01 As System.Text.RegularExpressions.Match, MatchedID01 As String = Nothing ' For Opening Brackets
                 Dim tMatchItem02 As System.Text.RegularExpressions.Match ' For Separator Brackets
                 Dim tMatchItem03 As System.Text.RegularExpressions.Match ' For Closing Brackets
-                Dim tRegExMatches As System.Text.RegularExpressions.MatchCollection = _
-                        System.Text.RegularExpressions.Regex.Matches( _
-                                                            cI.OriginalValue, _
-                                                            CaptureRegEx, _
-                                                            Text.RegularExpressions.RegexOptions.Multiline And Text.RegularExpressions.RegexOptions.Compiled _
+                Dim tRegExMatches As System.Text.RegularExpressions.MatchCollection =
+                        System.Text.RegularExpressions.Regex.Matches(
+                                                            cI.OriginalValue,
+                                                            CaptureRegEx,
+                                                            Text.RegularExpressions.RegexOptions.Multiline And Text.RegularExpressions.RegexOptions.Compiled
                                                         )
 
-                Dim REMEnum As IEnumerator = _
+                Dim REMEnum As IEnumerator =
                     tRegExMatches.GetEnumerator()
 
                 Do While REMEnum.MoveNext()
@@ -247,43 +251,43 @@ Namespace SolidDevelopment.Web.Managers
                                 ' Exam For Closing Bracketed Regex Result
                                 tMatchItem03 = System.Text.RegularExpressions.Regex.Match(lMatchItem02.Value, BracketedRegExClosing)
 
-                                If tMatchItem01.Success AndAlso _
+                                If tMatchItem01.Success AndAlso
                                     String.Compare(MatchedID01, tMatchItem01.Result("${ItemID}")) = 0 Then ' Check is Another Same Named Control Internally Opened Bracket
 
                                     InnerMatch += 1
-                                ElseIf tMatchItem02.Success AndAlso _
-                                    String.Compare(MatchedID01, tMatchItem02.Result("${ItemID}")) = 0 AndAlso _
+                                ElseIf tMatchItem02.Success AndAlso
+                                    String.Compare(MatchedID01, tMatchItem02.Result("${ItemID}")) = 0 AndAlso
                                     InnerMatch = 0 Then ' Check is Same Named Highlevel Control Separator Bracket
 
                                     ' Point the location of Separator Bracket index
                                     SeparatorIndexes.Add(lMatchItem02.Index - lMatchItem01.Index)
-                                ElseIf tMatchItem03.Success AndAlso _
+                                ElseIf tMatchItem03.Success AndAlso
                                     String.Compare(MatchedID01, tMatchItem03.Result("${ItemID}")) = 0 Then ' Check is Same Named Control Internally Closed Bracket
 
                                     If InnerMatch = 0 Then
                                         Dim ModifierText As String = String.Format("~{0}", lMatchItem01.Index)
-                                        Dim PointedOriginalValue As String = _
-                                            cI.OriginalValue.Substring( _
-                                                lMatchItem01.Index, _
-                                                (lMatchItem02.Index + lMatchItem02.Length) - lMatchItem01.Index _
+                                        Dim PointedOriginalValue As String =
+                                            cI.OriginalValue.Substring(
+                                                lMatchItem01.Index,
+                                                (lMatchItem02.Index + lMatchItem02.Length) - lMatchItem01.Index
                                             )
 
                                         PointedOriginalValue = PointedOriginalValue.Insert(PointedOriginalValue.Length - 1, ModifierText)
                                         For idxID As Integer = SeparatorIndexes.Count - 1 To 0 Step -1
-                                            PointedOriginalValue = PointedOriginalValue.Insert( _
-                                                                        (SeparatorIndexes(idxID) + String.Format("}}:{0}", MatchedID01).Length), _
-                                                                        ModifierText _
+                                            PointedOriginalValue = PointedOriginalValue.Insert(
+                                                                        (SeparatorIndexes(idxID) + String.Format("}}:{0}", MatchedID01).Length),
+                                                                        ModifierText
                                                                     )
                                         Next
                                         PointedOriginalValue = PointedOriginalValue.Insert(lMatchItem01.Length - 2, ModifierText)
 
-                                        Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
-                                            New Globals.RenderRequestInfo.CommonControlContent( _
-                                                                            cI, _
-                                                                            lMatchItem01.Index, _
-                                                                            PointedOriginalValue, _
-                                                                            (ModifierText.Length) * (SeparatorIndexes.Count + 2), _
-                                                                            cI.ContentArguments _
+                                        Dim tCI As Globals.RenderRequestInfo.ContentInfo =
+                                            New Globals.RenderRequestInfo.CommonControlContent(
+                                                                            cI,
+                                                                            lMatchItem01.Index,
+                                                                            PointedOriginalValue,
+                                                                            (ModifierText.Length) * (SeparatorIndexes.Count + 2),
+                                                                            cI.ContentArguments
                                                                         )
 
                                         ' Render Content
@@ -334,7 +338,7 @@ Namespace SolidDevelopment.Web.Managers
                         End If
                     End If
 
-                    If RRI.RequestingBlockRendering AndAlso _
+                    If RRI.RequestingBlockRendering AndAlso
                         RRI.BlockRenderingStatus = Globals.RenderRequestInfo.BlockRenderingStatuses.Rendered Then
 
                         Exit Do
@@ -359,7 +363,7 @@ Namespace SolidDevelopment.Web.Managers
 
                     shift += iCI.RenderedContentValue.Length - (iCI.OriginalLength - iCI.ModifierTuneLength)
                 Next
-                If cI.ContentType <> Globals.RenderRequestInfo.ContentInfo.ContentTypes.Renderless AndAlso _
+                If cI.ContentType <> Globals.RenderRequestInfo.ContentInfo.ContentTypes.Renderless AndAlso
                     String.Compare(cI.OriginalValue, cI.HelperSpace.Space) = 0 Then
 
                     cI.HelperSpace.Space = Nothing
@@ -368,12 +372,12 @@ Namespace SolidDevelopment.Web.Managers
             End Sub
 
             Private Function CaptureContentType(ByVal Content As String) As Globals.RenderRequestInfo.ContentInfo.ContentTypes
-                Dim rContentType As Globals.RenderRequestInfo.ContentInfo.ContentTypes = _
+                Dim rContentType As Globals.RenderRequestInfo.ContentInfo.ContentTypes =
                     Globals.RenderRequestInfo.ContentInfo.ContentTypes.Renderless
 
                 If Not String.IsNullOrEmpty(Content) Then
 
-                    Dim CPIDMatch As System.Text.RegularExpressions.Match = _
+                    Dim CPIDMatch As System.Text.RegularExpressions.Match =
                         System.Text.RegularExpressions.Regex.Match(Content, "\$((\w(\<\d+(\+)?\>)?(\[[\.\w\-]+\])?)|(\w+))\:")
 
                     If CPIDMatch.Success Then
@@ -400,18 +404,37 @@ Namespace SolidDevelopment.Web.Managers
                     End If
                 Catch ex As Exception
                     If SolidDevelopment.Web.Configurations.Debugging Then
+                        Dim FileNotFoundException As Boolean = False
                         Dim ExceptionString As String = Nothing
 
                         Do
-                            ExceptionString = _
-                                String.Format( _
+                            If TypeOf ex Is IO.FileNotFoundException Then
+                                Dim CacheRootLocation As String =
+                                    IO.Path.Combine(
+                                        SolidDevelopment.Web.Configurations.TemporaryRoot,
+                                        SolidDevelopment.Web.Configurations.WorkingPath.WorkingPathID
+                                    )
+
+                                If CType(ex, IO.FileNotFoundException).FileName.IndexOf(CacheRootLocation) > -1 Then
+                                    ' This is application dependency problem, force to apply auto recovery!
+                                    FileNotFoundException = True
+                                End If
+                            End If
+
+                            ExceptionString =
+                                String.Format(
                                     "<div align='left' style='border: solid 1px #660000; background-color: #FFFFFF'><div align='left' style='font-weight: bolder; color:#FFFFFF; background-color:#CC0000; padding: 4px;'>{0}</div><br><div align='left' style='padding: 4px'>{1}{2}</div></div>", ex.Message, ex.Source, IIf(Not ExceptionString Is Nothing, "<hr size='1px' />" & ExceptionString, Nothing))
 
                             ex = ex.InnerException
                         Loop Until ex Is Nothing
 
-                        cI.HelperSpace.Space = ExceptionString
-                        cI.HelperSpace.DefineAsRendered()
+                        If FileNotFoundException Then
+                            cI.HelperSpace.Space = "<!--_sys_ReloadApplication-->"
+                            cI.HelperSpace.DefineAsRendered()
+                        Else
+                            cI.HelperSpace.Space = ExceptionString
+                            cI.HelperSpace.DefineAsRendered()
+                        End If
                     End If
                 End Try
             End Sub
@@ -422,7 +445,7 @@ Namespace SolidDevelopment.Web.Managers
                 ' !--
 
                 ' Shift Parent Instance To Current
-                If Me._ParentInstance Is Nothing AndAlso _
+                If Me._ParentInstance Is Nothing AndAlso
                     Not Me._CurrentInstance.Addons.CurrentInstance Is Nothing Then
 
                     Me._ParentInstance = Me._CurrentInstance
@@ -434,22 +457,22 @@ Namespace SolidDevelopment.Web.Managers
 
                 Dim TemplateContent As String = String.Empty
                 Try
-                    Dim tCI As Globals.RenderRequestInfo.RenderlessContent = _
-                        New Globals.RenderRequestInfo.RenderlessContent( _
-                            cI.Parent, _
-                            0, _
-                            Me._CurrentInstance._Deployment.ProvideTemplateContent(cI.CommonControlID) _
+                    Dim tCI As Globals.RenderRequestInfo.RenderlessContent =
+                        New Globals.RenderRequestInfo.RenderlessContent(
+                            cI.Parent,
+                            0,
+                            Me._CurrentInstance._Deployment.ProvideTemplateContent(cI.CommonControlID)
                         )
 
                     cI.HelperSpace.Space = Me.RenderContent(RRI, CType(tCI, Globals.RenderRequestInfo.ContentInfo))
                 Catch ex As IO.FileNotFoundException
                     If Not Me._ParentInstance Is Nothing Then
                         Try
-                            Dim tCI As Globals.RenderRequestInfo.RenderlessContent = _
-                                New Globals.RenderRequestInfo.RenderlessContent( _
-                                    cI.Parent, _
-                                    0, _
-                                    Me._ParentInstance._Deployment.ProvideTemplateContent(cI.CommonControlID) _
+                            Dim tCI As Globals.RenderRequestInfo.RenderlessContent =
+                                New Globals.RenderRequestInfo.RenderlessContent(
+                                    cI.Parent,
+                                    0,
+                                    Me._ParentInstance._Deployment.ProvideTemplateContent(cI.CommonControlID)
                                )
 
                             cI.HelperSpace.Space = Me.RenderContent(RRI, CType(tCI, Globals.RenderRequestInfo.ContentInfo))
@@ -473,7 +496,7 @@ Namespace SolidDevelopment.Web.Managers
             End Sub
 
             Private Sub RenderSpecialProperty(ByRef RRI As Globals.RenderRequestInfo, ByRef cI As Globals.RenderRequestInfo.SpecialPropertyContent)
-                If cI.ClearedValue Is Nothing OrElse _
+                If cI.ClearedValue Is Nothing OrElse
                     cI.ClearedValue.Trim().Length = 0 Then
 
                     cI.HelperSpace.Space = "$"
@@ -492,12 +515,12 @@ Namespace SolidDevelopment.Web.Managers
                         Case Else
                             Select Case cI.ClearedValue.Chars(0)
                                 Case "^"c ' QueryString Value
-                                    Dim QueryValue As String = _
+                                    Dim QueryValue As String =
                                         SolidDevelopment.Web.General.Context.Request.QueryString.Item(cI.ClearedValue.Substring(1))
 
                                     Select Case SolidDevelopment.Web.Configurations.RequestTagFiltering
                                         Case PGlobals.RequestTagFilteringTypes.OnlyQuery, PGlobals.RequestTagFilteringTypes.Both
-                                            Dim ArgumentNameForCompare As String = _
+                                            Dim ArgumentNameForCompare As String =
                                                 cI.ClearedValue.Substring(1).ToLower(New Globalization.CultureInfo("en-US"))
 
                                             If Array.IndexOf(SolidDevelopment.Web.Configurations.RequestTagFilteringExceptions, ArgumentNameForCompare) = -1 Then _
@@ -508,20 +531,20 @@ Namespace SolidDevelopment.Web.Managers
 
                                 Case "~"c ' Form Post Value
                                     If String.Compare(General.Context.Request.HttpMethod, "POST", True) = 0 Then
-                                        Dim ControlSIM As Hashtable = _
+                                        Dim ControlSIM As Hashtable =
                                             CType(RRI.GlobalArguments.Item("_sys_ControlSIM").Value, Hashtable)
 
-                                        If Not ControlSIM Is Nothing AndAlso _
+                                        If Not ControlSIM Is Nothing AndAlso
                                             ControlSIM.ContainsKey(cI.ClearedValue.Substring(1)) Then
 
                                             cI.HelperSpace.Space = CType(ControlSIM.Item(cI.ClearedValue.Substring(1)), String)
                                         Else
-                                            Dim FormValue As String = _
+                                            Dim FormValue As String =
                                                 SolidDevelopment.Web.General.Context.Request.Form.Item(cI.ClearedValue.Substring(1))
 
                                             Select Case SolidDevelopment.Web.Configurations.RequestTagFiltering
                                                 Case PGlobals.RequestTagFilteringTypes.OnlyForm, PGlobals.RequestTagFilteringTypes.Both
-                                                    Dim ArgumentNameForCompare As String = _
+                                                    Dim ArgumentNameForCompare As String =
                                                         cI.ClearedValue.Substring(1).ToLower(New Globalization.CultureInfo("en-US"))
 
                                                     If Array.IndexOf(SolidDevelopment.Web.Configurations.RequestTagFilteringExceptions, ArgumentNameForCompare) = -1 Then _
@@ -562,10 +585,10 @@ Namespace SolidDevelopment.Web.Managers
                                     Loop Until searchContentInfo Is Nothing
 
                                     If Not searchContentInfo Is Nothing Then
-                                        Dim argItem As Globals.ArgumentInfo = _
+                                        Dim argItem As Globals.ArgumentInfo =
                                             searchContentInfo.ContentArguments.Item(searchVariableName)
 
-                                        If Not argItem.Value Is Nothing AndAlso _
+                                        If Not argItem.Value Is Nothing AndAlso
                                             Not argItem.Value.GetType() Is GetType(System.DBNull) Then
 
                                             cI.HelperSpace.Space = CType(argItem.Value, String)
@@ -584,10 +607,10 @@ Namespace SolidDevelopment.Web.Managers
 
                                     ' Search In DataFields (GlobalArguments, ContentArguments)
                                     If String.IsNullOrEmpty(searchArgValue) Then
-                                        Dim argItem As Globals.ArgumentInfo = _
+                                        Dim argItem As Globals.ArgumentInfo =
                                             Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, cI.ContentArguments).Item(searchArgName)
 
-                                        If Not argItem.Value Is Nothing AndAlso _
+                                        If Not argItem.Value Is Nothing AndAlso
                                             Not argItem.Value.GetType() Is GetType(System.DBNull) Then
 
                                             searchArgValue = CType(argItem.Value, String)
@@ -600,13 +623,13 @@ Namespace SolidDevelopment.Web.Managers
                                     If String.IsNullOrEmpty(searchArgValue) Then searchArgValue = CType(SolidDevelopment.Web.General.Context.Session.Contents.Item(searchArgName), String)
 
                                     ' Search In Form Post
-                                    If String.IsNullOrEmpty(searchArgValue) AndAlso _
+                                    If String.IsNullOrEmpty(searchArgValue) AndAlso
                                         String.Compare(General.Context.Request.HttpMethod, "POST", True) = 0 Then
 
-                                        Dim ControlSIM As Hashtable = _
+                                        Dim ControlSIM As Hashtable =
                                             CType(RRI.GlobalArguments.Item("_sys_ControlSIM").Value, Hashtable)
 
-                                        If Not ControlSIM Is Nothing AndAlso _
+                                        If Not ControlSIM Is Nothing AndAlso
                                             ControlSIM.ContainsKey(searchArgName) Then
 
                                             searchArgValue = CType(ControlSIM.Item(searchArgName), String)
@@ -621,7 +644,7 @@ Namespace SolidDevelopment.Web.Managers
                                     If String.IsNullOrEmpty(searchArgValue) Then searchArgValue = SolidDevelopment.Web.General.Context.Request.QueryString.Item(searchArgName)
 
                                     ' Cookie
-                                    If String.IsNullOrEmpty(searchArgValue) AndAlso _
+                                    If String.IsNullOrEmpty(searchArgValue) AndAlso
                                         Not SolidDevelopment.Web.General.Context.Request.Cookies.Item(searchArgName) Is Nothing Then
 
                                         searchArgValue = SolidDevelopment.Web.General.Context.Request.Cookies.Item(searchArgName).Value
@@ -631,7 +654,7 @@ Namespace SolidDevelopment.Web.Managers
 
                                 Case Else ' Search in Values Set for Current Request Session
                                     If cI.ClearedValue.IndexOf("@"c) > 0 Then
-                                        Dim ArgumentQueryObjectName As String = _
+                                        Dim ArgumentQueryObjectName As String =
                                             cI.ClearedValue.Substring(cI.ClearedValue.IndexOf("@"c) + 1)
 
                                         Dim ArgumentQueryObject As Object = Nothing
@@ -654,7 +677,7 @@ Namespace SolidDevelopment.Web.Managers
                                                 Loop Until searchContentInfo Is Nothing
 
                                                 If Not searchContentInfo Is Nothing Then
-                                                    Dim argItem As Globals.ArgumentInfo = _
+                                                    Dim argItem As Globals.ArgumentInfo =
                                                         searchContentInfo.ContentArguments.Item(searchVariableName)
 
                                                     If Not argItem.Value Is Nothing Then ArgumentQueryObject = argItem.Value
@@ -705,24 +728,24 @@ Namespace SolidDevelopment.Web.Managers
                             Dim AddonSearched As Boolean = False
                             Dim TemplateID As String = cI.ClearedValue.Split(":"c)(1)
 
-                            Dim sI_t As SettingsClass.ServicesClass.ServiceItem = _
-                                CType(Me._CurrentInstance.Settings, SettingsClass).Services.ServiceItems.GetServiceItem( _
-                                            SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template, _
+                            Dim sI_t As SettingsClass.ServicesClass.ServiceItem =
+                                CType(Me._CurrentInstance.Settings, SettingsClass).Services.ServiceItems.GetServiceItem(
+                                            SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template,
                                             TemplateID)
 
-                            If sI_t Is Nothing AndAlso _
+                            If sI_t Is Nothing AndAlso
                                 Not Me._ParentInstance Is Nothing Then
 
-                                sI_t = CType(Me._ParentInstance.Settings, SettingsClass).Services.ServiceItems.GetServiceItem( _
-                                                    SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template, _
+                                sI_t = CType(Me._ParentInstance.Settings, SettingsClass).Services.ServiceItems.GetServiceItem(
+                                                    SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template,
                                                     TemplateID)
 
                                 AddonSearched = True
                             End If
 
                             If Not sI_t Is Nothing Then
-                                If sI_t.Overridable AndAlso _
-                                    Not Me._CurrentInstance.Addons Is Nothing AndAlso _
+                                If sI_t.Overridable AndAlso
+                                    Not Me._CurrentInstance.Addons Is Nothing AndAlso
                                     Not AddonSearched Then
 
                                     Dim sI_a As SettingsClass.ServicesClass.ServiceItem
@@ -730,12 +753,12 @@ Namespace SolidDevelopment.Web.Managers
                                     For Each Addon As PGlobals.ThemeInfo.AddonInfo In Me._CurrentInstance.Addons.AddonInfos
                                         Me._CurrentInstance.Addons.CreateInstance(Addon)
 
-                                        sI_a = CType(Me._CurrentInstance.Addons.CurrentInstance.Settings, SettingsClass).Services.ServiceItems.GetServiceItem( _
-                                                                            SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template, _
+                                        sI_a = CType(Me._CurrentInstance.Addons.CurrentInstance.Settings, SettingsClass).Services.ServiceItems.GetServiceItem(
+                                                                            SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template,
                                                                             sI_t.ID)
 
                                         If Not sI_a Is Nothing Then
-                                            If sI_a.Authentication AndAlso _
+                                            If sI_a.Authentication AndAlso
                                                 sI_a.AuthenticationKeys.Length = 0 Then
 
                                                 sI_a.AuthenticationKeys = sI_t.AuthenticationKeys
@@ -762,7 +785,7 @@ Namespace SolidDevelopment.Web.Managers
                                     Next
 
                                     If Not LocalAuthenticationNotAccepted Then
-                                        GoTo RenderTemplate
+                                        GoTo RENDERTEMPLATE
                                     Else
                                         Dim SystemMessage As String = Me._CurrentInstance.Translation.GetTranslation("TEMPLATE_AUTH")
 
@@ -789,7 +812,7 @@ TRANSLATEVALUE:
                                 cI.CommonControlID = cI.ClearedValue.Split(":"c)(1)
                                 cI.HelperSpace.Space = Me._CurrentInstance.Translation.GetTranslation(cI.CommonControlID)
 
-                                If String.IsNullOrEmpty(cI.HelperSpace.Space) AndAlso _
+                                If String.IsNullOrEmpty(cI.HelperSpace.Space) AndAlso
                                     Not Me._ParentInstance Is Nothing Then
 
                                     cI.HelperSpace.Space = Me._ParentInstance.Translation.GetTranslation(cI.CommonControlID)
@@ -802,13 +825,13 @@ TRANSLATEVALUE:
                             Dim CapturedParentID As String = String.Empty
 
                             Dim IsLocalLeveling As Boolean = True
-                            Dim CLevelingMatch As System.Text.RegularExpressions.Match = _
+                            Dim CLevelingMatch As System.Text.RegularExpressions.Match =
                                 System.Text.RegularExpressions.Regex.Match(cI.ClearedValue.Split(":"c)(0), "\<\d+(\+)?\>")
 
                             If CLevelingMatch.Success Then
                                 Dim Leveling As Integer
                                 ' Trim < and > character from match result
-                                Dim CleanValue As String = _
+                                Dim CleanValue As String =
                                     CLevelingMatch.Value.Substring(1, CLevelingMatch.Value.Length - 2)
 
                                 If CleanValue.IndexOf("+"c) > -1 Then
@@ -823,7 +846,7 @@ TRANSLATEVALUE:
                             End If
 
                             If cI.CommonControlType = Globals.RenderRequestInfo.CommonControlContent.CommonControlTypes.Undefined Then
-                                Dim CPIDMatch As System.Text.RegularExpressions.Match = _
+                                Dim CPIDMatch As System.Text.RegularExpressions.Match =
                                     System.Text.RegularExpressions.Regex.Match(cI.ClearedValue.Split(":"c)(0), "\[[\.\w\-]+\]")
 
                                 If CPIDMatch.Success Then
@@ -841,7 +864,7 @@ TRANSLATEVALUE:
 
                                 Do Until tCI.Parent Is Nothing
                                     If TypeOf tCI.Parent Is Globals.RenderRequestInfo.CommonControlContent Then
-                                        If String.Compare( _
+                                        If String.Compare(
                                             CType(tCI.Parent, Globals.RenderRequestInfo.CommonControlContent).CommonControlID, CapturedParentID, True) = 0 Then
 
                                             Throw New Exception("Parented Control can not be located inside its parent!")
@@ -852,12 +875,12 @@ TRANSLATEVALUE:
                                 Loop
 
                                 ' Register ControlInfo to ParentPendingControlInfoList
-                                Dim PPCI As New Globals.RenderRequestInfo.CommonControlContent( _
-                                                    cI.Parent, _
-                                                    cI.OriginalStartIndex, _
-                                                    cI.OriginalValue, _
-                                                    cI.ModifierTuneLength, _
-                                                    cI.ContentArguments _
+                                Dim PPCI As New Globals.RenderRequestInfo.CommonControlContent(
+                                                    cI.Parent,
+                                                    cI.OriginalStartIndex,
+                                                    cI.OriginalValue,
+                                                    cI.ModifierTuneLength,
+                                                    cI.ContentArguments
                                                 )
                                 PPCI.CommonControlType = Globals.RenderRequestInfo.CommonControlContent.CommonControlTypes.Control
                                 PPCI.Leveling(IsLocalLeveling) = cI.Leveling
@@ -875,7 +898,7 @@ TRANSLATEVALUE:
                         Case "P"c ' HashCode Parser
                             cI.CommonControlType = Globals.RenderRequestInfo.CommonControlContent.CommonControlTypes.HashCodeParser
 
-                            Dim controlValueSplitted As String() = _
+                            Dim controlValueSplitted As String() =
                                 cI.ClearedValue.Split(":"c)
 
                             cI.HelperSpace.Space = String.Format("{0}/{1}", General.HashCode, controlValueSplitted(1))
@@ -883,17 +906,17 @@ TRANSLATEVALUE:
                         Case "F"c ' Direct Function Call Prefix
                             If Not RRI.RequestingBlockRendering Then
 RENDERMETHODRESULT:
-                                Dim controlValueSplitted As String() = _
+                                Dim controlValueSplitted As String() =
                                     cI.ClearedValue.Split(":"c)
 
                                 Dim IsLocalLeveling As Boolean = True
-                                Dim CLevelingMatch As System.Text.RegularExpressions.Match = _
+                                Dim CLevelingMatch As System.Text.RegularExpressions.Match =
                                     System.Text.RegularExpressions.Regex.Match(controlValueSplitted(0), "\<\d+(\+)?\>")
 
                                 If CLevelingMatch.Success Then
                                     Dim Leveling As Integer
                                     ' Trim < and > character from match result
-                                    Dim CleanValue As String = _
+                                    Dim CleanValue As String =
                                         CLevelingMatch.Value.Substring(1, CLevelingMatch.Value.Length - 2)
 
                                     If CleanValue.IndexOf("+"c) > -1 Then
@@ -910,7 +933,7 @@ RENDERMETHODRESULT:
                                 Dim CapturedParentID As String = String.Empty
 
                                 If cI.CommonControlType = Globals.RenderRequestInfo.CommonControlContent.CommonControlTypes.Undefined Then
-                                    Dim CPIDMatch As System.Text.RegularExpressions.Match = _
+                                    Dim CPIDMatch As System.Text.RegularExpressions.Match =
                                         System.Text.RegularExpressions.Regex.Match(controlValueSplitted(0), "\[[\.\w\-]+\]")
 
                                     If CPIDMatch.Success Then
@@ -928,7 +951,7 @@ RENDERMETHODRESULT:
 
                                     Do Until tCI.Parent Is Nothing
                                         If TypeOf tCI.Parent Is Globals.RenderRequestInfo.CommonControlContent Then
-                                            If String.Compare( _
+                                            If String.Compare(
                                                 CType(tCI.Parent, Globals.RenderRequestInfo.CommonControlContent).CommonControlID, CapturedParentID, True) = 0 Then
 
                                                 Throw New Exception("Parented Direct Call Function can not be located inside its parent!")
@@ -939,12 +962,12 @@ RENDERMETHODRESULT:
                                     Loop
 
                                     ' Register ControlInfo to ParentPendingControlInfoList
-                                    Dim PPCI As New Globals.RenderRequestInfo.CommonControlContent( _
-                                                        cI.Parent, _
-                                                        cI.OriginalStartIndex, _
-                                                        cI.OriginalValue, _
-                                                        cI.ModifierTuneLength, _
-                                                        cI.ContentArguments _
+                                    Dim PPCI As New Globals.RenderRequestInfo.CommonControlContent(
+                                                        cI.Parent,
+                                                        cI.OriginalStartIndex,
+                                                        cI.OriginalValue,
+                                                        cI.ModifierTuneLength,
+                                                        cI.ContentArguments
                                                     )
                                     PPCI.CommonControlType = Globals.RenderRequestInfo.CommonControlContent.CommonControlTypes.DirectCallFunction
                                     PPCI.Leveling(IsLocalLeveling) = cI.Leveling
@@ -957,7 +980,7 @@ RENDERMETHODRESULT:
                                     RRI.ParentPendingCommonControlContents.Item(CapturedParentID).Add(PPCI)
                                 Else
                                     Dim tAssembleResultInfo As PGlobals.Execution.AssembleResultInfo
-                                    Dim ControlContentArguments As SolidDevelopment.Web.Globals.ArgumentInfo.ArgumentInfoCollection = _
+                                    Dim ControlContentArguments As SolidDevelopment.Web.Globals.ArgumentInfo.ArgumentInfoCollection =
                                         cI.Parent.ContentArguments
                                     Dim Leveling As Integer = cI.Leveling
 
@@ -968,43 +991,43 @@ RENDERMETHODRESULT:
 
                                     If Me._ParentInstance Is Nothing Then
 PARENTCALL:
-                                        tAssembleResultInfo = _
-                                            [Assembly].AssemblePostBackInformation( _
+                                        tAssembleResultInfo =
+                                            [Assembly].AssemblePostBackInformation(
                                                             String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1), Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, ControlContentArguments))
                                     Else
-                                        tAssembleResultInfo = _
-                                            [Assembly].AssemblePostBackInformation( _
-                                                            Me._ParentInstance.CurrentID, _
-                                                            Me._CurrentInstance.CurrentID, _
+                                        tAssembleResultInfo =
+                                            [Assembly].AssemblePostBackInformation(
+                                                            Me._ParentInstance.CurrentID,
+                                                            Me._CurrentInstance.CurrentID,
                                                             String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1), Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, ControlContentArguments))
 
-                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                            TypeOf tAssembleResultInfo.MethodResult Is IO.FileNotFoundException Then
-
-                                            GoTo PARENTCALL
-                                        End If
+                                        If tAssembleResultInfo.ReloadRequired Then GoTo PARENTCALL
                                     End If
 
-                                    If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                        TypeOf tAssembleResultInfo.MethodResult Is Exception Then
-
-                                        Throw New Exception("Direct Function Call Error!", Me.PrepareException("PlugIn Execution Error!", CType(tAssembleResultInfo.MethodResult, Exception).Message, CType(tAssembleResultInfo.MethodResult, Exception).InnerException))
+                                    If tAssembleResultInfo.ReloadRequired Then
+                                        Throw New Exception("Direct Function Call Error!", New System.IO.FileNotFoundException("Application cache has been corrupted, Reload Required!", tAssembleResultInfo.ApplicationPath))
                                     Else
-                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                            TypeOf tAssembleResultInfo.MethodResult Is SolidDevelopment.Web.PGlobals.MapControls.RedirectOrder Then
+                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso
+                                            TypeOf tAssembleResultInfo.MethodResult Is Exception Then
 
-                                            If SolidDevelopment.Web.General.Context.Items.Contains("RedirectLocation") Then
-                                                SolidDevelopment.Web.General.Context.Items.Remove("RedirectLocation")
-                                            End If
-
-                                            SolidDevelopment.Web.General.Context.Items.Add( _
-                                                "RedirectLocation", _
-                                                CType(tAssembleResultInfo.MethodResult, SolidDevelopment.Web.PGlobals.MapControls.RedirectOrder).Location _
-                                            )
-
-                                            cI.HelperSpace.Space = Nothing
+                                            Throw New Exception("Direct Function Call Error!", Me.PrepareException("PlugIn Execution Error!", CType(tAssembleResultInfo.MethodResult, Exception).Message, CType(tAssembleResultInfo.MethodResult, Exception).InnerException))
                                         Else
-                                            cI.HelperSpace.Space = SolidDevelopment.Web.PGlobals.Execution.GetPrimitiveValue(tAssembleResultInfo.MethodResult)
+                                            If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso
+                                                TypeOf tAssembleResultInfo.MethodResult Is SolidDevelopment.Web.PGlobals.MapControls.RedirectOrder Then
+
+                                                If SolidDevelopment.Web.General.Context.Items.Contains("RedirectLocation") Then
+                                                    SolidDevelopment.Web.General.Context.Items.Remove("RedirectLocation")
+                                                End If
+
+                                                SolidDevelopment.Web.General.Context.Items.Add(
+                                                    "RedirectLocation",
+                                                    CType(tAssembleResultInfo.MethodResult, SolidDevelopment.Web.PGlobals.MapControls.RedirectOrder).Location
+                                                )
+
+                                                cI.HelperSpace.Space = Nothing
+                                            Else
+                                                cI.HelperSpace.Space = SolidDevelopment.Web.PGlobals.Execution.GetPrimitiveValue(tAssembleResultInfo.MethodResult)
+                                            End If
                                         End If
                                     End If
                                 End If
@@ -1017,13 +1040,13 @@ PARENTCALL:
 
                             If Not RRI.RequestingBlockRendering Then
 COMPILEPRIMITIVESTATEMENT:
-                                Dim controlValueSplitted As String() = _
+                                Dim controlValueSplitted As String() =
                                     cI.ClearedValue.Split(":"c)
 
                                 Dim BlockValue As String = String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
 
                                 ' Check This Control has a Content
-                                Dim idxCon As Integer = _
+                                Dim idxCon As Integer =
                                     BlockValue.IndexOf(":"c)
 
                                 ' Get ControlID Accourding to idxCon Value -1 = no content, else has content
@@ -1048,26 +1071,26 @@ COMPILEPRIMITIVESTATEMENT:
 RESEARCH_S_END:
                                 idxCoreContEnd = BlockValue.IndexOf(String.Format("}}:{0}", _sys_CommonControlID), idxCoreContEnd + 1)
                                 Dim TestEndContent As String = BlockValue.Substring(idxCoreContEnd + String.Format("}}:{0}", _sys_CommonControlID).Length)
-                                If TestEndContent.Length > 0 AndAlso _
+                                If TestEndContent.Length > 0 AndAlso
                                     Not Char.IsWhiteSpace(TestEndContent, 0) Then
 
                                     GoTo RESEARCH_S_END
                                 End If
 
-                                If idxCoreContStart <> -1 AndAlso _
+                                If idxCoreContStart <> -1 AndAlso
                                     idxCoreContEnd <> -1 Then
 
                                     CoreContent = BlockValue.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
 
-                                    If Not CoreContent Is Nothing AndAlso _
+                                    If Not CoreContent Is Nothing AndAlso
                                         CoreContent.Trim().Length > 0 Then
 
-                                        Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                        Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                             New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, CoreContent)
 
                                         CoreContent = Me.RenderContent(RRI, tCI)
 
-                                        If Not CoreContent Is Nothing AndAlso _
+                                        If Not CoreContent Is Nothing AndAlso
                                             CoreContent.Trim().Length > 0 Then
 
                                             Dim tMethodResultInfo As Object = Nothing
@@ -1078,7 +1101,7 @@ RESEARCH_S_END:
                                                 tMethodResultInfo = [Assembly].ExecuteStatement(Me._ParentInstance.CurrentID, Me._CurrentInstance.CurrentID, cI.CommonControlID, CoreContent.Trim())
                                             End If
 
-                                            If Not tMethodResultInfo Is Nothing AndAlso _
+                                            If Not tMethodResultInfo Is Nothing AndAlso
                                                 TypeOf tMethodResultInfo Is Exception Then
 
                                                 Throw New Exception("Statement Execution Error!", Me.PrepareException("External Call Error!", CType(tMethodResultInfo, Exception).Message, CType(tMethodResultInfo, Exception).InnerException))
@@ -1104,13 +1127,13 @@ RESEARCH_S_END:
                             If RRI.BlockRenderingStatus = Globals.RenderRequestInfo.BlockRenderingStatuses.Rendering Then
                                 Throw New Exception("Request Block must not Contain Inner Request Block")
                             Else
-                                Dim controlValueSplitted As String() = _
+                                Dim controlValueSplitted As String() =
                                     cI.ClearedValue.Split(":"c)
 
                                 Dim BlockValue As String = String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
 
                                 ' Check This Control has a Content
-                                Dim idxCon As Integer = _
+                                Dim idxCon As Integer =
                                     BlockValue.IndexOf(":"c)
 
                                 ' Get ControlID Accourding to idxCon Value -1 = no content, else has content
@@ -1134,19 +1157,32 @@ RESEARCH_S_END:
 RESEARCH_H_END:
                                 idxCoreContEnd = BlockValue.IndexOf(String.Format("}}:{0}", _sys_CommonControlID), idxCoreContEnd + 1)
                                 Dim TestEndContent As String = BlockValue.Substring(idxCoreContEnd + String.Format("}}:{0}", _sys_CommonControlID).Length)
-                                If TestEndContent.Length > 0 AndAlso _
+                                If TestEndContent.Length > 0 AndAlso
                                     Not Char.IsWhiteSpace(TestEndContent, 0) Then
 
                                     GoTo RESEARCH_H_END
                                 End If
 
-                                If idxCoreContStart <> -1 AndAlso _
+                                If idxCoreContStart <> -1 AndAlso
                                     idxCoreContEnd <> -1 Then
 
                                     CoreContent = BlockValue.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
 
-                                    If Not CoreContent Is Nothing AndAlso _
+                                    If Not CoreContent Is Nothing AndAlso
                                         CoreContent.Trim().Length > 0 Then
+
+                                        Dim RenderOnRequestMarker As String = "!RENDERONREQUEST"
+
+                                        If CoreContent.IndexOf(RenderOnRequestMarker) = 0 Then
+                                            If RRI.RequestingBlockRendering Then
+                                                CoreContent = CoreContent.Substring(RenderOnRequestMarker.Length)
+                                            Else
+                                                cI.HelperSpace.Space = String.Format("<div id=""{0}""></div>", cI.CommonControlID)
+                                                RRI.BlockRenderingStatus = Globals.RenderRequestInfo.BlockRenderingStatuses.Rendered
+
+                                                GoTo BLOCKSTATEMENT_FINISH
+                                            End If
+                                        End If
 
                                         If RRI.RequestingBlockRendering Then
                                             If Not String.Compare(RRI.BlockID, cI.CommonControlID) = 0 Then GoTo BLOCKSTATEMENT_FINISH
@@ -1155,12 +1191,12 @@ RESEARCH_H_END:
                                         End If
                                         RRI.BlockRenderingStatus = Globals.RenderRequestInfo.BlockRenderingStatuses.Rendering
 
-                                        Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                        Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                             New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, CoreContent)
 
                                         CoreContent = Me.RenderContent(RRI, tCI)
 
-                                        If Not CoreContent Is Nothing AndAlso _
+                                        If Not CoreContent Is Nothing AndAlso
                                             CoreContent.Trim().Length > 0 Then
 
                                             If RRI.RequestingBlockRendering Then
@@ -1188,31 +1224,31 @@ BLOCKSTATEMENT_FINISH:
                             End If
 
                         Case "X"c ' [POINTER] Encode Direct Call Function
-                            Dim matchXF As System.Text.RegularExpressions.Match = _
+                            Dim matchXF As System.Text.RegularExpressions.Match =
                                 System.Text.RegularExpressions.Regex.Match(cI.ClearedValue, "XF~\d+\:\{")
 
                             If matchXF.Success Then
                                 If String.Compare(matchXF.Value.Split("~"c)(0), "XF") = 0 Then ' Encode Direct Call Function
                                     cI.CommonControlType = Globals.RenderRequestInfo.CommonControlContent.CommonControlTypes.EncodedCallFunction
 
-                                    Dim controlValueSplitted As String() = _
+                                    Dim controlValueSplitted As String() =
                                         cI.ClearedValue.Split(":"c)
-                                    Dim ContentInfo As String = _
+                                    Dim ContentInfo As String =
                                         String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 2)
 
-                                    If Not ContentInfo Is Nothing AndAlso _
+                                    If Not ContentInfo Is Nothing AndAlso
                                         ContentInfo.Trim().Length >= 2 Then
 
                                         ContentInfo = ContentInfo.Substring(1, ContentInfo.Length - 2)
 
-                                        If Not ContentInfo Is Nothing AndAlso _
+                                        If Not ContentInfo Is Nothing AndAlso
                                             ContentInfo.Trim().Length > 0 Then
 
-                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                 New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, ContentInfo.Trim())
                                             ContentInfo = Me.RenderContent(RRI, tCI)
 
-                                            If Not ContentInfo Is Nothing AndAlso _
+                                            If Not ContentInfo Is Nothing AndAlso
                                                 ContentInfo.Trim().Length > 0 Then
 
                                                 If RRI.BlockRenderingStatus = Globals.RenderRequestInfo.BlockRenderingStatuses.Rendering Then
@@ -1241,29 +1277,29 @@ BLOCKSTATEMENT_FINISH:
                             End If
 
                         Case "M"c ' [POINTER] MessageInformation << First letter of MessageInformation
-                            Dim matchMI As System.Text.RegularExpressions.Match = _
+                            Dim matchMI As System.Text.RegularExpressions.Match =
                                 System.Text.RegularExpressions.Regex.Match(cI.ClearedValue, "MessageInformation~\d+\:\{")
 
                             If matchMI.Success Then
                                 If String.Compare(matchMI.Value.Split("~"c)(0), "MessageInformation") = 0 Then
-                                    Dim MessageResult As PGlobals.MapControls.MessageResult = _
+                                    Dim MessageResult As PGlobals.MapControls.MessageResult =
                                             CType(RRI.GlobalArguments.Item("_sys_MessageResult").Value, PGlobals.MapControls.MessageResult)
 
                                     If MessageResult Is Nothing Then
                                         cI.HelperSpace.Space = Nothing
                                     Else
-                                        Dim controlValueSplitted As String() = _
+                                        Dim controlValueSplitted As String() =
                                             cI.ClearedValue.Split(":"c)
 
-                                        Dim ContentInfo As String = _
+                                        Dim ContentInfo As String =
                                             String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 2)
 
-                                        If Not ContentInfo Is Nothing AndAlso _
+                                        If Not ContentInfo Is Nothing AndAlso
                                             ContentInfo.Trim().Length >= 2 Then
 
                                             ContentInfo = ContentInfo.Substring(1, ContentInfo.Length - 2)
 
-                                            If Not ContentInfo Is Nothing AndAlso _
+                                            If Not ContentInfo Is Nothing AndAlso
                                                 ContentInfo.Trim().Length > 0 Then
 
                                                 Dim dataArgs As New Globals.ArgumentInfo.ArgumentInfoCollection
@@ -1271,7 +1307,7 @@ BLOCKSTATEMENT_FINISH:
                                                 dataArgs.Add("MessageType", MessageResult.Type)
                                                 dataArgs.Add("Message", MessageResult.Message)
 
-                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                     New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, ContentInfo, dataArgs)
 
                                                 cI.HelperSpace.Space = Me.RenderContent(RRI, tCI)
@@ -1296,16 +1332,16 @@ BLOCKSTATEMENT_FINISH:
                                         Throw New Exception("Undefined Property!")
                                 End Select
                             Else ' Standart Value
-                                Dim matchXF As System.Text.RegularExpressions.Match = _
+                                Dim matchXF As System.Text.RegularExpressions.Match =
                                     System.Text.RegularExpressions.Regex.Match(cI.ClearedValue, "XF~\d+\:\{")
-                                Dim matchMI As System.Text.RegularExpressions.Match = _
+                                Dim matchMI As System.Text.RegularExpressions.Match =
                                     System.Text.RegularExpressions.Regex.Match(cI.ClearedValue, "MessageInformation~\d+\:\{")
 
-                                If matchXF.Success AndAlso _
+                                If matchXF.Success AndAlso
                                     String.Compare(matchXF.Value.Split("~"c)(0), "XF", True) = 0 Then
 
                                     Throw New Exception("Property Pointer must be Capital!")
-                                ElseIf matchMI.Success AndAlso _
+                                ElseIf matchMI.Success AndAlso
                                     String.Compare(matchMI.Value.Split("~"c)(0), "MessageInformation", True) = 0 Then
 
                                     Throw New Exception(matchMI.Value.Split("~"c)(0) & " must write down as 'MessageInformation'!")
@@ -1315,10 +1351,10 @@ BLOCKSTATEMENT_FINISH:
                             End If
                     End Select
 
-                    If Not String.IsNullOrEmpty(cI.CommonControlID) AndAlso _
+                    If Not String.IsNullOrEmpty(cI.CommonControlID) AndAlso
                         RRI.ParentPendingCommonControlContents.ContainsKey(cI.CommonControlID) Then
 
-                        Dim CCCList As Generic.List(Of Globals.RenderRequestInfo.CommonControlContent) = _
+                        Dim CCCList As Generic.List(Of Globals.RenderRequestInfo.CommonControlContent) =
                             RRI.ParentPendingCommonControlContents.Item(cI.CommonControlID)
 
                         For Each ppCI As Globals.RenderRequestInfo.ContentInfo In CCCList
@@ -1335,7 +1371,7 @@ BLOCKSTATEMENT_FINISH:
             End Sub
 
             Private Function CheckSecurityInfo(ByVal Control As Globals.Controls.IControlBase, ByVal argumentInfos As Globals.ArgumentInfo.ArgumentInfoCollection) As PGlobals.MapControls.SecurityControlResult.Results
-                Dim rSCR As PGlobals.MapControls.SecurityControlResult.Results = _
+                Dim rSCR As PGlobals.MapControls.SecurityControlResult.Results =
                     PGlobals.MapControls.SecurityControlResult.Results.ReadWrite
 
                 If Not Control.SecurityInfo.SecuritySet Then _
@@ -1344,7 +1380,7 @@ BLOCKSTATEMENT_FINISH:
                 If String.Compare(Control.SecurityInfo.CallFunction, "#GLOBAL") = 0 Then _
                     Throw New Exception("Security Information Call Function must be set!")
 
-                Control.SecurityInfo.CallFunction = _
+                Control.SecurityInfo.CallFunction =
                     Control.SecurityInfo.CallFunction.Replace("[ControlID]", "#ControlID")
                 argumentInfos.Add("ControlID", Control.ControlID)
 
@@ -1352,35 +1388,35 @@ BLOCKSTATEMENT_FINISH:
                 Dim tAssembleResultInfo As PGlobals.Execution.AssembleResultInfo
                 If Me._ParentInstance Is Nothing Then
 PARENTCALL:
-                    tAssembleResultInfo = _
-                        [Assembly].AssemblePostBackInformation( _
+                    tAssembleResultInfo =
+                        [Assembly].AssemblePostBackInformation(
                             Control.SecurityInfo.CallFunction, argumentInfos)
                 Else
-                    tAssembleResultInfo = _
-                        [Assembly].AssemblePostBackInformation( _
-                            Me._ParentInstance.CurrentID, _
-                            Me._CurrentInstance.CurrentID, _
+                    tAssembleResultInfo =
+                        [Assembly].AssemblePostBackInformation(
+                            Me._ParentInstance.CurrentID,
+                            Me._CurrentInstance.CurrentID,
                             Control.SecurityInfo.CallFunction, argumentInfos)
 
-                    If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                        TypeOf tAssembleResultInfo.MethodResult Is IO.FileNotFoundException Then
-
-                        GoTo PARENTCALL
-                    End If
+                    If tAssembleResultInfo.ReloadRequired Then GoTo PARENTCALL
                 End If
 
-                If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                    TypeOf tAssembleResultInfo.MethodResult Is Exception Then
-
-                    Throw New Exception("Security Information Call Function Error!", Me.PrepareException("PlugIn Execution Error!", CType(tAssembleResultInfo.MethodResult, Exception).Message, CType(tAssembleResultInfo.MethodResult, Exception).InnerException))
+                If tAssembleResultInfo.ReloadRequired Then
+                    Throw New Exception("Security Information Call Function Error!", New System.IO.FileNotFoundException("Application cache has been corrupted, Reload Required!", tAssembleResultInfo.ApplicationPath))
                 Else
-                    Dim sCR As PGlobals.MapControls.SecurityControlResult = _
-                        CType(tAssembleResultInfo.MethodResult, PGlobals.MapControls.SecurityControlResult)
+                    If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso
+                        TypeOf tAssembleResultInfo.MethodResult Is Exception Then
 
-                    rSCR = sCR.SecurityResult
+                        Throw New Exception("Security Information Call Function Error!", Me.PrepareException("PlugIn Execution Error!", CType(tAssembleResultInfo.MethodResult, Exception).Message, CType(tAssembleResultInfo.MethodResult, Exception).InnerException))
+                    Else
+                        Dim sCR As PGlobals.MapControls.SecurityControlResult =
+                            CType(tAssembleResultInfo.MethodResult, PGlobals.MapControls.SecurityControlResult)
 
-                    If rSCR = PGlobals.MapControls.SecurityControlResult.Results.None Then _
-                        rSCR = PGlobals.MapControls.SecurityControlResult.Results.ReadWrite
+                        rSCR = sCR.SecurityResult
+
+                        If rSCR = PGlobals.MapControls.SecurityControlResult.Results.None Then _
+                            rSCR = PGlobals.MapControls.SecurityControlResult.Results.ReadWrite
+                    End If
                 End If
                 ' ----
 
@@ -1389,14 +1425,14 @@ PARENTCALL:
 
             Private Sub RenderControlContent(ByVal RRI As Globals.RenderRequestInfo, ByRef cI As Globals.RenderRequestInfo.CommonControlContent)
                 ' Clear Control Modifier
-                Dim controlValueSplitted As String() = _
+                Dim controlValueSplitted As String() =
                     cI.ClearedValue.Split(":"c)
-                Dim ControlContent As String = _
+                Dim ControlContent As String =
                     String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
                 ' !---
 
                 ' Check This Control has a Content
-                Dim idxCon As Integer = _
+                Dim idxCon As Integer =
                     ControlContent.IndexOf(":"c)
 
                 ' Get ControlID Accourding to idxCon Value -1 = no content, else has content
@@ -1409,19 +1445,19 @@ PARENTCALL:
                 End If
 
                 Dim _sys_CommonControlID As String = cI.CommonControlID
-                If Not String.IsNullOrEmpty(cI.CommonControlID) AndAlso _
+                If Not String.IsNullOrEmpty(cI.CommonControlID) AndAlso
                     cI.CommonControlID.IndexOf("~"c) > -1 Then cI.CommonControlID = cI.CommonControlID.Substring(0, cI.CommonControlID.IndexOf("~"c))
 
                 Dim CompareCulture As New Globalization.CultureInfo("en-US")
                 Dim objControl As Globals.Controls.IControlBase = Me.GetControlMap(cI.CommonControlID)
 
-                Dim ControlSecurityInfoResult As PGlobals.MapControls.SecurityControlResult.Results = _
+                Dim ControlSecurityInfoResult As PGlobals.MapControls.SecurityControlResult.Results =
                     Me.CheckSecurityInfo(objControl, Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, cI.Parent.ContentArguments))
-                Dim ControlSIM As Hashtable = _
+                Dim ControlSIM As Hashtable =
                     CType(RRI.GlobalArguments.Item("_sys_ControlSIM").Value, Hashtable)
 
                 If objControl.SecurityInfo.Disabled.IsSet Then
-                    Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                    Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                         New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, objControl.SecurityInfo.Disabled.Value, cI.Parent.ContentArguments)
 
                     objControl.SecurityInfo.Disabled.Value = Me.RenderContent(RRI, tCI)
@@ -1439,13 +1475,13 @@ GENERATEDATALISTRESULT:
 RESEARCH_DataList_END:
                                 idxCoreContEnd = ControlContent.IndexOf(String.Format("}}:{0}", _sys_CommonControlID), idxCoreContEnd + 1)
                                 Dim TestEndContent As String = ControlContent.Substring(idxCoreContEnd + String.Format("}}:{0}", _sys_CommonControlID).Length)
-                                If TestEndContent.Length > 0 AndAlso _
+                                If TestEndContent.Length > 0 AndAlso
                                     Not Char.IsWhiteSpace(TestEndContent, 0) Then
 
                                     GoTo RESEARCH_DataList_END
                                 End If
 
-                                If idxCoreContStart <> -1 AndAlso _
+                                If idxCoreContStart <> -1 AndAlso
                                     idxCoreContEnd <> -1 Then
 
                                     Dim CoreContent As String
@@ -1476,7 +1512,7 @@ RESEARCH_DataList_END:
 
                                         ' Call Related Function and Exam It
                                         Dim tAssembleResultInfo As PGlobals.Execution.AssembleResultInfo
-                                        Dim ControlContentArguments As SolidDevelopment.Web.Globals.ArgumentInfo.ArgumentInfoCollection = _
+                                        Dim ControlContentArguments As SolidDevelopment.Web.Globals.ArgumentInfo.ArgumentInfoCollection =
                                             cI.Parent.ContentArguments
                                         Dim Leveling As Integer = cI.Leveling
 
@@ -1487,190 +1523,93 @@ RESEARCH_DataList_END:
 
                                         If Me._ParentInstance Is Nothing Then
 PARENTCALL_DataList:
-                                            tAssembleResultInfo = _
-                                                [Assembly].AssemblePostBackInformation( _
+                                            tAssembleResultInfo =
+                                                [Assembly].AssemblePostBackInformation(
                                                                 objControl.CallFunction, Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, ControlContentArguments))
                                         Else
-                                            tAssembleResultInfo = _
-                                                [Assembly].AssemblePostBackInformation( _
-                                                                Me._ParentInstance.CurrentID, _
-                                                                Me._CurrentInstance.CurrentID, _
+                                            tAssembleResultInfo =
+                                                [Assembly].AssemblePostBackInformation(
+                                                                Me._ParentInstance.CurrentID,
+                                                                Me._CurrentInstance.CurrentID,
                                                                 objControl.CallFunction, Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, ControlContentArguments))
 
-                                            If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                                TypeOf tAssembleResultInfo.MethodResult Is IO.FileNotFoundException Then
-
-                                                GoTo PARENTCALL_DataList
-                                            End If
+                                            If tAssembleResultInfo.ReloadRequired Then GoTo PARENTCALL_DataList
                                         End If
 
-                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                            TypeOf tAssembleResultInfo.MethodResult Is Exception Then
-
-                                            Throw New Exception("Datalist Call Function Error!", Me.PrepareException("PlugIn Execution Error!", CType(tAssembleResultInfo.MethodResult, Exception).Message, CType(tAssembleResultInfo.MethodResult, Exception).InnerException))
+                                        If tAssembleResultInfo.ReloadRequired Then
+                                            Throw New Exception("Datalist Call Function Error!", New System.IO.FileNotFoundException("Application cache has been corrupted, Reload Required!", tAssembleResultInfo.ApplicationPath))
                                         Else
-                                            If tAssembleResultInfo.MethodResult Is Nothing OrElse _
-                                                ( _
-                                                    Not TypeOf tAssembleResultInfo.MethodResult Is PGlobals.MapControls.PartialDataTable AndAlso _
-                                                    Not TypeOf tAssembleResultInfo.MethodResult Is PGlobals.MapControls.DirectDataReader _
-                                                ) Then
+                                            If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso
+                                                TypeOf tAssembleResultInfo.MethodResult Is Exception Then
 
-                                                SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(0, 0))
+                                                Throw New Exception("Datalist Call Function Error!", Me.PrepareException("PlugIn Execution Error!", CType(tAssembleResultInfo.MethodResult, Exception).Message, CType(tAssembleResultInfo.MethodResult, Exception).InnerException))
                                             Else
-                                                If TypeOf tAssembleResultInfo.MethodResult Is PGlobals.MapControls.PartialDataTable Then
-                                                    Dim RepeaterList As PGlobals.MapControls.PartialDataTable = _
-                                                        CType(tAssembleResultInfo.MethodResult, PGlobals.MapControls.PartialDataTable)
+                                                If tAssembleResultInfo.MethodResult Is Nothing OrElse
+                                                    (
+                                                        Not TypeOf tAssembleResultInfo.MethodResult Is PGlobals.MapControls.PartialDataTable AndAlso
+                                                        Not TypeOf tAssembleResultInfo.MethodResult Is PGlobals.MapControls.DirectDataReader
+                                                    ) Then
 
-                                                    Dim dataArgs As New Globals.ArgumentInfo.ArgumentInfoCollection
+                                                    SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(0, 0))
+                                                Else
+                                                    If TypeOf tAssembleResultInfo.MethodResult Is PGlobals.MapControls.PartialDataTable Then
+                                                        Dim RepeaterList As PGlobals.MapControls.PartialDataTable =
+                                                            CType(tAssembleResultInfo.MethodResult, PGlobals.MapControls.PartialDataTable)
 
-                                                    If Not RepeaterList.MessageResult Is Nothing Then
-                                                        SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(0, 0))
+                                                        Dim dataArgs As New Globals.ArgumentInfo.ArgumentInfoCollection
 
-                                                        If String.IsNullOrEmpty(MessageTemplate) Then
-                                                            cI.HelperSpace.Space = RepeaterList.MessageResult.Message
-                                                        Else
-                                                            dataArgs.Add("MessageType", RepeaterList.MessageResult.Type)
-                                                            dataArgs.Add("Message", RepeaterList.MessageResult.Message)
-
-                                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
-                                                                New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, MessageTemplate, dataArgs)
-
-                                                            cI.HelperSpace.Space = Me.RenderContent(RRI, tCI)
-                                                        End If
-                                                    Else
-                                                        ' Set Variables
-                                                        SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(RepeaterList.ThisContainer.Rows.Count, RepeaterList.TotalCount))
-
-                                                        Dim RenderedContent As New System.Text.StringBuilder
-                                                        Dim ContentIndex As Integer = 0, rC As Integer = 0
-                                                        Dim IsItemIndexColumnExists As Boolean = False
-
-                                                        For Each dR As DataRow In RepeaterList.ThisContainer.Rows
-                                                            dataArgs.Add("_sys_ItemIndex", rC)
-                                                            For Each dC As DataColumn In RepeaterList.ThisContainer.Columns
-                                                                If CompareCulture.CompareInfo.Compare(dC.ColumnName, "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
-
-                                                                dataArgs.Add(dC.ColumnName, dR.Item(dC.ColumnName))
-                                                            Next
-                                                            ' this is for user interaction
-                                                            If Not IsItemIndexColumnExists Then dataArgs.Add("ItemIndex", rC)
-
-                                                            ContentIndex = rC Mod ContentCollection.Length
-
-                                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
-                                                                New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, ContentCollection(ContentIndex), dataArgs)
-
-                                                            RenderedContent.Append( _
-                                                                Me.RenderContent(RRI, tCI) _
-                                                            )
-
-                                                            rC += 1
-                                                        Next
-                                                        cI.HelperSpace.Space = RenderedContent.ToString()
-                                                    End If
-                                                ElseIf TypeOf tAssembleResultInfo.MethodResult Is PGlobals.MapControls.DirectDataReader Then
-                                                    Dim DataReaderInfo As PGlobals.MapControls.DirectDataReader = _
-                                                        CType(tAssembleResultInfo.MethodResult, PGlobals.MapControls.DirectDataReader)
-
-                                                    Dim dataArgs As New Globals.ArgumentInfo.ArgumentInfoCollection
-
-                                                    If DataReaderInfo.DatabaseCommand Is Nothing Then
-                                                        If Not DataReaderInfo.MessageResult Is Nothing Then
+                                                        If Not RepeaterList.MessageResult Is Nothing Then
                                                             SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(0, 0))
 
                                                             If String.IsNullOrEmpty(MessageTemplate) Then
-                                                                cI.HelperSpace.Space = DataReaderInfo.MessageResult.Message
+                                                                cI.HelperSpace.Space = RepeaterList.MessageResult.Message
                                                             Else
-                                                                dataArgs.Add("MessageType", DataReaderInfo.MessageResult.Type)
-                                                                dataArgs.Add("Message", DataReaderInfo.MessageResult.Message)
+                                                                dataArgs.Add("MessageType", RepeaterList.MessageResult.Type)
+                                                                dataArgs.Add("Message", RepeaterList.MessageResult.Message)
 
-                                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                                     New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, MessageTemplate, dataArgs)
 
                                                                 cI.HelperSpace.Space = Me.RenderContent(RRI, tCI)
                                                             End If
-
-                                                            SolidDevelopment.Web.Helpers.EventLogging.WriteToLog("DirectDataReader Error! DatabaseCommand can not be null!")
                                                         Else
-                                                            Throw New Exception("DirectDataReader Error! DatabaseCommand can not be null!")
-                                                        End If
-                                                    Else
-                                                        Dim DBConnection As IDbConnection = _
-                                                            DataReaderInfo.DatabaseCommand.Connection
-                                                        Dim DBCommand As IDbCommand = _
-                                                            DataReaderInfo.DatabaseCommand
-                                                        Dim DBReader As IDataReader
-
-                                                        Try
-                                                            DBConnection.Open()
-                                                            DBReader = DBCommand.ExecuteReader()
-
                                                             ' Set Variables
+                                                            SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(RepeaterList.ThisContainer.Rows.Count, RepeaterList.TotalCount))
+
                                                             Dim RenderedContent As New System.Text.StringBuilder
                                                             Dim ContentIndex As Integer = 0, rC As Integer = 0
                                                             Dim IsItemIndexColumnExists As Boolean = False
 
-                                                            If DBReader.Read() Then
-                                                                Do
-                                                                    dataArgs.Add("_sys_ItemIndex", rC)
-                                                                    For cC As Integer = 0 To DBReader.FieldCount - 1
-                                                                        If CompareCulture.CompareInfo.Compare(DBReader.GetName(cC), "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
+                                                            For Each dR As DataRow In RepeaterList.ThisContainer.Rows
+                                                                dataArgs.Add("_sys_ItemIndex", rC)
+                                                                For Each dC As DataColumn In RepeaterList.ThisContainer.Columns
+                                                                    If CompareCulture.CompareInfo.Compare(dC.ColumnName, "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
 
-                                                                        dataArgs.Add(DBReader.GetName(cC), DBReader.GetValue(cC))
-                                                                    Next
-                                                                    ' this is for user interaction
-                                                                    If Not IsItemIndexColumnExists Then dataArgs.Add("ItemIndex", rC)
+                                                                    dataArgs.Add(dC.ColumnName, dR.Item(dC.ColumnName))
+                                                                Next
+                                                                ' this is for user interaction
+                                                                If Not IsItemIndexColumnExists Then dataArgs.Add("ItemIndex", rC)
 
-                                                                    ContentIndex = rC Mod ContentCollection.Length
+                                                                ContentIndex = rC Mod ContentCollection.Length
 
-                                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
-                                                                        New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, ContentCollection(ContentIndex), dataArgs)
+                                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo =
+                                                                    New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, ContentCollection(ContentIndex), dataArgs)
 
-                                                                    RenderedContent.Append( _
-                                                                        Me.RenderContent(RRI, tCI) _
-                                                                    )
+                                                                RenderedContent.Append(
+                                                                    Me.RenderContent(RRI, tCI)
+                                                                )
 
-                                                                    rC += 1
-                                                                Loop While DBReader.Read()
-                                                                SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(rC, rC))
-                                                                cI.HelperSpace.Space = RenderedContent.ToString()
-                                                            Else
-                                                                SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(0, 0))
+                                                                rC += 1
+                                                            Next
+                                                            cI.HelperSpace.Space = RenderedContent.ToString()
+                                                        End If
+                                                    ElseIf TypeOf tAssembleResultInfo.MethodResult Is PGlobals.MapControls.DirectDataReader Then
+                                                        Dim DataReaderInfo As PGlobals.MapControls.DirectDataReader =
+                                                            CType(tAssembleResultInfo.MethodResult, PGlobals.MapControls.DirectDataReader)
 
-                                                                If Not DataReaderInfo.MessageResult Is Nothing Then
-                                                                    If String.IsNullOrEmpty(MessageTemplate) Then
-                                                                        cI.HelperSpace.Space = DataReaderInfo.MessageResult.Message
-                                                                    Else
-                                                                        dataArgs.Add("MessageType", DataReaderInfo.MessageResult.Type)
-                                                                        dataArgs.Add("Message", DataReaderInfo.MessageResult.Message)
+                                                        Dim dataArgs As New Globals.ArgumentInfo.ArgumentInfoCollection
 
-                                                                        Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
-                                                                            New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, MessageTemplate, dataArgs)
-
-                                                                        cI.HelperSpace.Space = Me.RenderContent(RRI, tCI)
-                                                                    End If
-                                                                Else
-                                                                    cI.HelperSpace.Space = String.Empty
-                                                                End If
-                                                            End If
-
-                                                            ' Close and Dispose Database Reader
-                                                            DBReader.Close()
-                                                            DBReader.Dispose()
-                                                            GC.SuppressFinalize(DBReader)
-                                                            ' ----
-
-                                                            ' Close and Dispose Database Command
-                                                            DBCommand.Dispose()
-                                                            GC.SuppressFinalize(DBCommand)
-                                                            ' ----
-
-                                                            ' Close and Dispose Database Connection
-                                                            DBConnection.Close()
-                                                            DBConnection.Dispose()
-                                                            GC.SuppressFinalize(DBConnection)
-                                                            ' ----
-                                                        Catch ex As Exception
+                                                        If DataReaderInfo.DatabaseCommand Is Nothing Then
                                                             If Not DataReaderInfo.MessageResult Is Nothing Then
                                                                 SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(0, 0))
 
@@ -1680,17 +1619,114 @@ PARENTCALL_DataList:
                                                                     dataArgs.Add("MessageType", DataReaderInfo.MessageResult.Type)
                                                                     dataArgs.Add("Message", DataReaderInfo.MessageResult.Message)
 
-                                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                                         New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, MessageTemplate, dataArgs)
 
                                                                     cI.HelperSpace.Space = Me.RenderContent(RRI, tCI)
                                                                 End If
 
-                                                                SolidDevelopment.Web.Helpers.EventLogging.WriteToLog(ex)
+                                                                SolidDevelopment.Web.Helpers.EventLogging.WriteToLog("DirectDataReader Error! DatabaseCommand can not be null!")
                                                             Else
-                                                                Throw New Exception("DirectDataReader Error!", ex)
+                                                                Throw New Exception("DirectDataReader Error! DatabaseCommand can not be null!")
                                                             End If
-                                                        End Try
+                                                        Else
+                                                            Dim DBConnection As IDbConnection =
+                                                                DataReaderInfo.DatabaseCommand.Connection
+                                                            Dim DBCommand As IDbCommand =
+                                                                DataReaderInfo.DatabaseCommand
+                                                            Dim DBReader As IDataReader
+
+                                                            Try
+                                                                DBConnection.Open()
+                                                                DBReader = DBCommand.ExecuteReader()
+
+                                                                ' Set Variables
+                                                                Dim RenderedContent As New System.Text.StringBuilder
+                                                                Dim ContentIndex As Integer = 0, rC As Integer = 0
+                                                                Dim IsItemIndexColumnExists As Boolean = False
+
+                                                                If DBReader.Read() Then
+                                                                    Do
+                                                                        dataArgs.Add("_sys_ItemIndex", rC)
+                                                                        For cC As Integer = 0 To DBReader.FieldCount - 1
+                                                                            If CompareCulture.CompareInfo.Compare(DBReader.GetName(cC), "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
+
+                                                                            dataArgs.Add(DBReader.GetName(cC), DBReader.GetValue(cC))
+                                                                        Next
+                                                                        ' this is for user interaction
+                                                                        If Not IsItemIndexColumnExists Then dataArgs.Add("ItemIndex", rC)
+
+                                                                        ContentIndex = rC Mod ContentCollection.Length
+
+                                                                        Dim tCI As Globals.RenderRequestInfo.ContentInfo =
+                                                                            New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, ContentCollection(ContentIndex), dataArgs)
+
+                                                                        RenderedContent.Append(
+                                                                            Me.RenderContent(RRI, tCI)
+                                                                        )
+
+                                                                        rC += 1
+                                                                    Loop While DBReader.Read()
+                                                                    SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(rC, rC))
+                                                                    cI.HelperSpace.Space = RenderedContent.ToString()
+                                                                Else
+                                                                    SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(0, 0))
+
+                                                                    If Not DataReaderInfo.MessageResult Is Nothing Then
+                                                                        If String.IsNullOrEmpty(MessageTemplate) Then
+                                                                            cI.HelperSpace.Space = DataReaderInfo.MessageResult.Message
+                                                                        Else
+                                                                            dataArgs.Add("MessageType", DataReaderInfo.MessageResult.Type)
+                                                                            dataArgs.Add("Message", DataReaderInfo.MessageResult.Message)
+
+                                                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo =
+                                                                                New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, MessageTemplate, dataArgs)
+
+                                                                            cI.HelperSpace.Space = Me.RenderContent(RRI, tCI)
+                                                                        End If
+                                                                    Else
+                                                                        cI.HelperSpace.Space = String.Empty
+                                                                    End If
+                                                                End If
+
+                                                                ' Close and Dispose Database Reader
+                                                                DBReader.Close()
+                                                                DBReader.Dispose()
+                                                                GC.SuppressFinalize(DBReader)
+                                                                ' ----
+
+                                                                ' Close and Dispose Database Command
+                                                                DBCommand.Dispose()
+                                                                GC.SuppressFinalize(DBCommand)
+                                                                ' ----
+
+                                                                ' Close and Dispose Database Connection
+                                                                DBConnection.Close()
+                                                                DBConnection.Dispose()
+                                                                GC.SuppressFinalize(DBConnection)
+                                                                ' ----
+                                                            Catch ex As Exception
+                                                                If Not DataReaderInfo.MessageResult Is Nothing Then
+                                                                    SolidDevelopment.Web.General.SetVariable(cI.CommonControlID, New Globals.DataListOutputInfo(0, 0))
+
+                                                                    If String.IsNullOrEmpty(MessageTemplate) Then
+                                                                        cI.HelperSpace.Space = DataReaderInfo.MessageResult.Message
+                                                                    Else
+                                                                        dataArgs.Add("MessageType", DataReaderInfo.MessageResult.Type)
+                                                                        dataArgs.Add("Message", DataReaderInfo.MessageResult.Message)
+
+                                                                        Dim tCI As Globals.RenderRequestInfo.ContentInfo =
+                                                                            New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, MessageTemplate, dataArgs)
+
+                                                                        cI.HelperSpace.Space = Me.RenderContent(RRI, tCI)
+                                                                    End If
+
+                                                                    SolidDevelopment.Web.Helpers.EventLogging.WriteToLog(ex)
+                                                                Else
+                                                                    Throw New Exception("DirectDataReader Error!", ex)
+                                                                End If
+                                                            End Try
+                                                        End If
                                                     End If
                                                 End If
                                             End If
@@ -1714,13 +1750,13 @@ PARENTCALL_DataList:
 RESEARCH_ConditionalStatement_END:
                             idxCoreContEnd = ControlContent.IndexOf(String.Format("}}:{0}", _sys_CommonControlID), idxCoreContEnd + 1)
                             Dim TestEndContent As String = ControlContent.Substring(idxCoreContEnd + String.Format("}}:{0}", _sys_CommonControlID).Length)
-                            If TestEndContent.Length > 0 AndAlso _
+                            If TestEndContent.Length > 0 AndAlso
                                 Not Char.IsWhiteSpace(TestEndContent, 0) Then
 
                                 GoTo RESEARCH_ConditionalStatement_END
                             End If
 
-                            If idxCoreContStart <> -1 AndAlso _
+                            If idxCoreContStart <> -1 AndAlso
                                 idxCoreContEnd <> -1 Then
 
                                 Dim ConditionResult As PGlobals.MapControls.ConditionalStatementResult = Nothing
@@ -1744,7 +1780,7 @@ RESEARCH_ConditionalStatement_END:
 
                                     ' Call Related Function and Exam It
                                     Dim tAssembleResultInfo As PGlobals.Execution.AssembleResultInfo
-                                    Dim ControlContentArguments As SolidDevelopment.Web.Globals.ArgumentInfo.ArgumentInfoCollection = _
+                                    Dim ControlContentArguments As SolidDevelopment.Web.Globals.ArgumentInfo.ArgumentInfoCollection =
                                         cI.Parent.ContentArguments
                                     Dim Leveling As Integer = cI.Leveling
 
@@ -1755,29 +1791,29 @@ RESEARCH_ConditionalStatement_END:
 
                                     If Me._ParentInstance Is Nothing Then
 PARENTCALL_ConditionalStatement:
-                                        tAssembleResultInfo = _
-                                            [Assembly].AssemblePostBackInformation( _
+                                        tAssembleResultInfo =
+                                            [Assembly].AssemblePostBackInformation(
                                                             objControl.CallFunction, Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, ControlContentArguments))
                                     Else
-                                        tAssembleResultInfo = _
-                                            [Assembly].AssemblePostBackInformation( _
-                                                            Me._ParentInstance.CurrentID, _
-                                                            Me._CurrentInstance.CurrentID, _
+                                        tAssembleResultInfo =
+                                            [Assembly].AssemblePostBackInformation(
+                                                            Me._ParentInstance.CurrentID,
+                                                            Me._CurrentInstance.CurrentID,
                                                             objControl.CallFunction, Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, ControlContentArguments))
 
-                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                            TypeOf tAssembleResultInfo.MethodResult Is IO.FileNotFoundException Then
-
-                                            GoTo PARENTCALL_ConditionalStatement
-                                        End If
+                                        If tAssembleResultInfo.ReloadRequired Then GoTo PARENTCALL_ConditionalStatement
                                     End If
 
-                                    If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                        TypeOf tAssembleResultInfo.MethodResult Is Exception Then
-
-                                        Throw New Exception("Conditional Statement Call Function Error!", Me.PrepareException("PlugIn Execution Error!", CType(tAssembleResultInfo.MethodResult, Exception).Message, CType(tAssembleResultInfo.MethodResult, Exception).InnerException))
+                                    If tAssembleResultInfo.ReloadRequired Then
+                                        Throw New Exception("Conditional Statement Call Function Error!", New System.IO.FileNotFoundException("Application cache has been corrupted, Reload Required!", tAssembleResultInfo.ApplicationPath))
                                     Else
-                                        ConditionResult = CType(tAssembleResultInfo.MethodResult, PGlobals.MapControls.ConditionalStatementResult)
+                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso
+                                            TypeOf tAssembleResultInfo.MethodResult Is Exception Then
+
+                                            Throw New Exception("Conditional Statement Call Function Error!", Me.PrepareException("PlugIn Execution Error!", CType(tAssembleResultInfo.MethodResult, Exception).Message, CType(tAssembleResultInfo.MethodResult, Exception).InnerException))
+                                        Else
+                                            ConditionResult = CType(tAssembleResultInfo.MethodResult, PGlobals.MapControls.ConditionalStatementResult)
+                                        End If
                                     End If
                                     ' ----
 
@@ -1787,13 +1823,13 @@ PARENTCALL_ConditionalStatement:
 
                                         Select Case ConditionResult.ConditionResult
                                             Case PGlobals.MapControls.ConditionalStatementResult.Conditions.True
-                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                     New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, ContentTrue, cI.Parent.ContentArguments)
 
                                                 RenderedContent = Me.RenderContent(RRI, tCI)
                                             Case PGlobals.MapControls.ConditionalStatementResult.Conditions.False
                                                 If Not ContentFalse Is Nothing Then
-                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                         New Globals.RenderRequestInfo.RenderlessContent(cI.Parent, 0, ContentFalse, cI.Parent.ContentArguments)
 
                                                     RenderedContent = Me.RenderContent(RRI, tCI)
@@ -1821,25 +1857,25 @@ PARENTCALL_ConditionalStatement:
 RESEARCH_VariableBlock_END:
                             idxCoreContEnd = ControlContent.IndexOf(String.Format("}}:{0}", _sys_CommonControlID), idxCoreContEnd + 1)
                             Dim TestEndContent As String = ControlContent.Substring(idxCoreContEnd + String.Format("}}:{0}", _sys_CommonControlID).Length)
-                            If TestEndContent.Length > 0 AndAlso _
+                            If TestEndContent.Length > 0 AndAlso
                                 Not Char.IsWhiteSpace(TestEndContent, 0) Then
 
                                 GoTo RESEARCH_VariableBlock_END
                             End If
 
-                            If idxCoreContStart <> -1 AndAlso _
+                            If idxCoreContStart <> -1 AndAlso
                                 idxCoreContEnd <> -1 Then
 
                                 CoreContent = ControlContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
 
-                                If Not CoreContent Is Nothing AndAlso _
+                                If Not CoreContent Is Nothing AndAlso
                                     CoreContent.Trim().Length > 0 Then
 
                                     Dim VariableBlockResult As PGlobals.MapControls.VariableBlockResult = Nothing
 
                                     ' Call Related Function and Exam It
                                     Dim tAssembleResultInfo As PGlobals.Execution.AssembleResultInfo
-                                    Dim ControlContentArguments As SolidDevelopment.Web.Globals.ArgumentInfo.ArgumentInfoCollection = _
+                                    Dim ControlContentArguments As SolidDevelopment.Web.Globals.ArgumentInfo.ArgumentInfoCollection =
                                         cI.Parent.ContentArguments
                                     Dim Leveling As Integer = cI.Leveling
 
@@ -1850,29 +1886,29 @@ RESEARCH_VariableBlock_END:
 
                                     If Me._ParentInstance Is Nothing Then
 PARENTCALL_VariableBlock:
-                                        tAssembleResultInfo = _
-                                            [Assembly].AssemblePostBackInformation( _
+                                        tAssembleResultInfo =
+                                            [Assembly].AssemblePostBackInformation(
                                                             objControl.CallFunction, Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, ControlContentArguments))
                                     Else
-                                        tAssembleResultInfo = _
-                                            [Assembly].AssemblePostBackInformation( _
-                                                            Me._ParentInstance.CurrentID, _
-                                                            Me._CurrentInstance.CurrentID, _
+                                        tAssembleResultInfo =
+                                            [Assembly].AssemblePostBackInformation(
+                                                            Me._ParentInstance.CurrentID,
+                                                            Me._CurrentInstance.CurrentID,
                                                             objControl.CallFunction, Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, ControlContentArguments))
 
-                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                            TypeOf tAssembleResultInfo.MethodResult Is IO.FileNotFoundException Then
-
-                                            GoTo PARENTCALL_VariableBlock
-                                        End If
+                                        If tAssembleResultInfo.ReloadRequired Then GoTo PARENTCALL_VariableBlock
                                     End If
 
-                                    If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                        TypeOf tAssembleResultInfo.MethodResult Is Exception Then
-
-                                        Throw New Exception("Variable Block Statement Call Function Error!", Me.PrepareException("PlugIn Execution Error!", CType(tAssembleResultInfo.MethodResult, Exception).Message, CType(tAssembleResultInfo.MethodResult, Exception).InnerException))
+                                    If tAssembleResultInfo.ReloadRequired Then
+                                        Throw New Exception("Variable Block Statement Call Function Error!", New System.IO.FileNotFoundException("Application cache has been corrupted, Reload Required!", tAssembleResultInfo.ApplicationPath))
                                     Else
-                                        VariableBlockResult = CType(tAssembleResultInfo.MethodResult, PGlobals.MapControls.VariableBlockResult)
+                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso
+                                            TypeOf tAssembleResultInfo.MethodResult Is Exception Then
+
+                                            Throw New Exception("Variable Block Statement Call Function Error!", Me.PrepareException("PlugIn Execution Error!", CType(tAssembleResultInfo.MethodResult, Exception).Message, CType(tAssembleResultInfo.MethodResult, Exception).InnerException))
+                                        Else
+                                            VariableBlockResult = CType(tAssembleResultInfo.MethodResult, PGlobals.MapControls.VariableBlockResult)
+                                        End If
                                     End If
                                     ' ----
 
@@ -1926,20 +1962,20 @@ RENDERCONTROL:
 
                                         TextBoxValue = CType(objControl, Globals.Controls.Textbox).Text
 
-                                        If Not TextBoxValue Is Nothing AndAlso _
+                                        If Not TextBoxValue Is Nothing AndAlso
                                             TextBoxValue.Trim().Length > 0 Then
 
-                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                 New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, TextBoxValue, cI.Parent.ContentArguments)
 
                                             TextBoxValue = Me.RenderContent(RRI, tCI)
                                         End If
 
                                         If Not String.IsNullOrEmpty(CType(objControl, Globals.Controls.Textbox).DefaultButtonID) Then
-                                            Dim buttonControl As Globals.Controls.IControlBase = _
+                                            Dim buttonControl As Globals.Controls.IControlBase =
                                                 Me.GetControlMap(CType(objControl, Globals.Controls.Textbox).DefaultButtonID)
 
-                                            Dim buttonControlSCR As PGlobals.MapControls.SecurityControlResult.Results = _
+                                            Dim buttonControlSCR As PGlobals.MapControls.SecurityControlResult.Results =
                                                 Me.CheckSecurityInfo(buttonControl, Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, cI.Parent.ContentArguments))
 
                                             If buttonControlSCR <> PGlobals.MapControls.SecurityControlResult.Results.ReadOnly Then
@@ -1962,10 +1998,10 @@ RENDERCONTROL:
                                             If objControl.SecurityInfo.Disabled.IsSet Then
                                                 TextBoxValue = objControl.SecurityInfo.Disabled.Value
 
-                                                If Not TextBoxValue Is Nothing AndAlso _
+                                                If Not TextBoxValue Is Nothing AndAlso
                                                     TextBoxValue.Trim().Length > 0 Then
 
-                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                         New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, TextBoxValue, cI.Parent.ContentArguments)
 
                                                     TextBoxValue = Me.RenderContent(RRI, tCI)
@@ -1978,20 +2014,20 @@ RENDERCONTROL:
 
                                         PasswordValue = CType(objControl, Globals.Controls.Password).Text
 
-                                        If Not PasswordValue Is Nothing AndAlso _
+                                        If Not PasswordValue Is Nothing AndAlso
                                             PasswordValue.Trim().Length > 0 Then
 
-                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                 New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, PasswordValue, cI.Parent.ContentArguments)
 
                                             PasswordValue = Me.RenderContent(RRI, tCI)
                                         End If
 
                                         If Not String.IsNullOrEmpty(CType(objControl, Globals.Controls.Password).DefaultButtonID) Then
-                                            Dim buttonControl As Globals.Controls.IControlBase = _
+                                            Dim buttonControl As Globals.Controls.IControlBase =
                                                 Me.GetControlMap(CType(objControl, Globals.Controls.Password).DefaultButtonID)
 
-                                            Dim buttonControlSCR As PGlobals.MapControls.SecurityControlResult.Results = _
+                                            Dim buttonControlSCR As PGlobals.MapControls.SecurityControlResult.Results =
                                                 Me.CheckSecurityInfo(buttonControl, Globals.ArgumentInfo.ArgumentInfoCollection.Combine(RRI.GlobalArguments, cI.Parent.ContentArguments))
 
                                             If buttonControlSCR <> PGlobals.MapControls.SecurityControlResult.Results.ReadOnly Then
@@ -2014,10 +2050,10 @@ RENDERCONTROL:
                                             If objControl.SecurityInfo.Disabled.IsSet Then
                                                 PasswordValue = objControl.SecurityInfo.Disabled.Value
 
-                                                If Not PasswordValue Is Nothing AndAlso _
+                                                If Not PasswordValue Is Nothing AndAlso
                                                     PasswordValue.Trim().Length > 0 Then
 
-                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                         New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, PasswordValue, cI.Parent.ContentArguments)
 
                                                     PasswordValue = Me.RenderContent(RRI, tCI)
@@ -2030,10 +2066,10 @@ RENDERCONTROL:
 
                                         ButtonValue = CType(objControl, Globals.Controls.Button).Text
 
-                                        If Not ButtonValue Is Nothing AndAlso _
+                                        If Not ButtonValue Is Nothing AndAlso
                                             ButtonValue.Trim().Length > 0 Then
 
-                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                 New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, ButtonValue, cI.Parent.ContentArguments)
 
                                             ButtonValue = Me.RenderContent(RRI, tCI)
@@ -2047,10 +2083,10 @@ RENDERCONTROL:
                                             If objControl.SecurityInfo.Disabled.IsSet Then
                                                 ButtonValue = objControl.SecurityInfo.Disabled.Value
 
-                                                If Not ButtonValue Is Nothing AndAlso _
+                                                If Not ButtonValue Is Nothing AndAlso
                                                     ButtonValue.Trim().Length > 0 Then
 
-                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                         New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, ButtonValue, cI.Parent.ContentArguments)
 
                                                     ButtonValue = Me.RenderContent(RRI, tCI)
@@ -2063,10 +2099,10 @@ RENDERCONTROL:
 
                                         TextareaValue = CType(objControl, Globals.Controls.Textarea).Content
 
-                                        If Not TextareaValue Is Nothing AndAlso _
+                                        If Not TextareaValue Is Nothing AndAlso
                                             TextareaValue.Trim().Length > 0 Then
 
-                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                 New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, TextareaValue, cI.Parent.ContentArguments)
 
                                             TextareaValue = Me.RenderContent(RRI, tCI)
@@ -2080,10 +2116,10 @@ RENDERCONTROL:
                                             If objControl.SecurityInfo.Disabled.IsSet Then
                                                 TextareaValue = objControl.SecurityInfo.Disabled.Value
 
-                                                If Not TextareaValue Is Nothing AndAlso _
+                                                If Not TextareaValue Is Nothing AndAlso
                                                     TextareaValue.Trim().Length > 0 Then
 
-                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                         New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, TextareaValue, cI.Parent.ContentArguments)
 
                                                     TextareaValue = Me.RenderContent(RRI, tCI)
@@ -2098,10 +2134,10 @@ RENDERCONTROL:
 
                                         AnchorLinkValue = CType(objControl, Globals.Controls.Link).Text
 
-                                        If Not AnchorLinkValue Is Nothing AndAlso _
+                                        If Not AnchorLinkValue Is Nothing AndAlso
                                             AnchorLinkValue.Trim().Length > 0 Then
 
-                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                 New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, AnchorLinkValue, cI.Parent.ContentArguments)
 
                                             AnchorLinkValue = Me.RenderContent(RRI, tCI)
@@ -2109,7 +2145,7 @@ RENDERCONTROL:
 
                                         AnchorLinkHref = CType(objControl, Globals.Controls.Link).Url
 
-                                        If Not AnchorLinkHref Is Nothing AndAlso _
+                                        If Not AnchorLinkHref Is Nothing AndAlso
                                             AnchorLinkHref.Trim().Length > 0 Then
 
                                             If AnchorLinkHref.IndexOf("~/") = 0 Then
@@ -2120,7 +2156,7 @@ RENDERCONTROL:
                                                 AnchorLinkHref = AnchorLinkHref.Insert(0, Configurations.VirtualRoot)
                                             End If
 
-                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                 New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, AnchorLinkHref, cI.Parent.ContentArguments)
 
                                             AnchorLinkHref = Me.RenderContent(RRI, tCI)
@@ -2129,22 +2165,22 @@ RENDERCONTROL:
                                         If Not String.IsNullOrEmpty(objControl.CallFunction) Then
                                             AnchorLinkHref = "#_action0"
 
-                                            If ControlSecurityInfoResult = PGlobals.MapControls.SecurityControlResult.Results.ReadOnly AndAlso _
+                                            If ControlSecurityInfoResult = PGlobals.MapControls.SecurityControlResult.Results.ReadOnly AndAlso
                                                 objControl.SecurityInfo.Disabled.IsSet Then
 
                                                 AnchorLinkValue = objControl.SecurityInfo.Disabled.Value
 
-                                                If Not AnchorLinkValue Is Nothing AndAlso _
+                                                If Not AnchorLinkValue Is Nothing AndAlso
                                                     AnchorLinkValue.Trim().Length > 0 Then
 
-                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                         New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, AnchorLinkValue, cI.Parent.ContentArguments)
 
                                                     AnchorLinkValue = Me.RenderContent(RRI, tCI)
                                                 End If
                                             End If
                                         Else
-                                            If AnchorLinkHref Is Nothing OrElse _
+                                            If AnchorLinkHref Is Nothing OrElse
                                                 (Not AnchorLinkHref Is Nothing AndAlso AnchorLinkHref.Trim().Length = 0) Then
 
                                                 AnchorLinkHref = "#_action1"
@@ -2157,24 +2193,24 @@ RENDERCONTROL:
 
                                         ImageSource = CType(objControl, Globals.Controls.Image).Source
 
-                                        If Not ImageSource Is Nothing AndAlso _
+                                        If Not ImageSource Is Nothing AndAlso
                                             ImageSource.Trim().Length > 0 Then
 
-                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                 New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, ImageSource, cI.Parent.ContentArguments)
 
                                             ImageSource = Me.RenderContent(RRI, tCI)
                                         End If
 
-                                        If ControlSecurityInfoResult = PGlobals.MapControls.SecurityControlResult.Results.ReadOnly AndAlso _
+                                        If ControlSecurityInfoResult = PGlobals.MapControls.SecurityControlResult.Results.ReadOnly AndAlso
                                             objControl.SecurityInfo.Disabled.IsSet Then
 
                                             ImageSource = objControl.SecurityInfo.Disabled.Value
 
-                                            If Not ImageSource Is Nothing AndAlso _
+                                            If Not ImageSource Is Nothing AndAlso
                                                 ImageSource.Trim().Length > 0 Then
 
-                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                     New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, ImageSource, cI.Parent.ContentArguments)
 
                                                 ImageSource = Me.RenderContent(RRI, tCI)
@@ -2186,12 +2222,12 @@ RENDERCONTROL:
                                             CheckBoxLabel = CType(objControl, Globals.Controls.CheckBox).Text
 
                                             If CheckBoxLabel.Trim().Length > 0 Then
-                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                     New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, CheckBoxLabel, cI.Parent.ContentArguments)
 
                                                 CheckBoxLabel = Me.RenderContent(RRI, tCI)
 
-                                                Dim ItemIndex As String = _
+                                                Dim ItemIndex As String =
                                                     CType(RRI.GlobalArguments.Item("_sys_ItemIndex").Value, String)
 
                                                 If ItemIndex Is Nothing Then
@@ -2209,12 +2245,12 @@ RENDERCONTROL:
                                             RadioButtonLabel = CType(objControl, Globals.Controls.RadioButton).Text
 
                                             If RadioButtonLabel.Trim().Length > 0 Then
-                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                                Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                     New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, RadioButtonLabel, cI.Parent.ContentArguments)
 
                                                 RadioButtonLabel = Me.RenderContent(RRI, tCI)
 
-                                                Dim ItemIndex As String = _
+                                                Dim ItemIndex As String =
                                                     CType(RRI.GlobalArguments.Item("_sys_ItemIndex").Value, String)
 
                                                 If ItemIndex Is Nothing Then
@@ -2230,17 +2266,17 @@ RENDERCONTROL:
                                 End Select
 
                                 If Not String.IsNullOrEmpty(objControl.CallFunction) Then
-                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                    Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                         New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, objControl.CallFunction, cI.Parent.ContentArguments)
 
                                     objControl.CallFunction = Me.RenderContent(RRI, tCI)
 
                                     Select Case objControl.Type
                                         Case Globals.Controls.ControlTypes.Textbox, Globals.Controls.ControlTypes.Password
-                                            If RRI.BlockRenderingStatus = Globals.RenderRequestInfo.BlockRenderingStatuses.Rendering OrElse _
+                                            If RRI.BlockRenderingStatus = Globals.RenderRequestInfo.BlockRenderingStatuses.Rendering OrElse
                                                 objControl.BlockIDsToUpdate.Count > 0 Then
 
-                                                If Not objControl.BlockIDsToUpdate.Contains(RRI.BlockID) AndAlso _
+                                                If Not objControl.BlockIDsToUpdate.Contains(RRI.BlockID) AndAlso
                                                     objControl.BlockLocalUpdate Then
 
                                                     objControl.BlockIDsToUpdate.Add(RRI.BlockID)
@@ -2280,10 +2316,10 @@ RENDERCONTROL:
 
                                         Case Else
                                             If ControlSecurityInfoResult = PGlobals.MapControls.SecurityControlResult.Results.ReadWrite Then
-                                                If RRI.BlockRenderingStatus = Globals.RenderRequestInfo.BlockRenderingStatuses.Rendering OrElse _
+                                                If RRI.BlockRenderingStatus = Globals.RenderRequestInfo.BlockRenderingStatuses.Rendering OrElse
                                                     objControl.BlockIDsToUpdate.Count > 0 Then
 
-                                                    If Not objControl.BlockIDsToUpdate.Contains(RRI.BlockID) AndAlso _
+                                                    If Not objControl.BlockIDsToUpdate.Contains(RRI.BlockID) AndAlso
                                                         objControl.BlockLocalUpdate Then
 
                                                         objControl.BlockIDsToUpdate.Add(RRI.BlockID)
@@ -2311,16 +2347,16 @@ RENDERCONTROL:
                                     If CompareCulture.CompareInfo.Compare(aI.Id, "id", Globalization.CompareOptions.IgnoreCase) <> 0 Then
                                         tAttribHelper = aI.Value
 
-                                        If Not tAttribHelper Is Nothing AndAlso _
+                                        If Not tAttribHelper Is Nothing AndAlso
                                             tAttribHelper.Trim().Length > 0 Then
 
-                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo = _
+                                            Dim tCI As Globals.RenderRequestInfo.ContentInfo =
                                                 New Globals.RenderRequestInfo.RenderlessContent(cI.Parent.Parent, 0, tAttribHelper, cI.Parent.ContentArguments)
 
                                             tAttribHelper = Me.RenderContent(RRI, tCI)
                                         End If
 
-                                        If aI.Id Is Nothing OrElse _
+                                        If aI.Id Is Nothing OrElse
                                             aI.Id.Trim().Length = 0 Then
 
                                             tAttribs.AppendFormat(" {0}", tAttribHelper)
@@ -2332,7 +2368,7 @@ RENDERCONTROL:
 
                                 Select Case objControl.Type
                                     Case Globals.Controls.ControlTypes.Textbox
-                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso _
+                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso
                                             objControl.SecurityInfo.Disabled.Type = Globals.Controls.ControlBase.SecurityInfos.DisabledClass.DisabledTypes.Dynamic Then
 
                                             cI.HelperSpace.Space = objControl.SecurityInfo.Disabled.Value
@@ -2340,7 +2376,7 @@ RENDERCONTROL:
                                             cI.HelperSpace.Space = String.Format("<input type=""text"" name=""{0}"" id=""{0}""{1}{2}>", cI.CommonControlID, IIf(Not TextBoxValue Is Nothing, String.Format(" value=""{0}""", TextBoxValue), Nothing), tAttribs.ToString())
                                         End If
                                     Case Globals.Controls.ControlTypes.Password
-                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso _
+                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso
                                             objControl.SecurityInfo.Disabled.Type = Globals.Controls.ControlBase.SecurityInfos.DisabledClass.DisabledTypes.Dynamic Then
 
                                             cI.HelperSpace.Space = objControl.SecurityInfo.Disabled.Value
@@ -2352,7 +2388,7 @@ RENDERCONTROL:
                                     Case Globals.Controls.ControlTypes.Radio
                                         cI.HelperSpace.Space = String.Format("<input type=""radio"" name=""{0}"" id=""{1}""{2}>{3}", cI.CommonControlID, RadioButtonID, tAttribs.ToString(), RadioButtonLabel)
                                     Case Globals.Controls.ControlTypes.Button
-                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso _
+                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso
                                             objControl.SecurityInfo.Disabled.Type = Globals.Controls.ControlBase.SecurityInfos.DisabledClass.DisabledTypes.Dynamic Then
 
                                             cI.HelperSpace.Space = objControl.SecurityInfo.Disabled.Value
@@ -2360,7 +2396,7 @@ RENDERCONTROL:
                                             cI.HelperSpace.Space = String.Format("<input type=""button"" name=""{0}"" id=""{0}""{1}{2}>", cI.CommonControlID, IIf(Not ButtonValue Is Nothing, String.Format(" value=""{0}""", ButtonValue), Nothing), tAttribs.ToString())
                                         End If
                                     Case Globals.Controls.ControlTypes.Textarea
-                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso _
+                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso
                                             objControl.SecurityInfo.Disabled.Type = Globals.Controls.ControlBase.SecurityInfos.DisabledClass.DisabledTypes.Dynamic Then
 
                                             cI.HelperSpace.Space = objControl.SecurityInfo.Disabled.Value
@@ -2368,7 +2404,7 @@ RENDERCONTROL:
                                             cI.HelperSpace.Space = String.Format("<textarea name=""{0}"" id=""{0}""{1}>{2}</textarea>", cI.CommonControlID, tAttribs.ToString(), TextareaValue)
                                         End If
                                     Case Globals.Controls.ControlTypes.Image
-                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso _
+                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso
                                             objControl.SecurityInfo.Disabled.Type = Globals.Controls.ControlBase.SecurityInfos.DisabledClass.DisabledTypes.Dynamic Then
 
                                             cI.HelperSpace.Space = objControl.SecurityInfo.Disabled.Value
@@ -2376,7 +2412,7 @@ RENDERCONTROL:
                                             cI.HelperSpace.Space = String.Format("<img name=""{0}"" alt="""" id=""{0}"" src=""{2}""{1} />", cI.CommonControlID, tAttribs.ToString(), ImageSource)
                                         End If
                                     Case Globals.Controls.ControlTypes.Link
-                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso _
+                                        If objControl.SecurityInfo.Disabled.IsSet AndAlso
                                             objControl.SecurityInfo.Disabled.Type = Globals.Controls.ControlBase.SecurityInfos.DisabledClass.DisabledTypes.Dynamic Then
 
                                             cI.HelperSpace.Space = objControl.SecurityInfo.Disabled.Value
@@ -2390,7 +2426,7 @@ RENDERCONTROL:
 
                     End Select
                 Catch ex As Exception
-                    If Not ex.Source Is Nothing AndAlso _
+                    If Not ex.Source Is Nothing AndAlso
                         ex.Source.IndexOf("!"c) = 0 Then
 
                         Throw Me.PrepareException(ex.Message, ex.Source, ex.InnerException)
@@ -2404,7 +2440,7 @@ RENDERCONTROL:
 
             Private _QuickControlMapCache As New Generic.Dictionary(Of String, Globals.Controls.IControlBase)
             Private Function GetControlMap(ByVal ControlID As String) As Globals.Controls.IControlBase
-                Dim rControl As Globals.Controls.IControlBase = _
+                Dim rControl As Globals.Controls.IControlBase =
                         New Globals.Controls.ControlBase(Nothing, Globals.Controls.ControlTypes.Unknown)
 
                 Dim ParentSearched As Boolean = False
@@ -2412,10 +2448,10 @@ RENDERCONTROL:
 
                 Try
 SEARCHPARENT:
-                    Dim SearchingControl As String = _
+                    Dim SearchingControl As String =
                         String.Format("{0}_{1}", WorkingInstance.CurrentID, ControlID)
 
-                    Dim IsFound As Boolean = _
+                    Dim IsFound As Boolean =
                         Me._QuickControlMapCache.ContainsKey(SearchingControl)
 
                     If IsFound Then
@@ -2430,7 +2466,7 @@ SEARCHPARENT:
                             IsFound = True
 
                             ' Prepare variables from topnode attributes before going to first child
-                            Dim ControlID_local As String = _
+                            Dim ControlID_local As String =
                                 xPathNav.GetAttribute("controlid", xPathNav.BaseURI)
 
                             If xPathNav.MoveToFirstChild() Then
@@ -2453,7 +2489,7 @@ SEARCHPARENT:
                                 Do
                                     Select Case xPathNav.Name.ToLower(CompareCulture)
                                         Case "type"
-                                            Dim xControlType As String = _
+                                            Dim xControlType As String =
                                                     xPathNav.Value
 
                                             ControlType = Me.ParseControlType(xControlType)
@@ -2462,7 +2498,7 @@ SEARCHPARENT:
                                             CallFunction = xPathNav.Value
 
                                         Case "attributes"
-                                            Dim ChildReader As Xml.XPath.XPathNavigator = _
+                                            Dim ChildReader As Xml.XPath.XPathNavigator =
                                                     xPathNav.Clone()
 
                                             If ChildReader.MoveToFirstChild() Then
@@ -2477,12 +2513,12 @@ SEARCHPARENT:
                                             End If
 
                                         Case "security"
-                                            Dim ChildReader As Xml.XPath.XPathNavigator = _
+                                            Dim ChildReader As Xml.XPath.XPathNavigator =
                                                     xPathNav.Clone()
 
                                             If ChildReader.MoveToFirstChild() Then
-                                                Dim RegisteredGroup As String = String.Empty, FriendlyName As String = String.Empty, _
-                                                    SecurityCallFunction As String = "#GLOBAL", DisabledValue As String = String.Empty, _
+                                                Dim RegisteredGroup As String = String.Empty, FriendlyName As String = String.Empty,
+                                                    SecurityCallFunction As String = "#GLOBAL", DisabledValue As String = String.Empty,
                                                     DisabledType As String = "Inherited", DisabledSet As Boolean = False
 
                                                 Do
@@ -2511,11 +2547,11 @@ SEARCHPARENT:
                                                     .FriendlyName = FriendlyName
                                                     .CallFunction = SecurityCallFunction
                                                     .Disabled.IsSet = DisabledSet
-                                                    .Disabled.Type = CType( _
-                                                                            [Enum].Parse( _
-                                                                                GetType(Globals.Controls.ControlBase.SecurityInfos.DisabledClass.DisabledTypes), _
-                                                                                DisabledType, True _
-                                                                            ), Globals.Controls.ControlBase.SecurityInfos.DisabledClass.DisabledTypes _
+                                                    .Disabled.Type = CType(
+                                                                            [Enum].Parse(
+                                                                                GetType(Globals.Controls.ControlBase.SecurityInfos.DisabledClass.DisabledTypes),
+                                                                                DisabledType, True
+                                                                            ), Globals.Controls.ControlBase.SecurityInfos.DisabledClass.DisabledTypes
                                                                         )
                                                     .Disabled.Value = DisabledValue
                                                 End With
@@ -2524,7 +2560,7 @@ SEARCHPARENT:
                                         Case "blockidstoupdate"
                                             BlockLocalUpdate = xPathNav.GetAttribute("localupdate", xPathNav.BaseURI)
 
-                                            Dim ChildReader As Xml.XPath.XPathNavigator = _
+                                            Dim ChildReader As Xml.XPath.XPathNavigator =
                                                     xPathNav.Clone()
 
                                             If ChildReader.MoveToFirstChild() Then
@@ -2614,7 +2650,7 @@ SEARCHPARENT:
                                         rControl = New Globals.Controls.VariableBlock(ControlID_local)
 
                                     Case Globals.Controls.ControlTypes.Unknown
-                                        rControl = New Globals.Controls.ControlBase( _
+                                        rControl = New Globals.Controls.ControlBase(
                                                         ControlID_local, Globals.Controls.ControlTypes.Unknown)
 
                                 End Select
@@ -2622,7 +2658,7 @@ SEARCHPARENT:
                                 With rControl
                                     If String.Compare(SecurityInfo.CallFunction, "#GLOBAL") = 0 Then
                                         SecurityInfo.CallFunction = Me._CurrentInstance.Settings.Configurations.DefaultSecurityCallFunction
-                                        If String.Compare(SecurityInfo.CallFunction, "#GLOBAL") = 0 AndAlso _
+                                        If String.Compare(SecurityInfo.CallFunction, "#GLOBAL") = 0 AndAlso
                                             Not Me._ParentInstance Is Nothing Then
 
                                             SecurityInfo.CallFunction = Me._ParentInstance.Settings.Configurations.DefaultSecurityCallFunction
@@ -2740,17 +2776,17 @@ SEARCHPARENT:
                 Get
                     Dim rObject As Object = Nothing
 
-                    Dim SessionInfo As Globals.WebServiceSessionInfo = _
-                        CType( _
-                            Me.VariablePool.GetVariableFromPool(PublicKey),  _
-                            Globals.WebServiceSessionInfo _
+                    Dim SessionInfo As Globals.WebServiceSessionInfo =
+                        CType(
+                            Me.VariablePool.GetVariableFromPool(PublicKey),
+                            Globals.WebServiceSessionInfo
                         )
 
                     If Not SessionInfo Is Nothing Then
-                        Dim cfg As System.Configuration.Configuration = _
-                                System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration( _
+                        Dim cfg As System.Configuration.Configuration =
+                                System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration(
                                     System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
-                        Dim wConfig As System.Web.Configuration.SessionStateSection = _
+                        Dim wConfig As System.Web.Configuration.SessionStateSection =
                             CType(cfg.GetSection("system.web/sessionState"), System.Web.Configuration.SessionStateSection)
                         Dim TimeoutMinute As Integer = wConfig.Timeout.Minutes
                         If TimeoutMinute = 0 Then TimeoutMinute = 20
@@ -2774,19 +2810,19 @@ SEARCHPARENT:
 
             Public Function RenderWebService(ByVal ExecuteIn As String, ByVal TemplateID As String, ByVal Arguments As Globals.ArgumentInfo.ArgumentInfoCollection) As String
                 ' call = Calling Function Providing in Query String
-                Dim callFunction As String = _
-                        String.Format( _
-                            "{0}?{1}.{2},~execParams", _
-                            ExecuteIn, _
-                            TemplateID, _
+                Dim callFunction As String =
+                        String.Format(
+                            "{0}?{1}.{2},~execParams",
+                            ExecuteIn,
+                            TemplateID,
                             SolidDevelopment.Web.General.Context.Request.QueryString.Item("call"))
 
                 Dim tAssembleResultInfo As PGlobals.Execution.AssembleResultInfo
                 If Me._ParentID Is Nothing Then
-                    tAssembleResultInfo = [Assembly].AssemblePostBackInformation( _
+                    tAssembleResultInfo = [Assembly].AssemblePostBackInformation(
                                                     callFunction, Arguments)
                 Else
-                    tAssembleResultInfo = [Assembly].AssemblePostBackInformation( _
+                    tAssembleResultInfo = [Assembly].AssemblePostBackInformation(
                                                     Me._ParentID, Me._CurrentID, callFunction, Arguments)
                 End If
 
@@ -2822,7 +2858,7 @@ SEARCHPARENT:
 
                         xmlWriter.WriteCData(CType(MethodResult, SolidDevelopment.Web.PGlobals.MapControls.ConditionalStatementResult).ConditionResult.ToString())
                     ElseIf TypeOf MethodResult Is SolidDevelopment.Web.PGlobals.MapControls.VariableBlockResult Then
-                        Dim VariableBlockResult As SolidDevelopment.Web.PGlobals.MapControls.VariableBlockResult = _
+                        Dim VariableBlockResult As SolidDevelopment.Web.PGlobals.MapControls.VariableBlockResult =
                             CType(MethodResult, SolidDevelopment.Web.PGlobals.MapControls.VariableBlockResult)
 
                         xmlWriter.WriteAttributeString("type", MethodResult.GetType().Name)
@@ -2853,8 +2889,8 @@ SEARCHPARENT:
                                     xmlWriter.WriteAttributeString("type", GetType(String).FullName)
                                 End If
 
-                                xmlWriter.WriteCData( _
-                                    CType(MethodResult, SolidDevelopment.Web.PGlobals.MapControls.VariableBlockResult).Item(key).ToString() _
+                                xmlWriter.WriteCData(
+                                    CType(MethodResult, SolidDevelopment.Web.PGlobals.MapControls.VariableBlockResult).Item(key).ToString()
                                 )
                             End If
 
@@ -2903,8 +2939,8 @@ SEARCHPARENT:
                         If Not CType(MethodResult, SolidDevelopment.Web.PGlobals.MapControls.PartialDataTable).MessageResult Is Nothing Then
                             xmlWriter.WriteStartElement("MessageResult")
                             xmlWriter.WriteAttributeString("messagetype", CType(MethodResult, SolidDevelopment.Web.PGlobals.MapControls.PartialDataTable).MessageResult.Type.ToString())
-                            xmlWriter.WriteCData( _
-                                CType(MethodResult, SolidDevelopment.Web.PGlobals.MapControls.PartialDataTable).MessageResult.Message _
+                            xmlWriter.WriteCData(
+                                CType(MethodResult, SolidDevelopment.Web.PGlobals.MapControls.PartialDataTable).MessageResult.Message
                             )
                             xmlWriter.WriteEndElement()
                         End If
@@ -2919,7 +2955,7 @@ SEARCHPARENT:
                             xmlWriter.WriteCData(CType(MethodResult, String))
                         Else
                             Try
-                                Dim SerializedValue As String = _
+                                Dim SerializedValue As String =
                                     SerializeHelpers.BinaryToBase64Serializer(MethodResult)
 
                                 xmlWriter.WriteAttributeString("type", MethodResult.GetType().FullName)
@@ -3093,7 +3129,7 @@ SEARCHPARENT:
             Private _URLMappings As URLMappingClass
 
             Public Sub New(ByVal ConfigurationContent As String)
-                If ConfigurationContent Is Nothing OrElse _
+                If ConfigurationContent Is Nothing OrElse
                     ConfigurationContent.Trim().Length = 0 Then
 
                     Throw New Exception(Globals.SystemMessages.CONFIGURATIONCONTENT & "!")
@@ -3153,7 +3189,7 @@ SEARCHPARENT:
 
                 Public ReadOnly Property AuthenticationPage() As String Implements PGlobals.ITheme.ISettings.IConfigurationClass.AuthenticationPage
                     Get
-                        Dim _AuthenticationPage As String = _
+                        Dim _AuthenticationPage As String =
                             Me.ReadConfiguration("authenticationpage")
 
                         If _AuthenticationPage Is Nothing Then _AuthenticationPage = Me.DefaultPage
@@ -3394,7 +3430,7 @@ SEARCHPARENT:
                             Dim rServiceItem As ServiceItem = Nothing
 
                             For Each sI As ServiceItem In Me
-                                If sI.ServiceType = ServiceType AndAlso _
+                                If sI.ServiceType = ServiceType AndAlso
                                     String.Compare(sI.ID, ID, True) = 0 Then
 
                                     rServiceItem = sI
@@ -3463,8 +3499,8 @@ SEARCHPARENT:
                         xPathIter = Me._ConfigurationClassNavigator.Select(String.Format("//URLMapping"))
 
                         If xPathIter.MoveNext() Then
-                            If Not Boolean.TryParse( _
-                                    xPathIter.Current.GetAttribute("active", xPathIter.Current.BaseURI), _
+                            If Not Boolean.TryParse(
+                                    xPathIter.Current.GetAttribute("active", xPathIter.Current.BaseURI),
                                     Me._IsURLMappingActive) Then
 
                                 Me._IsURLMappingActive = False
@@ -3501,7 +3537,7 @@ SEARCHPARENT:
                                             Case "Reverse"
                                                 Reverse_ID = xPathIter_in.Current.GetAttribute("id", xPathIter_in.Current.BaseURI)
 
-                                                Dim xPathIter_servicetest As System.Xml.XPath.XPathNodeIterator = _
+                                                Dim xPathIter_servicetest As System.Xml.XPath.XPathNodeIterator =
                                                     Me._ConfigurationClassNavigator.Select(String.Format("//Services/Item[@id='{0}']", Reverse_ID))
 
                                                 If xPathIter_servicetest.MoveNext() Then _
@@ -3600,7 +3636,7 @@ SEARCHPARENT:
             Private _TranslationXPathNavigator As Xml.XPath.XPathNavigator
 
             Public Sub New(ByVal TranslationContent As String)
-                If TranslationContent Is Nothing OrElse _
+                If TranslationContent Is Nothing OrElse
                     TranslationContent.Trim().Length = 0 Then
 
                     Throw New Exception(Globals.SystemMessages.TRANSLATIONCONTENT & "!")
@@ -3668,7 +3704,7 @@ SEARCHPARENT:
 
                     If xPathIter.MoveNext() Then rString = xPathIter.Current.Value
 
-                    If String.IsNullOrEmpty(rString) AndAlso _
+                    If String.IsNullOrEmpty(rString) AndAlso
                         Not Me._ParentTranslation Is Nothing Then
 
                         rString = Me._ParentTranslation.GetTranslation(ID)

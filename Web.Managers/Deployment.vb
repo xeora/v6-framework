@@ -1208,8 +1208,8 @@ RETRY_TRANSLATIONCONTENT:
 
             Select Case Me._DeploymentType
                 Case PGlobals.ThemeBase.DeploymentTypes.Development
-                    ControlsMapFile = _
-                        IO.Path.Combine( _
+                    ControlsMapFile =
+                        IO.Path.Combine(
                             Me.TemplatesPath, "ControlsMap.xml")
 
                     Dim fS As IO.FileStream = Nothing, buffer As Byte() = CType(Array.CreateInstance(GetType(Byte), 102400), Byte()), rB As Integer
@@ -1233,9 +1233,9 @@ RETRY_TRANSLATIONCONTENT:
                         If Not fS Is Nothing Then fS.Close() : GC.SuppressFinalize(fS)
                     End Try
                 Case PGlobals.ThemeBase.DeploymentTypes.Release
-                    Dim swctFileInfo As Decompiler.swctFileInfo = _
-                            Me._SWCTDecompiler.GetswctFileInfo( _
-                                    Me.TemplatesRegistration, "ControlsMap.xml" _
+                    Dim swctFileInfo As Decompiler.swctFileInfo =
+                            Me._SWCTDecompiler.GetswctFileInfo(
+                                    Me.TemplatesRegistration, "ControlsMap.xml"
                                 )
 
                     If swctFileInfo.Index > -1 Then
@@ -1266,6 +1266,11 @@ RETRY_TRANSLATIONCONTENT:
 
             Return rControlMapContent_s
         End Function
+
+        Public Sub ClearDeploymentCache()
+            If Me._DeploymentType = PGlobals.ThemeBase.DeploymentTypes.Release Then _
+                Me._SWCTDecompiler.ClearStreamBytesCache()
+        End Sub
 
 #Region " Solid Web Content Theme Decompiler "
         Protected Class Decompiler
@@ -1471,7 +1476,7 @@ RETRY_TRANSLATIONCONTENT:
                 If OutputStream Is Nothing Then Throw New Exception("OutputStream must be specified!")
 
                 ' Search in Cache First
-                Dim SearchKey As String = _
+                Dim SearchKey As String =
                     String.Format("i:{0}.l:{1}", index, length)
                 Dim InCache As Boolean = False
 
@@ -1557,6 +1562,11 @@ RETRY_TRANSLATIONCONTENT:
 
 QUICKEXIT:
                 OutputStream.Seek(0, IO.SeekOrigin.Begin)
+            End Sub
+
+            Public Sub ClearStreamBytesCache()
+                If Not Decompiler._streamBytesCache Is Nothing Then _
+                    Decompiler._streamBytesCache = Hashtable.Synchronized(New Hashtable)
             End Sub
         End Class
 #End Region

@@ -5,14 +5,11 @@ Namespace SolidDevelopment.Web.Managers
         Inherits MarshalByRefObject
         Implements PGlobals.Execution.IVariablePool
 
-        Private Enum VariablePoolTypeStatus
-            Host
-            Client
-        End Enum
+        Private Const APPLICATIONSESSIONKEYID As String = "000000000000000000000000_00000000"
 
         Private _VariablePoolID As String
         Private _RemoteVariablePoolService As System.Runtime.Remoting.Channels.Tcp.TcpServerChannel = Nothing
-        Private _VariablePoolTypeStatus As VariablePoolTypeStatus
+        Private _VariablePoolTypeStatus As PGlobals.Execution.IVariablePool.VariablePoolTypeStatus
 
         ' Cache Variables In this object Until They are Confirmed
         Private _VariableCache As Hashtable
@@ -24,33 +21,70 @@ Namespace SolidDevelopment.Web.Managers
         Private _Timer As Timers.Timer = Nothing
 
         Private _PoolLockFS As IO.FileStream = Nothing
-        Private _PoolLockFileLocation As String = _
-            IO.Path.Combine( _
-                SolidDevelopment.Web.Configurations.TemporaryRoot, _
-                String.Format( _
-                        "{0}{1}vp.lock", _
-                        Configurations.WorkingPath.WorkingPathID, _
-                        IO.Path.DirectorySeparatorChar _
-                    ) _
+        Private _PoolLockFileLocation As String =
+            IO.Path.Combine(
+                SolidDevelopment.Web.Configurations.TemporaryRoot,
+                String.Format(
+                        "{0}{1}vp.lock",
+                        Configurations.WorkingPath.WorkingPathID,
+                        IO.Path.DirectorySeparatorChar
+                    )
             )
+
+        Private _RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
+        Private _VariablePool As PGlobals.Execution.IVariablePool = Nothing
 
         Public Sub New()
             Me._VariablePoolID = String.Format("VP_{0}", SolidDevelopment.Web.Configurations.WorkingPath.WorkingPathID)
 
+            Me.RemakeVariablePoolConnections()
+        End Sub
+
+        Public ReadOnly Property VariablePoolType As PGlobals.Execution.IVariablePool.VariablePoolTypeStatus Implements PGlobals.Execution.IVariablePool.VariablePoolType
+            Get
+                Return Me._VariablePoolTypeStatus
+            End Get
+        End Property
+
+        Private Sub RemakeVariablePoolConnections()
             Me.CreateVariablePoolHostForRemoteConnections()
+
+            ' Let's set our pointer. If it is client it will be a remote connection tunnel or will throw exception
+            Me._VariablePool = Me.CreateConnectionToRemoteVariablePool(Me._RemoteVariablePoolServiceConnection)
+
+            ' VariablePool does not exists? So, hmmm, lets wait for a second, sometimes a second change so many things...
+            If Me._VariablePoolTypeStatus = PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Client AndAlso
+                Me._VariablePool Is Nothing Then _
+                System.Threading.Thread.Sleep(1000)
         End Sub
 
         Private Sub CreateVariablePoolHostForRemoteConnections()
             Try
+                ' Pool Lock File Accessiable
                 Me._PoolLockFS = New IO.FileStream(Me._PoolLockFileLocation, IO.FileMode.Create, IO.FileAccess.Write, IO.FileShare.None)
 
-                Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Host
+                ' No Exception so Create Remoting Service
+                Dim serverProvider As New System.Runtime.Remoting.Channels.BinaryServerFormatterSinkProvider
+                serverProvider.TypeFilterLevel = Runtime.Serialization.Formatters.TypeFilterLevel.Full
+
+                Me._RemoteVariablePoolService =
+                    New System.Runtime.Remoting.Channels.Tcp.TcpServerChannel(
+                        Me._VariablePoolID, Configurations.VariablePoolServicePort, serverProvider)
+
+                ' Register RemoteVariablePoolService to Remoting Service
+                System.Runtime.Remoting.Channels.ChannelServices.RegisterChannel(Me._RemoteVariablePoolService, True)
+
+                ' Register VariablePool's Service Name
+                System.Runtime.Remoting.RemotingServices.Marshal(Me, Me._VariablePoolID, GetType(VariablePoolOperationClass))
+
+                ' No Exception So Mark As Host and Create Local Variables
+                Me._VariablePoolTypeStatus = PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Host
 
                 ' Get the configuration section and set timeout and CookieMode values.
-                Dim cfg As System.Configuration.Configuration = _
-                    System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration( _
+                Dim cfg As System.Configuration.Configuration =
+                    System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration(
                                 System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
-                Dim wConfig As System.Web.Configuration.SessionStateSection = _
+                Dim wConfig As System.Web.Configuration.SessionStateSection =
                     CType(cfg.GetSection("system.web/sessionState"), System.Web.Configuration.SessionStateSection)
 
                 Me._VariableTimeout = CInt(wConfig.Timeout.TotalMinutes)
@@ -63,21 +97,8 @@ Namespace SolidDevelopment.Web.Managers
                 Me._FileAccessQueues = Hashtable.Synchronized(New Hashtable)
 
                 Me._SynchronizedObjects = Hashtable.Synchronized(New Hashtable)
-
-                Dim serverProvider As New System.Runtime.Remoting.Channels.BinaryServerFormatterSinkProvider
-                serverProvider.TypeFilterLevel = Runtime.Serialization.Formatters.TypeFilterLevel.Full
-
-                Me._RemoteVariablePoolService = _
-                    New System.Runtime.Remoting.Channels.Tcp.TcpServerChannel( _
-                        Me._VariablePoolID, Configurations.VariablePoolServicePort, serverProvider)
-
-                ' Register RemoteVariablePoolService to Remoting Service
-                System.Runtime.Remoting.Channels.ChannelServices.RegisterChannel(Me._RemoteVariablePoolService, True)
-
-                ' Register VariablePool's Service Name
-                System.Runtime.Remoting.RemotingServices.Marshal(Me, Me._VariablePoolID, GetType(VariablePoolOperationClass))
             Catch ex As IO.IOException
-                Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Client
+                Me._VariablePoolTypeStatus = PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Client
             Catch ex As Exception
                 If Not Me._PoolLockFS Is Nothing Then
                     Me._PoolLockFS.Close()
@@ -92,7 +113,7 @@ Namespace SolidDevelopment.Web.Managers
         Private Function CreateConnectionToRemoteVariablePool(ByRef RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel) As PGlobals.Execution.IVariablePool
             Dim rRemoteVariablePool As PGlobals.Execution.IVariablePool = Nothing
 
-            If Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Host Then
+            If Me._VariablePoolTypeStatus = PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Host Then
                 rRemoteVariablePool = Me
             Else
                 Dim VariablePoolExists As Boolean = False
@@ -100,17 +121,17 @@ Namespace SolidDevelopment.Web.Managers
                 Try
                     Dim clientProvider As New System.Runtime.Remoting.Channels.BinaryClientFormatterSinkProvider
 
-                    RemoteVariablePoolServiceConnection = _
+                    RemoteVariablePoolServiceConnection =
                         New System.Runtime.Remoting.Channels.Tcp.TcpClientChannel(Guid.NewGuid().ToString(), clientProvider)
                     System.Runtime.Remoting.Channels.ChannelServices.RegisterChannel(RemoteVariablePoolServiceConnection, True)
 
-                    rRemoteVariablePool = _
-                        CType( _
-                            Activator.GetObject( _
-                                GetType(PGlobals.Execution.IVariablePool), _
-                                String.Format("tcp://{0}:{1}/{2}", System.Environment.MachineName, Configurations.VariablePoolServicePort, Me._VariablePoolID) _
-                            ),  _
-                            PGlobals.Execution.IVariablePool _
+                    rRemoteVariablePool =
+                        CType(
+                            Activator.GetObject(
+                                GetType(PGlobals.Execution.IVariablePool),
+                                String.Format("tcp://{0}:{1}/{2}", System.Environment.MachineName, Configurations.VariablePoolServicePort, Me._VariablePoolID)
+                            ),
+                            PGlobals.Execution.IVariablePool
                         )
 
                     If Not rRemoteVariablePool Is Nothing Then
@@ -154,15 +175,15 @@ Namespace SolidDevelopment.Web.Managers
                             RemoteVariablePoolServiceConnection = Nothing
                         End If
 
-                        ' Try to get the ownership of being host
-                        Try
-                            Me.CreateVariablePoolHostForRemoteConnections()
+                        '' Try to get the ownership of being host
+                        'Try
+                        '    Me.CreateVariablePoolHostForRemoteConnections()
 
-                            If Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Host Then _
-                                rRemoteVariablePool = Me
-                        Catch ex As Exception
-                            ' Just Handle Exceptions
-                        End Try
+                        '    If Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Host Then _
+                        '        rRemoteVariablePool = Me
+                        'Catch ex As Exception
+                        '    Throw ex
+                        'End Try
                     End If
                 End Try
             End If
@@ -170,14 +191,14 @@ Namespace SolidDevelopment.Web.Managers
             Return rRemoteVariablePool
         End Function
 
-        Private Sub DestroyConnectionFromRemoteVariablePool(ByRef RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel)
-            Try
-                If Not RemoteVariablePoolServiceConnection Is Nothing Then _
-                    System.Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(RemoteVariablePoolServiceConnection)
-            Catch ex As Exception
-                ' Just Handle Exceptions
-            End Try
-        End Sub
+        'Private Sub DestroyConnectionFromRemoteVariablePool(ByRef RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel)
+        '    Try
+        '        If Not RemoteVariablePoolServiceConnection Is Nothing Then _
+        '            System.Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(RemoteVariablePoolServiceConnection)
+        '    Catch ex As Exception
+        '        ' Just Handle Exceptions
+        '    End Try
+        'End Sub
 
         Private ReadOnly Property FileAccessQueue(ByVal SessionKeyID As String) As Concurrent.ConcurrentQueue(Of String)
             Get
@@ -234,10 +255,15 @@ Namespace SolidDevelopment.Web.Managers
         End Property
 
         Private Function ReadVariableValue(ByVal SessionKeyID As String, ByVal name As String) As Byte()
-            Dim rValue As Byte() = _
+            Dim rValue As Byte() =
                 Me.ReadVariableValueFromCache(SessionKeyID, name)
 
-            If rValue Is Nothing Then rValue = Me.ReadVariableValueFromFile(SessionKeyID, name)
+            If rValue Is Nothing Then
+                rValue = Me.ReadVariableValueFromFile(SessionKeyID, name)
+
+                If Not rValue Is Nothing Then _
+                    Me.WriteVariableValueToCache(SessionKeyID, name, rValue)
+            End If
 
             Return rValue
         End Function
@@ -245,8 +271,25 @@ Namespace SolidDevelopment.Web.Managers
         Private Function ReadVariableValueFromCache(ByVal SessionKeyID As String, ByVal name As String) As Byte()
             Dim rValue As Byte() = Nothing
 
-            If Me._VariableCache.ContainsKey(String.Format("{0}_{1}", SessionKeyID, name)) Then _
-                rValue = CType(Me._VariableCache.Item(String.Format("{0}_{1}", SessionKeyID, name)), Byte())
+            If Me._VariableCache.ContainsKey(SessionKeyID) Then
+                Dim SessionKeysObject As Object() =
+                    CType(Me._VariableCache.Item(SessionKeyID), Object())
+
+                If Not SessionKeysObject Is Nothing AndAlso
+                    SessionKeysObject.Length = 2 Then
+
+                    Dim SessionKeysDate As Date = CType(SessionKeysObject(0), Date)
+                    SessionKeysDate = SessionKeysDate.AddMinutes(Me._VariableTimeout)
+
+                    If Date.Compare(SessionKeysDate, Date.Now) >= 0 Then
+                        Dim SessionKeysHash As Hashtable = CType(SessionKeysObject(1), Hashtable)
+
+                        If SessionKeysHash.ContainsKey(name) AndAlso
+                            Not SessionKeysHash.Item(name) Is Nothing Then _
+                            rValue = CType(SessionKeysHash.Item(name), Byte())
+                    End If
+                End If
+            End If
 
             Return rValue
         End Function
@@ -254,19 +297,27 @@ Namespace SolidDevelopment.Web.Managers
         Private Sub WriteVariableValueToCache(ByVal SessionKeyID As String, ByVal name As String, ByVal value As Byte())
             System.Threading.Monitor.Enter(Me._VariableCache.SyncRoot)
             Try
-                If Me._VariableCache.ContainsKey(String.Format("{0}_{1}", SessionKeyID, name)) Then
-                    If value Is Nothing Then
-                        Me._VariableCache.Item(String.Format("{0}_{1}", SessionKeyID, name)) = New Byte() {}
-                    Else
-                        Me._VariableCache.Item(String.Format("{0}_{1}", SessionKeyID, name)) = value
+                Dim SessionKeysObject As Object() = Nothing
+
+                If Me._VariableCache.ContainsKey(SessionKeyID) Then _
+                    SessionKeysObject = CType(Me._VariableCache.Item(SessionKeyID), Object())
+                If SessionKeysObject Is Nothing Then SessionKeysObject = New Object() {Date.Now, New Hashtable()}
+
+                Dim SessionKeysHash As Hashtable =
+                    CType(SessionKeysObject(1), Hashtable)
+
+                If value Is Nothing Then
+                    If SessionKeysHash.ContainsKey(name) Then
+                        SessionKeysHash.Remove(name)
+
+                        ' Do Also Immediate File Session Information Destroy
+                        Me.WriteVariableValueToFile(SessionKeyID, name, Nothing)
                     End If
                 Else
-                    If value Is Nothing Then
-                        Me._VariableCache.Add(String.Format("{0}_{1}", SessionKeyID, name), New Byte() {})
-                    Else
-                        Me._VariableCache.Add(String.Format("{0}_{1}", SessionKeyID, name), value)
-                    End If
+                    SessionKeysHash.Item(name) = value
                 End If
+
+                Me._VariableCache.Item(SessionKeyID) = New Object() {Date.Now, SessionKeysHash}
             Finally
                 System.Threading.Monitor.Exit(Me._VariableCache.SyncRoot)
             End Try
@@ -275,7 +326,7 @@ Namespace SolidDevelopment.Web.Managers
         Private Function IsVariableExpired(ByRef vpsFS As IO.FileStream) As Boolean
             Dim rBoolean As Boolean = True
 
-            If Not vpsFS Is Nothing AndAlso _
+            If Not vpsFS Is Nothing AndAlso
                 vpsFS.CanSeek AndAlso vpsFS.CanRead Then
 
                 ' "Expires: " length is 9
@@ -286,7 +337,7 @@ Namespace SolidDevelopment.Web.Managers
                 vpsFS.Read(bytes, 0, 14)
 
                 Dim ExpiresDateTimeLong As Long, ExpiresDateTime As Date
-                Long.TryParse( _
+                Long.TryParse(
                     System.Text.Encoding.UTF8.GetString(bytes), ExpiresDateTimeLong)
                 ExpiresDateTime = Helpers.DateTime.FormatDateTime(ExpiresDateTimeLong)
 
@@ -299,12 +350,12 @@ Namespace SolidDevelopment.Web.Managers
         End Function
 
         Private Sub ExtendVariableLife(ByRef vpsFS As IO.FileStream)
-            If Not vpsFS Is Nothing AndAlso _
+            If Not vpsFS Is Nothing AndAlso
                 vpsFS.CanSeek AndAlso vpsFS.CanWrite Then
 
                 ' "Expires: YYYYMMDDhhmmss" length is 23 + NewLineBytes
-                Dim bytes As Byte() = _
-                    System.Text.Encoding.UTF8.GetBytes( _
+                Dim bytes As Byte() =
+                    System.Text.Encoding.UTF8.GetBytes(
                         String.Format("Expires: {0}{1}", Helpers.DateTime.FormatDateTime(Date.Now.AddMinutes(Me._VariableTimeout), Helpers.DateTime.DateTimeFormat.DateTime), Environment.NewLine))
 
                 vpsFS.Seek(0, IO.SeekOrigin.Begin)
@@ -317,19 +368,19 @@ Namespace SolidDevelopment.Web.Managers
         Private Function ReadVariableValueFromFile(ByVal SessionKeyID As String, ByVal name As String) As Byte()
             Dim rValue As Byte() = Nothing
 
-            Dim vpService As String = _
-                        IO.Path.Combine( _
-                            SolidDevelopment.Web.Configurations.TemporaryRoot, _
-                            String.Format( _
-                                    "{0}{2}PoolSessions{2}{1}{2}vmap.dat", _
-                                    Configurations.WorkingPath.WorkingPathID, _
-                                    SessionKeyID, _
-                                    IO.Path.DirectorySeparatorChar _
-                                ) _
+            Dim vpService As String =
+                        IO.Path.Combine(
+                            SolidDevelopment.Web.Configurations.TemporaryRoot,
+                            String.Format(
+                                    "{0}{2}PoolSessions{2}{1}{2}vmap.dat",
+                                    Configurations.WorkingPath.WorkingPathID,
+                                    SessionKeyID,
+                                    IO.Path.DirectorySeparatorChar
+                                )
                         )
 
             If IO.File.Exists(vpService) Then
-                Dim RequestKey As String = _
+                Dim RequestKey As String =
                     String.Format("{0}_{1}", Date.Now.Ticks, name)
                 Me.FileAccessQueue(SessionKeyID).Enqueue(RequestKey)
 
@@ -404,21 +455,21 @@ Namespace SolidDevelopment.Web.Managers
         End Function
 
         Private Sub WriteVariableValueToFile(ByVal SessionKeyID As String, ByVal name As String, ByVal value As Byte())
-            Dim vpService As String = _
-                    IO.Path.Combine( _
-                        SolidDevelopment.Web.Configurations.TemporaryRoot, _
-                        String.Format( _
-                                "{0}{2}PoolSessions{2}{1}{2}vmap.dat", _
-                                Configurations.WorkingPath.WorkingPathID, _
-                                SessionKeyID, _
-                                IO.Path.DirectorySeparatorChar _
-                            ) _
+            Dim vpService As String =
+                    IO.Path.Combine(
+                        SolidDevelopment.Web.Configurations.TemporaryRoot,
+                        String.Format(
+                                "{0}{2}PoolSessions{2}{1}{2}vmap.dat",
+                                Configurations.WorkingPath.WorkingPathID,
+                                SessionKeyID,
+                                IO.Path.DirectorySeparatorChar
+                            )
                     )
 
             If Not IO.Directory.Exists(IO.Path.GetDirectoryName(vpService)) Then _
                 IO.Directory.CreateDirectory(IO.Path.GetDirectoryName(vpService))
 
-            Dim RequestKey As String = _
+            Dim RequestKey As String =
                     String.Format("{0}_{1}", Date.Now.Ticks, name)
             Me.FileAccessQueue(SessionKeyID).Enqueue(RequestKey)
 
@@ -493,7 +544,7 @@ Namespace SolidDevelopment.Web.Managers
             Dim rBytes As Byte() = Nothing
 
             Select Case Me._VariablePoolTypeStatus
-                Case VariablePoolTypeStatus.Host
+                Case PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Host
                     If Not String.IsNullOrWhiteSpace(name) Then
                         Dim syncObject As Object = Me.SynchronizedObject(SessionKeyID, name)
 
@@ -510,21 +561,19 @@ Namespace SolidDevelopment.Web.Managers
                         End Try
                     End If
                 Case Else
-                    Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                    Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
-                        Me.CreateConnectionToRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
                     Dim eO As Boolean = False
                     Try
-                        rBytes = RemoteVariablePool.GetVariableFromPool(SessionKeyID, name)
+                        If Not Me._VariablePool Is Nothing AndAlso Me._VariablePool.PingToRemoteEndPoint() Then
+                            rBytes = Me._VariablePool.GetVariableFromPool(SessionKeyID, name)
+                        Else
+                            Throw New Exception("VariablePool Connection does not exists!")
+                        End If
                     Catch ex As Exception
                         eO = True
                     End Try
 
-                    Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
                     If eO Then
-                        Threading.Thread.Sleep(1000)
+                        Me.RemakeVariablePoolConnections()
 
                         rBytes = Me.GetVariableFromPool(SessionKeyID, name)
                     End If
@@ -535,8 +584,8 @@ Namespace SolidDevelopment.Web.Managers
 
         Public Sub DoMassRegistration(ByVal SessionKeyID As String, ByVal serializedSerializableDictionary As Byte()) Implements PGlobals.Execution.IVariablePool.DoMassRegistration
             Select Case Me._VariablePoolTypeStatus
-                Case VariablePoolTypeStatus.Host
-                    If Not serializedSerializableDictionary Is Nothing AndAlso _
+                Case PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Host
+                    If Not serializedSerializableDictionary Is Nothing AndAlso
                     serializedSerializableDictionary.Length > 0 Then
 
                         Dim forStream As IO.Stream = Nothing
@@ -558,10 +607,10 @@ Namespace SolidDevelopment.Web.Managers
                             End If
                         End Try
 
-                        If Not tObject Is Nothing AndAlso _
+                        If Not tObject Is Nothing AndAlso
                             TypeOf tObject Is PGlobals.Execution.SerializableDictionary Then
 
-                            Dim sD As PGlobals.Execution.SerializableDictionary = _
+                            Dim sD As PGlobals.Execution.SerializableDictionary =
                                 CType(tObject, PGlobals.Execution.SerializableDictionary)
 
                             For Each KVP As PGlobals.Execution.SerializableDictionary.SerializableKeyValuePair In sD
@@ -570,31 +619,29 @@ Namespace SolidDevelopment.Web.Managers
                         End If
                     End If
                 Case Else
-                    Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                    Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
-                        Me.CreateConnectionToRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
                     Dim eO As Boolean = False
                     Try
-                        RemoteVariablePool.DoMassRegistration(SessionKeyID, serializedSerializableDictionary)
+                        If Not Me._VariablePool Is Nothing AndAlso Me._VariablePool.PingToRemoteEndPoint() Then
+                            Me._VariablePool.DoMassRegistration(SessionKeyID, serializedSerializableDictionary)
+                        Else
+                            Throw New Exception("VariablePool Connection does not exists!")
+                        End If
                     Catch ex As Exception
                         eO = True
                     End Try
 
-                    Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
                     If eO Then
-                        Threading.Thread.Sleep(1000)
+                        Me.RemakeVariablePoolConnections()
 
                         Me.DoMassRegistration(SessionKeyID, serializedSerializableDictionary)
                     End If
             End Select
         End Sub
 
-        Private Delegate Sub RegisterVariableToPoolDelegate(ByVal SessionKeyID As String, ByVal name As String, ByVal serializedValue As Byte())
+        'Private Delegate Sub RegisterVariableToPoolDelegate(ByVal SessionKeyID As String, ByVal name As String, ByVal serializedValue As Byte())
         Public Sub RegisterVariableToPool(ByVal SessionKeyID As String, ByVal name As String, ByVal serializedValue As Byte()) Implements PGlobals.Execution.IVariablePool.RegisterVariableToPool
             Select Case Me._VariablePoolTypeStatus
-                Case VariablePoolTypeStatus.Host
+                Case PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Host
                     If String.IsNullOrWhiteSpace(name) Then Exit Sub
 
                     Dim syncObject As Object = Me.SynchronizedObject(SessionKeyID, name)
@@ -610,21 +657,19 @@ Namespace SolidDevelopment.Web.Managers
                         Me.SynchronizedObject(SessionKeyID, name) = syncObject
                     End Try
                 Case Else
-                    Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                    Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
-                        Me.CreateConnectionToRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
                     Dim eO As Boolean = False
                     Try
-                        RemoteVariablePool.RegisterVariableToPool(SessionKeyID, name, serializedValue)
+                        If Not Me._VariablePool Is Nothing AndAlso Me._VariablePool.PingToRemoteEndPoint() Then
+                            Me._VariablePool.RegisterVariableToPool(SessionKeyID, name, serializedValue)
+                        Else
+                            Throw New Exception("VariablePool Connection does not exists!")
+                        End If
                     Catch ex As Exception
                         eO = True
                     End Try
 
-                    Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
                     If eO Then
-                        Threading.Thread.Sleep(1000)
+                        Me.RemakeVariablePoolConnections()
 
                         Me.RegisterVariableToPool(SessionKeyID, name, serializedValue)
                     End If
@@ -633,24 +678,22 @@ Namespace SolidDevelopment.Web.Managers
 
         Public Sub UnRegisterVariableFromPool(ByVal SessionKeyID As String, ByVal name As String) Implements PGlobals.Execution.IVariablePool.UnRegisterVariableFromPool
             Select Case Me._VariablePoolTypeStatus
-                Case VariablePoolTypeStatus.Host
+                Case PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Host
                     Me.RegisterVariableToPool(SessionKeyID, name, Nothing)
                 Case Else
-                    Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                    Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
-                        Me.CreateConnectionToRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
                     Dim eO As Boolean = False
                     Try
-                        RemoteVariablePool.UnRegisterVariableFromPool(SessionKeyID, name)
+                        If Not Me._VariablePool Is Nothing AndAlso Me._VariablePool.PingToRemoteEndPoint() Then
+                            Me._VariablePool.UnRegisterVariableFromPool(SessionKeyID, name)
+                        Else
+                            Throw New Exception("VariablePool Connection does not exists!")
+                        End If
                     Catch ex As Exception
                         eO = True
                     End Try
 
-                    Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
                     If eO Then
-                        Threading.Thread.Sleep(1000)
+                        Me.RemakeVariablePoolConnections()
 
                         Me.UnRegisterVariableFromPool(SessionKeyID, name)
                     End If
@@ -659,141 +702,143 @@ Namespace SolidDevelopment.Web.Managers
 
         Public Sub TransferRegistrations(ByVal FromSessionKeyID As String, ByVal CurrentSessionKeyID As String) Implements PGlobals.Execution.IVariablePool.TransferRegistrations
             Select Case Me._VariablePoolTypeStatus
-                Case VariablePoolTypeStatus.Host
-                    Me.ConfirmRegistrations(FromSessionKeyID)
-
-                    Dim vpServiceFrom As String = _
-                                IO.Path.Combine( _
-                                    SolidDevelopment.Web.Configurations.TemporaryRoot, _
-                                    String.Format( _
-                                            "{0}{2}PoolSessions{2}{1}", _
-                                            Configurations.WorkingPath.WorkingPathID, _
-                                            FromSessionKeyID, _
-                                            IO.Path.DirectorySeparatorChar _
-                                        ) _
-                                )
-
-                    If IO.Directory.Exists(vpServiceFrom) Then
-                        Dim vpServiceTo As String = _
-                                IO.Path.Combine( _
-                                    SolidDevelopment.Web.Configurations.TemporaryRoot, _
-                                    String.Format( _
-                                            "{0}{2}PoolSessions{2}{1}", _
-                                            Configurations.WorkingPath.WorkingPathID, _
-                                            CurrentSessionKeyID, _
-                                            IO.Path.DirectorySeparatorChar _
-                                        ) _
-                                )
-
-                        Dim dI As New IO.DirectoryInfo(vpServiceFrom)
-                        If Not dI.Exists Then dI.Create()
-
-                        For Each fI As IO.FileInfo In dI.GetFiles("*.dat")
-                            Try
-                                fI.CopyTo( _
-                                    IO.Path.Combine(vpServiceTo, fI.Name), True)
-                            Catch ex As Exception
-                                ' Just Handle Exceptions
-                            End Try
-                        Next
-                    End If
+                Case PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Host
+                    If Me._VariableCache.ContainsKey(FromSessionKeyID) Then _
+                        Me._VariableCache.Item(CurrentSessionKeyID) =
+                            Me._VariableCache.Item(FromSessionKeyID)
                 Case Else
-                    Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                    Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
-                        Me.CreateConnectionToRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
                     Dim eO As Boolean = False
                     Try
-                        RemoteVariablePool.TransferRegistrations(FromSessionKeyID, CurrentSessionKeyID)
+                        If Not Me._VariablePool Is Nothing AndAlso Me._VariablePool.PingToRemoteEndPoint() Then
+                            Me._VariablePool.TransferRegistrations(FromSessionKeyID, CurrentSessionKeyID)
+                        Else
+                            Throw New Exception("VariablePool Connection does not exists!")
+                        End if
                     Catch ex As Exception
                         eO = True
                     End Try
 
-                    Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
                     If eO Then
-                        Threading.Thread.Sleep(1000)
+                        Me.RemakeVariablePoolConnections()
 
                         Me.TransferRegistrations(FromSessionKeyID, CurrentSessionKeyID)
                     End If
             End Select
         End Sub
 
-        Public Sub ConfirmRegistrations(ByVal SessionKeyID As String) Implements PGlobals.Execution.IVariablePool.ConfirmRegistrations
+        Private Sub ConfirmRegistrations() 'Implements PGlobals.Execution.IVariablePool.ConfirmRegistrations
             Select Case Me._VariablePoolTypeStatus
-                Case VariablePoolTypeStatus.Host
-                    Dim tKeyList As New System.Collections.Generic.List(Of String)
-
+                Case PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Host
                     System.Threading.Monitor.Enter(Me._VariableCache.SyncRoot)
                     Try
-                        For Each key As String In Me._VariableCache.Keys
-                            If key.IndexOf(SessionKeyID) > -1 Then
-                                Dim eO As Boolean = False
-                                Dim varName As String = key.Substring(SessionKeyID.Length + 1)
+                        For Each SessionKeyID As String In Me._VariableCache.Keys
+                            Dim SessionKeysObject As Object() =
+                                CType(Me._VariableCache.Item(SessionKeyID), Object())
 
-                                Try
-                                    Me.WriteVariableValueToFile(SessionKeyID, varName, CType(Me._VariableCache.Item(key), Byte()))
-                                Catch ex As Exception
-                                    ' Write To File System Generally Occurs
-                                    ' Because of that, keep this variable in the memory
-                                    eO = True
+                            If Not SessionKeysObject Is Nothing AndAlso
+                                SessionKeysObject.Length = 2 Then
 
-                                    Try
-                                        If Not System.Diagnostics.EventLog.SourceExists("XeoraCube") Then System.Diagnostics.EventLog.CreateEventSource("XeoraCube", "XeoraCube")
+                                Dim SessionKeysDate As Date =
+                                    CType(SessionKeysObject(0), Date)
+                                SessionKeysDate = SessionKeysDate.AddMinutes(Me._VariableTimeout)
 
-                                        System.Diagnostics.EventLog.WriteEntry("XeoraCube", _
-                                            " --- Variable Pool Registration Exception --- " & Environment.NewLine & Environment.NewLine & _
-                                            ex.ToString(), _
-                                            EventLogEntryType.Error _
-                                        )
-                                    Catch ex02 As Exception
-                                        ' Just Handle Exception
-                                    End Try
-                                End Try
+                                If Date.Compare(SessionKeysDate, Date.Now) >= 0 Then
+                                    Dim SessionKeysHash As Hashtable =
+                                        CType(SessionKeysObject(1), Hashtable)
 
-                                If Not eO Then tKeyList.Add(key)
+                                    If Not SessionKeysHash Is Nothing Then
+                                        For Each varName As String In SessionKeysHash.Keys
+                                            Try
+                                                Me.WriteVariableValueToFile(SessionKeyID, varName, CType(SessionKeysHash.Item(varName), Byte()))
+                                            Catch ex As Exception
+                                                ' Write To File System Generally Occurs
+                                                ' However, this application is already correpted. That's why just log to see what's going on...
+                                                Try
+                                                    If Not System.Diagnostics.EventLog.SourceExists("XeoraCube") Then System.Diagnostics.EventLog.CreateEventSource("XeoraCube", "XeoraCube")
+
+                                                    System.Diagnostics.EventLog.WriteEntry("XeoraCube",
+                                                        " --- Variable Pool Registration Exception --- " & Environment.NewLine & Environment.NewLine &
+                                                        ex.ToString(),
+                                                        EventLogEntryType.Error
+                                                    )
+                                                Catch ex02 As Exception
+                                                    ' Just Handle Exception
+                                                End Try
+                                            End Try
+                                        Next
+                                    End If
+                                End If
                             End If
-                        Next
-
-                        For Each LI As String In tKeyList
-                            If Me._VariableCache.ContainsKey(LI) Then Me._VariableCache.Remove(LI)
                         Next
                     Finally
                         System.Threading.Monitor.Exit(Me._VariableCache.SyncRoot)
                     End Try
-                Case Else
-                    Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                    Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
-                        Me.CreateConnectionToRemoteVariablePool(RemoteVariablePoolServiceConnection)
+                    'Case Else
+                    '    Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
+                    '    Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
+                    '        Me.CreateConnectionToRemoteVariablePool(RemoteVariablePoolServiceConnection)
 
-                    Dim eO As Boolean = False
-                    Try
-                        RemoteVariablePool.ConfirmRegistrations(SessionKeyID)
-                    Catch ex As Exception
-                        eO = True
-                    End Try
+                    '    Dim eO As Boolean = False
+                    '    Try
+                    '        RemoteVariablePool.ConfirmRegistrations(SessionKeyID)
+                    '    Catch ex As Exception
+                    '        eO = True
+                    '    End Try
 
-                    Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
+                    '    Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
 
-                    If eO Then
-                        Threading.Thread.Sleep(1000)
+                    '    If eO Then
+                    '        Threading.Thread.Sleep(1000)
 
-                        Me.ConfirmRegistrations(SessionKeyID)
-                    End If
+                    '        Me.ConfirmRegistrations(SessionKeyID)
+                    '    End If
             End Select
         End Sub
 
         Public Sub DoCleanUp() Implements PGlobals.Execution.IVariablePool.DoCleanUp
             Select Case Me._VariablePoolTypeStatus
-                Case VariablePoolTypeStatus.Host
-                    Dim vpLocation As String = _
-                        IO.Path.Combine( _
-                            SolidDevelopment.Web.Configurations.TemporaryRoot, _
-                            String.Format( _
-                                "{0}{1}PoolSessions{1}", _
-                                Configurations.WorkingPath.WorkingPathID, _
-                                IO.Path.DirectorySeparatorChar _
-                            ) _
+                Case PGlobals.Execution.IVariablePool.VariablePoolTypeStatus.Host
+                    ' First Clean Up Cache
+                    System.Threading.Monitor.Enter(Me._VariableCache.SyncRoot)
+                    Try
+                        Dim CleanUpSessionKeysIDList As New Generic.List(Of String)
+
+                        For Each SessionKeyID As String In Me._VariableCache.Keys
+                            If String.Compare(VariablePoolOperationClass.APPLICATIONSESSIONKEYID, SessionKeyID) = 0 Then Continue For
+
+                            Dim SessionKeysObject As Object() =
+                                CType(Me._VariableCache.Item(SessionKeyID), Object())
+
+                            If Not SessionKeysObject Is Nothing AndAlso
+                                SessionKeysObject.Length = 2 Then
+
+                                Dim SessionKeysDate As Date = CType(SessionKeysObject(0), Date)
+                                SessionKeysDate = SessionKeysDate.AddMinutes(Me._VariableTimeout)
+
+                                If Date.Compare(SessionKeysDate, Date.Now) <= 0 Then _
+                                    CleanUpSessionKeysIDList.Add(SessionKeyID)
+                            Else
+                                CleanUpSessionKeysIDList.Add(SessionKeyID)
+                            End If
+                        Next
+
+                        For Each SessionKeyID As String In CleanUpSessionKeysIDList
+                            If Me._VariableCache.ContainsKey(SessionKeyID) Then _
+                                Me._VariableCache.Remove(SessionKeyID)
+                        Next
+                    Finally
+                        System.Threading.Monitor.Exit(Me._VariableCache.SyncRoot)
+                    End Try
+
+                    ' Now Do the same thing for variable cache files
+                    Dim vpLocation As String =
+                        IO.Path.Combine(
+                            SolidDevelopment.Web.Configurations.TemporaryRoot,
+                            String.Format(
+                                "{0}{1}PoolSessions{1}",
+                                Configurations.WorkingPath.WorkingPathID,
+                                IO.Path.DirectorySeparatorChar
+                            )
                         )
 
                     If IO.Directory.Exists(vpLocation) Then
@@ -801,14 +846,14 @@ Namespace SolidDevelopment.Web.Managers
                             Dim IsExpired As Boolean = False
 
                             Dim vpsFS As IO.FileStream = Nothing
-                            Dim vpService As String = _
-                                IO.Path.Combine( _
-                                    vpLocation, _
-                                    String.Format( _
-                                        "{0}{1}vmap.dat", _
-                                        IO.Path.GetFileName(Path), _
-                                        IO.Path.DirectorySeparatorChar _
-                                    ) _
+                            Dim vpService As String =
+                                IO.Path.Combine(
+                                    vpLocation,
+                                    String.Format(
+                                        "{0}{1}vmap.dat",
+                                        IO.Path.GetFileName(Path),
+                                        IO.Path.DirectorySeparatorChar
+                                    )
                                 )
 
                             Try
@@ -831,25 +876,9 @@ Namespace SolidDevelopment.Web.Managers
                             End If
                         Next
                     End If
-                Case Else
-                    Dim RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                    Dim RemoteVariablePool As PGlobals.Execution.IVariablePool = _
-                        Me.CreateConnectionToRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
-                    Dim eO As Boolean = False
-                    Try
-                        RemoteVariablePool.DoCleanUp()
-                    Catch ex As Exception
-                        eO = True
-                    End Try
-
-                    Me.DestroyConnectionFromRemoteVariablePool(RemoteVariablePoolServiceConnection)
-
-                    If eO Then
-                        Threading.Thread.Sleep(1000)
-
-                        Me.DoCleanUp()
-                    End If
+                    'Case Else
+                    '    If Me._VariablePool.PingToRemoteEndPoint() Then _
+                    '        Me._VariablePool.DoCleanUp()
             End Select
         End Sub
 
@@ -872,10 +901,19 @@ Namespace SolidDevelopment.Web.Managers
         End Function
 
         Protected Overrides Sub Finalize()
+            Me.ConfirmRegistrations()
+
             If Not Me._Timer Is Nothing Then
                 Me._Timer.Enabled = False
                 Me._Timer.Dispose()
             End If
+
+            Try
+                If Not Me._RemoteVariablePoolServiceConnection Is Nothing Then _
+                    System.Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(Me._RemoteVariablePoolServiceConnection)
+            Catch ex As Exception
+                ' Just Handle Exceptions
+            End Try
 
             Try
                 If Not Me._RemoteVariablePoolService Is Nothing Then _

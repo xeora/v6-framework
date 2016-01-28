@@ -268,22 +268,22 @@ Namespace SolidDevelopment.Web.Managers
             ' !--
 
             Try
-                ThemeDI = New IO.DirectoryInfo( _
-                                    IO.Path.Combine( _
-                                        Web.Configurations.PyhsicalRoot, _
-                                        String.Format("{0}Themes", Web.Configurations.ApplicationRoot.FileSystemImplementation) _
-                                    ) _
+                ThemeDI = New IO.DirectoryInfo(
+                                    IO.Path.Combine(
+                                        Web.Configurations.PyhsicalRoot,
+                                        String.Format("{0}Themes", Web.Configurations.ApplicationRoot.FileSystemImplementation)
+                                    )
                                 )
 
                 Dim ThemePassword As Byte() = Nothing, ThemePasswordBase64 As String
 
                 ' Deployment Type = Release
                 For Each FI As IO.FileInfo In ThemeDI.GetFiles("*.swct")
-                    ThemePasswordBase64 = _
-                        System.Configuration.ConfigurationManager.AppSettings.Item( _
-                                                String.Format("{0}_Password", _
-                                                    IO.Path.GetFileNameWithoutExtension(FI.Name) _
-                                                ) _
+                    ThemePasswordBase64 =
+                        System.Configuration.ConfigurationManager.AppSettings.Item(
+                                                String.Format("{0}_Password",
+                                                    IO.Path.GetFileNameWithoutExtension(FI.Name)
+                                                )
                                             )
 
                     Try
@@ -298,13 +298,13 @@ Namespace SolidDevelopment.Web.Managers
                     ThemeTranslations = Managers.ThemeDeployment.AvailableTranslationInfos(ThemeID, ThemePassword)
                     Assembly.QueryThemeAddons(ThemeID, ThemeAddons)
 
-                    rThemeInfoCollection.Add( _
-                                New PGlobals.ThemeInfo( _
-                                    PGlobals.ThemeBase.DeploymentTypes.Release, _
-                                    ThemeID, _
-                                    ThemeTranslations, _
-                                    ThemeAddons _
-                                ) _
+                    rThemeInfoCollection.Add(
+                                New PGlobals.ThemeInfo(
+                                    PGlobals.ThemeBase.DeploymentTypes.Release,
+                                    ThemeID,
+                                    ThemeTranslations,
+                                    ThemeAddons
+                                )
                             )
                 Next
                 ' !--
@@ -316,13 +316,13 @@ Namespace SolidDevelopment.Web.Managers
                         ThemeTranslations = Managers.ThemeDeployment.AvailableTranslationInfos(ThemeID, Nothing)
                         Assembly.QueryThemeAddons(ThemeID, ThemeAddons)
 
-                        rThemeInfoCollection.Add( _
-                                    New PGlobals.ThemeInfo( _
-                                        PGlobals.ThemeBase.DeploymentTypes.Development, _
-                                        ThemeID, _
-                                        ThemeTranslations, _
-                                        ThemeAddons _
-                                    ) _
+                        rThemeInfoCollection.Add(
+                                    New PGlobals.ThemeInfo(
+                                        PGlobals.ThemeBase.DeploymentTypes.Development,
+                                        ThemeID,
+                                        ThemeTranslations,
+                                        ThemeAddons
+                                    )
                                 )
                     End If
                 Next
@@ -333,6 +333,10 @@ Namespace SolidDevelopment.Web.Managers
 
             Return rThemeInfoCollection
         End Function
+
+        Public Sub ClearThemeCache()
+            Me._Theme.ClearThemeCache()
+        End Sub
 
         Private Sub PrepareServiceSettings()
             If String.IsNullOrEmpty(Me._ServiceID) Then _

@@ -4,3 +4,4 @@ P:\XeoraCube\Web.PlugInsLoader\obj\x64\Debug\Resources.resources
 P:\XeoraCube\Web.PlugInsLoader\obj\x64\Debug\Web.PlugInsLoader.vbproj.GenerateResource.Cache
 P:\XeoraCube\Web.PlugInsLoader\obj\x64\Debug\WebPlugInsLoader.dll
 P:\XeoraCube\Web.PlugInsLoader\obj\x64\Debug\WebPlugInsLoader.pdb
+P:\XeoraCube\Web.PlugInsLoader\obj\x64\Debug\Web.PlugInsLoader.vbprojResolveAssemblyReference.cache

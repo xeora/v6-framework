@@ -1,0 +1,6 @@
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\bin\Xeora.AddInLoader.dll
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\bin\Xeora.AddInLoader.pdb
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Release\Resources.resources
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Release\Xeora.AddInLoader.vbproj.GenerateResource.Cache
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Release\Xeora.AddInLoader.dll
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Release\Xeora.AddInLoader.pdb

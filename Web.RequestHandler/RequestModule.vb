@@ -2,6 +2,8 @@ Namespace SolidDevelopment.Web
     Public NotInheritable Class RequestModule
         Implements System.Web.IHttpModule
 
+        Private Shared _QuickAccess As RequestModule = Nothing
+
         Private Shared _pInitialized As Boolean = False
         Private Shared _pApplicationID As String = String.Empty
         Private Shared _pApplicationLocation As String = String.Empty
@@ -74,6 +76,11 @@ Namespace SolidDevelopment.Web
             End Property
         End Class
 
+
+        Public Sub New()
+            RequestModule._QuickAccess = Me
+        End Sub
+
         Public Sub Init(ByVal app As System.Web.HttpApplication) Implements System.Web.IHttpModule.Init
             ' Application Domain UnHandled Exception Event Handling Defination
             Try
@@ -93,8 +100,6 @@ Namespace SolidDevelopment.Web
             AddHandler app.ReleaseRequestState, New EventHandler(AddressOf Me.OnReleaseRequestState)
             AddHandler app.EndRequest, New EventHandler(AddressOf Me.OnEndRequest)
             ' !---
-
-            RequestModule._VPService = New SolidDevelopment.Web.Managers.VariablePoolOperationClass()
 
             Me.LoadApplication(False)
 
@@ -156,7 +161,7 @@ Namespace SolidDevelopment.Web
                 CType(source, System.Web.HttpApplication)
 
             ' Check URL contains RootPath (~) modifier
-            Dim RootPath As String = _
+            Dim RootPath As String =
                 app.Context.Request.RawUrl
 
             If RootPath.IndexOf("~/") > -1 Then
@@ -224,11 +229,14 @@ Namespace SolidDevelopment.Web
                         If Not sessionData Is Nothing Then
                             If Date.Compare(Date.Now, sessionData.Expires) <= 0 Then
                                 sessionData.Expires = Date.Now.AddMinutes(RequestModule._pTimeout)
-                            Else
-                                ' Remove Session Data From HashTable
-                                RequestModule._pSessionItems.Remove(sessionID)
 
-                                sessionData = Nothing
+                                RequestModule._pSessionItems(sessionID) = sessionData
+                            Else
+                                ' Remove Items From Session
+                                sessionData.Items.Clear()
+                                sessionData.Expires = Date.Now.AddMinutes(RequestModule._pTimeout)
+
+                                RequestModule._pSessionItems(sessionID) = sessionData
                             End If
                         End If
                     Else
@@ -305,7 +313,7 @@ Namespace SolidDevelopment.Web
                 CType(context.Items.Item("_sys_TemplateRequest"), Boolean)
 
             ' WAIT UNTIL CONFIRMATION FINISHES!
-            If IsTemplateRequest Then SolidDevelopment.Web.General.ConfirmVariables()
+            'If IsTemplateRequest Then SolidDevelopment.Web.General.ConfirmVariables()
 
             If Not RequestModule._HttpContextTable Is Nothing AndAlso _
                 Not String.IsNullOrEmpty(RequestID) Then
@@ -353,6 +361,18 @@ Namespace SolidDevelopment.Web
         '
         Private Sub OnEndRequest(ByVal source As Object, ByVal args As EventArgs)
             CType(source, System.Web.HttpApplication).CompleteRequest()
+        End Sub
+
+        Public Shared Sub ReloadApplication(ByVal RequestID As String)
+            Dim Context As System.Web.HttpContext =
+                RequestModule.Context(RequestID)
+
+            RequestModule._QuickAccess.Dispose()
+
+            If Not Context Is Nothing Then
+                Context.Response.Redirect(Context.Request.RawUrl)
+                Context.Response.End()
+            End If
         End Sub
 
         Public Shared ReadOnly Property VariablePool() As SolidDevelopment.Web.Managers.VariablePoolOperationClass
@@ -427,9 +447,20 @@ Namespace SolidDevelopment.Web
         Private Sub LoadApplication(ByVal ForceReload As Boolean)
             If Not ForceReload AndAlso Not String.IsNullOrEmpty(RequestModule._pApplicationID) Then Exit Sub
 
+            Dim CacheRootLocation As String = _
+                IO.Path.Combine( _
+                    SolidDevelopment.Web.Configurations.TemporaryRoot, _
+                    SolidDevelopment.Web.Configurations.WorkingPath.WorkingPathID _
+                )
+            If Not IO.Directory.Exists(CacheRootLocation) Then _
+                IO.Directory.CreateDirectory(CacheRootLocation)
+
+            If RequestModule._VPService Is Nothing Then _
+                RequestModule._VPService = New SolidDevelopment.Web.Managers.VariablePoolOperationClass()
+
             If ForceReload Then
                 RequestModule.VariablePool.UnRegisterVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
-                RequestModule.VariablePool.ConfirmRegistrations(RequestModule.SESSIONKEYID)
+                'RequestModule.VariablePool.ConfirmRegistrations(RequestModule.SESSIONKEYID)
             End If
 
             Dim ApplicationID As Byte() = _
@@ -465,7 +496,7 @@ Namespace SolidDevelopment.Web
                         RequestModule.SESSIONKEYID, "ApplicationID", _
                         System.Text.Encoding.UTF8.GetBytes(RequestModule._pApplicationID) _
                     )
-                    RequestModule.VariablePool.ConfirmRegistrations(RequestModule.SESSIONKEYID)
+                    'RequestModule.VariablePool.ConfirmRegistrations(RequestModule.SESSIONKEYID)
 
                     If Not IO.Directory.Exists(RequestModule._pApplicationLocation) Then _
                         IO.Directory.CreateDirectory(RequestModule._pApplicationLocation)
@@ -480,17 +511,20 @@ Namespace SolidDevelopment.Web
                     Dim DI As New IO.DirectoryInfo(ThemeDllsLocation)
 
                     For Each fI As IO.FileInfo In DI.GetFiles()
-                        If Not IO.File.Exists( _
+                        If Not IO.File.Exists(
                             IO.Path.Combine(RequestModule._pApplicationLocation, fI.Name)) Then
 
                             Try
-                                fI.CopyTo( _
+                                fI.CopyTo(
                                     IO.Path.Combine(RequestModule._pApplicationLocation, fI.Name), True)
                             Catch ex As Exception
                                 ' Just Handle Exceptions
                             End Try
                         End If
                     Next
+
+                    RequestModule.VariablePool.RegisterVariableToPool(
+                        RequestModule.SESSIONKEYID, String.Format("{0}_Command", RequestModule._pApplicationID), System.Text.Encoding.UTF32.GetBytes("ClearThemeCache"))
                 Catch ex As Exception
                     Throw New Exception(String.Format("{0}!", SolidDevelopment.Web.Globals.SystemMessages.SYSTEM_APPLICATIONLOADINGERROR), ex)
                 End Try

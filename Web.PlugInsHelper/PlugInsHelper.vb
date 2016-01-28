@@ -795,6 +795,11 @@ Namespace SolidDevelopment.Web
             End Interface
 
             Public Interface IVariablePool
+                Enum VariablePoolTypeStatus
+                    Host
+                    Client
+                End Enum
+
                 Function GetVariableFromPool(ByVal SessionKeyID As String, ByVal name As String) As Byte()
 
                 Sub DoMassRegistration(ByVal SessionKeyID As String, ByVal serializedSerializableDictionary As Byte())
@@ -805,10 +810,12 @@ Namespace SolidDevelopment.Web
 
                 Sub TransferRegistrations(ByVal FromSessionKeyID As String, ByVal CurrentSessionKeyID As String)
 
-                Sub ConfirmRegistrations(ByVal SessionKeyID As String)
+                'Sub ConfirmRegistrations(ByVal SessionKeyID As String)
                 Sub DoCleanUp()
 
                 Function PingToRemoteEndPoint() As Boolean
+
+                ReadOnly Property VariablePoolType As VariablePoolTypeStatus
             End Interface
 
             Public Overloads Shared Function CrossCall(ByVal DllName As String, ByVal ClassName As String, ByVal FunctionName As String, ByVal FunctionParameters As FunctionParameter.FunctionParameterCollection) As Object
@@ -1065,6 +1072,8 @@ Namespace SolidDevelopment.Web
                 Private _FunctionName As String
                 Private _FunctionParams As String()
                 Private _MethodResult As Object
+                Private _ReloadRequired As Boolean
+                Private _ApplicationPath As String
 
                 Public Sub New(ByVal DllName As String, ByVal ClassName As String, ByVal FunctionName As String, ByVal FunctionParams As String())
                     Me._DllName = DllName
@@ -1072,6 +1081,8 @@ Namespace SolidDevelopment.Web
                     Me._FunctionName = FunctionName
                     Me._FunctionParams = FunctionParams
                     Me._MethodResult = New Exception("Null Method Result Exception!")
+                    Me._ReloadRequired = False
+                    Me._ApplicationPath = String.Empty
                 End Sub
 
                 Public ReadOnly Property DllName() As String
@@ -1104,6 +1115,24 @@ Namespace SolidDevelopment.Web
                     End Get
                     Set(ByVal Value As Object)
                         Me._MethodResult = Value
+                    End Set
+                End Property
+
+                Public Property ReloadRequired() As Boolean
+                    Get
+                        Return Me._ReloadRequired
+                    End Get
+                    Set(value As Boolean)
+                        Me._ReloadRequired = value
+                    End Set
+                End Property
+
+                Public Property ApplicationPath() As String
+                    Get
+                        Return Me._ApplicationPath
+                    End Get
+                    Set(value As String)
+                        Me._ApplicationPath = value
                     End Set
                 End Property
             End Class
@@ -2239,22 +2268,31 @@ Namespace SolidDevelopment.Web
         End Function
 
         Public Shared Sub TransferVariables(ByVal FromSessionID As String)
-            General.VariablePool.TransferRegistrations( _
-                    String.Format( _
-                        "{0}_{1}", FromSessionID, General.HashCode) _
+            General.VariablePool.TransferRegistrations(
+                    String.Format(
+                        "{0}_{1}", FromSessionID, General.HashCode)
                 )
         End Sub
 
-        Public Shared Sub ConfirmVariables()
-            Try
-                General.VariablePool.ConfirmRegistrations()
-                General.VariablePoolForWebService.ConfirmRegistrations()
-            Catch ex As Exception
-                ' Just Handle Exceptions
-                '   Null Object Referance
-                '   Null SessionID Parameter
-            End Try
+        Public Shared Sub ReloadApplication()
+            Dim RequestAsm As System.Reflection.Assembly, objRequest As System.Type
+
+            RequestAsm = System.Reflection.Assembly.Load("WebHandler")
+            objRequest = RequestAsm.GetType("SolidDevelopment.Web.RequestModule", False, True)
+
+            objRequest.InvokeMember("ReloadApplication", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, New Object() {General.CurrentRequestID})
         End Sub
+
+        'Public Shared Sub ConfirmVariables()
+        '    Try
+        '        General.VariablePool.ConfirmRegistrations()
+        '        General.VariablePoolForWebService.ConfirmRegistrations()
+        '    Catch ex As Exception
+        '        ' Just Handle Exceptions
+        '        '   Null Object Referance
+        '        '   Null SessionID Parameter
+        '    End Try
+        'End Sub
 
         Public Shared ReadOnly Property ScheduledTasks() As General.ScheduledTasksOperationsClass
             Get
@@ -2303,7 +2341,7 @@ Namespace SolidDevelopment.Web
                 If String.IsNullOrEmpty(Me._SessionKeyID) Then Throw New Exception("SessionID must be set!")
 
                 Dim rObject As Object = _
-                    VariablePoolPreCacheClass.GetCachedVariable(Me._SessionKeyID, name)
+                   VariablePoolPreCacheClass.GetCachedVariable(Me._SessionKeyID, name)
 
                 If rObject Is Nothing Then
                     Dim serializedValue As Byte() = _
@@ -2338,11 +2376,33 @@ Namespace SolidDevelopment.Web
             Public Sub RegisterVariableToPool(ByVal name As String, ByVal value As Object)
                 If String.IsNullOrEmpty(Me._SessionKeyID) Then Throw New Exception("SessionID must be set!")
 
-                VariablePoolPreCacheClass.CacheVariable(Me._SessionKeyID, name, value)
+                VariablePoolPreCacheClass.CleanCachedVariables(Me._SessionKeyID, name)
+
+                Dim serializedValue As Byte() = New Byte() {}
+                Dim forStream As IO.Stream = Nothing
+
+                Try
+                    forStream = New IO.MemoryStream
+
+                    Dim binFormater As New System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+                    binFormater.Serialize(forStream, value)
+
+                    serializedValue = _
+                        CType(forStream, IO.MemoryStream).ToArray()
+                Catch ex As Exception
+                    ' Just Handle Exceptions
+                Finally
+                    If Not forStream Is Nothing Then
+                        forStream.Close()
+                        GC.SuppressFinalize(forStream)
+                    End If
+                End Try
+
+                General._VariablePoolOperationCache.RegisterVariableToPool(Me._SessionKeyID, name, serializedValue)
             End Sub
 
             Public Sub UnRegisterVariableFromPool(ByVal name As String)
-                VariablePoolPreCacheClass.CacheVariable(Me._SessionKeyID, name, Nothing)
+                VariablePoolPreCacheClass.CleanCachedVariables(Me._SessionKeyID, name)
 
                 ' Unregister Variable From Pool Immidiately. 
                 ' Otherwise it will cause cache reload in the same domain call
@@ -2412,62 +2472,71 @@ Namespace SolidDevelopment.Web
                 Return serializedValue
             End Function
 
-            Public Sub ConfirmRegistrations()
-                ' CONFIRMATION HAS TO RUN ALWAYS ON MAIN THREAD. WE NEED BLOCKAGE!
-                If String.IsNullOrEmpty(Me._SessionKeyID) Then Throw New Exception("SessionID must be set!")
+            'Public Sub ConfirmRegistrations()
+            '    ' CONFIRMATION HAS TO RUN ALWAYS ON MAIN THREAD. WE NEED BLOCKAGE!
+            '    If String.IsNullOrEmpty(Me._SessionKeyID) Then Throw New Exception("SessionID must be set!")
 
-                Dim serializedHashTable As Byte() = Nothing
+            '    'Dim serializedHashTable As Byte() = Nothing
 
-                SyncLock VariablePoolPreCacheClass.VariablePreCache.SyncRoot
-                    serializedHashTable = _
-                        Me._SerializeNameValuePairs( _
-                            VariablePoolPreCacheClass.UnsafeGetCachedSession(Me._SessionKeyID) _
-                        )
-                End SyncLock
+            '    'SyncLock VariablePoolPreCacheClass.VariablePreCache.SyncRoot
+            '    '    serializedHashTable = _
+            '    '        Me._SerializeNameValuePairs( _
+            '    '            VariablePoolPreCacheClass.UnsafeGetCachedSession(Me._SessionKeyID) _
+            '    '        )
+            '    'End SyncLock
 
-                General._VariablePoolOperationCache.DoMassRegistration(Me._SessionKeyID, serializedHashTable)
-                General._VariablePoolOperationCache.ConfirmRegistrations(Me._SessionKeyID)
+            '    'General._VariablePoolOperationCache.DoMassRegistration(Me._SessionKeyID, serializedHashTable)
+            '    General._VariablePoolOperationCache.ConfirmRegistrations(Me._SessionKeyID)
 
-                VariablePoolPreCacheClass.CleanCachedVariables(Me._SessionKeyID)
-            End Sub
+            '    'VariablePoolPreCacheClass.CleanCachedVariables(Me._SessionKeyID)
+            'End Sub
         End Class
 
+        ' This class required to eliminate the mass request to VariablePool.
+        ' VariablePool registration requires serialization...
+        ' Use PreCache for only read keys do not use for variable registration!
+        ' It is suitable for repeating requests...
         Private Class VariablePoolPreCacheClass
             Private Shared _VariablePreCache As Hashtable = Nothing
 
             Friend Shared ReadOnly Property VariablePreCache() As Hashtable
                 Get
                     If VariablePoolPreCacheClass._VariablePreCache Is Nothing Then _
-                        VariablePoolPreCacheClass._VariablePreCache = Hashtable.Synchronized(New Hashtable)
+                        VariablePoolPreCacheClass._VariablePreCache = _
+                            Hashtable.Synchronized(New Hashtable)
 
                     Return VariablePoolPreCacheClass._VariablePreCache
                 End Get
             End Property
 
-            Friend Shared Function UnsafeGetCachedSession(ByVal SessionKeyID As String) As Generic.Dictionary(Of String, Object)
-                Dim rNameValuePairs As Generic.Dictionary(Of String, Object) = Nothing
+            'Friend Shared Function UnsafeGetCachedSession(ByVal SessionKeyID As String) As Generic.Dictionary(Of String, Object)
+            '    Dim rNameValuePairs As Generic.Dictionary(Of String, Object) = Nothing
 
-                If VariablePoolPreCacheClass.VariablePreCache.ContainsKey(SessionKeyID) Then
-                    rNameValuePairs = _
-                        CType(VariablePoolPreCacheClass.VariablePreCache.Item(SessionKeyID), Generic.Dictionary(Of String, Object))
-                End If
+            '    If VariablePoolPreCacheClass.VariablePreCache.ContainsKey(SessionKeyID) Then
+            '        rNameValuePairs = _
+            '            CType(VariablePoolPreCacheClass.VariablePreCache.Item(SessionKeyID), Generic.Dictionary(Of String, Object))
+            '    End If
 
-                Return rNameValuePairs
-            End Function
+            '    Return rNameValuePairs
+            'End Function
 
             Public Shared Function GetCachedVariable(ByVal SessionKeyID As String, ByVal name As String) As Object
                 Dim rObject As Object = Nothing
 
-                SyncLock VariablePoolPreCacheClass.VariablePreCache.SyncRoot
+                System.Threading.Monitor.Enter(VariablePoolPreCacheClass.VariablePreCache.SyncRoot)
+                Try
                     If VariablePoolPreCacheClass.VariablePreCache.ContainsKey(SessionKeyID) Then
-                        Dim NameValuePairs As Generic.Dictionary(Of String, Object) = _
+                        Dim NameValuePairs As Generic.Dictionary(Of String, Object) =
                             CType(VariablePoolPreCacheClass.VariablePreCache.Item(SessionKeyID), Generic.Dictionary(Of String, Object))
 
-                        If Not NameValuePairs Is Nothing AndAlso _
-                            NameValuePairs.ContainsKey(name) Then _
+                        If Not NameValuePairs Is Nothing AndAlso
+                            NameValuePairs.ContainsKey(name) AndAlso
+                            Not NameValuePairs.Item(name) Is Nothing Then _
                                 rObject = NameValuePairs.Item(name)
                     End If
-                End SyncLock
+                Finally
+                    System.Threading.Monitor.Exit(VariablePoolPreCacheClass.VariablePreCache.SyncRoot)
+                End Try
 
                 Return rObject
             End Function
@@ -2480,7 +2549,8 @@ Namespace SolidDevelopment.Web
                         NameValuePairs = CType(VariablePoolPreCacheClass.VariablePreCache.Item(SessionKeyID), Generic.Dictionary(Of String, Object))
 
                         If value Is Nothing Then
-                            NameValuePairs.Remove(name)
+                            If NameValuePairs.ContainsKey(name) AndAlso Not NameValuePairs.Remove(name) Then _
+                                NameValuePairs.Item(name) = Nothing
                         Else
                             NameValuePairs.Item(name) = value
                         End If
@@ -2499,11 +2569,18 @@ Namespace SolidDevelopment.Web
                 End Try
             End Sub
 
-            Public Shared Sub CleanCachedVariables(ByVal SessionKeyID As String)
+            Public Shared Sub CleanCachedVariables(ByVal SessionKeyID As String, ByVal name As String)
                 System.Threading.Monitor.Enter(VariablePoolPreCacheClass.VariablePreCache.SyncRoot)
                 Try
-                    If VariablePoolPreCacheClass.VariablePreCache.ContainsKey(SessionKeyID) Then _
-                        VariablePoolPreCacheClass.VariablePreCache.Remove(SessionKeyID)
+                    If VariablePoolPreCacheClass.VariablePreCache.ContainsKey(SessionKeyID) Then
+                        Dim NameValuePairs As Generic.Dictionary(Of String, Object) = _
+                            CType(VariablePoolPreCacheClass.VariablePreCache.Item(SessionKeyID), Generic.Dictionary(Of String, Object))
+
+                        If NameValuePairs.ContainsKey(name) AndAlso Not NameValuePairs.Remove(name) Then _
+                            NameValuePairs.Item(name) = Nothing
+
+                        VariablePoolPreCacheClass.VariablePreCache.Item(SessionKeyID) = NameValuePairs
+                    End If
                 Finally
                     System.Threading.Monitor.Exit(VariablePoolPreCacheClass.VariablePreCache.SyncRoot)
                 End Try

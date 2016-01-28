@@ -77,7 +77,8 @@ Namespace SolidDevelopment.Web
                     CType(context.Items.Item("RequestID"), String))
                 ' !--
 
-                General.Context.Items.Add("_sys_TemplateRequest", False)
+                ' DO NOT USE General.Context for this line
+                context.Items.Add("_sys_TemplateRequest", False)
 
                 Dim IsEO As Boolean = False
 
@@ -87,33 +88,33 @@ Namespace SolidDevelopment.Web
                     ' Create with default ones
                     Me._ThemeWebControl = New Managers.ThemeWebControl(ThemeID, TranslationID)
 
-                    Dim URLMI As PGlobals.URLMappingInfos = _
+                    Dim URLMI As PGlobals.URLMappingInfos =
                         Me._ThemeWebControl.URLMappingInfo
 
                     ' Resolve If Request is Mapped (and if urlmapping is active)
                     If URLMI.URLMapping Then
-                        Dim ResolvedMapped As PGlobals.URLMappingInfos.ResolvedMapped = _
+                        Dim ResolvedMapped As PGlobals.URLMappingInfos.ResolvedMapped =
                             URLMI.ResolveMappedURL(General.Context.Request.RawUrl)
 
-                        If Not ResolvedMapped Is Nothing AndAlso _
+                        If Not ResolvedMapped Is Nothing AndAlso
                             ResolvedMapped.IsResolved Then ' this is a mapped request
 
                             Dim QueryString As New System.Text.StringBuilder
 
                             For qS As Integer = 0 To ResolvedMapped.QueryStrings.Count - 1
-                                QueryString.AppendFormat("{0}={1}", _
-                                    ResolvedMapped.QueryStrings.Item(qS).ID, _
-                                    ResolvedMapped.QueryStrings.Item(qS).Value _
+                                QueryString.AppendFormat("{0}={1}",
+                                    ResolvedMapped.QueryStrings.Item(qS).ID,
+                                    ResolvedMapped.QueryStrings.Item(qS).Value
                                 )
 
                                 If ResolvedMapped.QueryStrings.Count > (qS + 1) Then _
                                     QueryString.Append("&")
                             Next
 
-                            Dim RequestURL As String = _
-                                String.Format("{0}{1}", _
-                                    Configurations.ApplicationRoot.BrowserSystemImplementation, _
-                                    ResolvedMapped.TemplateID _
+                            Dim RequestURL As String =
+                                String.Format("{0}{1}",
+                                    Configurations.ApplicationRoot.BrowserSystemImplementation,
+                                    ResolvedMapped.TemplateID
                                 )
                             If QueryString.Length > 0 Then _
                                 RequestURL = String.Concat(RequestURL, "?", QueryString.ToString())
@@ -137,7 +138,7 @@ Namespace SolidDevelopment.Web
                         End Select
 
                         ' Session Cookie Option
-                        Dim CookilessSessionString As String = _
+                        Dim CookilessSessionString As String =
                             String.Format("{0}_Cookieless", Configurations.VirtualRoot.Replace("/"c, "_"c))
                         Select Case General.Context.Request.QueryString.Item("nocache")
                             Case "L0XC", "L1XC", "L2XC"
@@ -150,21 +151,21 @@ Namespace SolidDevelopment.Web
                         General.Context.Response.ExpiresAbsolute = Date.Today.AddYears(1)
                     End If
 
-                    Dim AcceptEncodings As String = _
+                    Dim AcceptEncodings As String =
                         General.Context.Request.ServerVariables.Item("HTTP_ACCEPT_ENCODING")
                     If Not AcceptEncodings Is Nothing Then _
                         Me._SupportCompression = (AcceptEncodings.IndexOf("gzip") > -1)
 
                     ' Check Requested Path For Template
-                    Dim RequestedTemplate As String = _
+                    Dim RequestedTemplate As String =
                         SolidDevelopment.Web.General.ResolveTemplateFromURL(General.Context.Request.RawUrl)
 
                     If RequestedTemplate Is Nothing Then
                         ' Requested File is not a WebService Or Template
 
-                        Dim ThemePublicContentsPath As String = _
+                        Dim ThemePublicContentsPath As String =
                             General.GetThemePublicContentsPath(ThemeID, TranslationID)
-                        Dim RequestedFileVirtualPath As String = _
+                        Dim RequestedFileVirtualPath As String =
                             General.Context.Request.Path
 
                         If RequestedFileVirtualPath.IndexOf(ThemePublicContentsPath) = -1 Then
@@ -176,7 +177,7 @@ Namespace SolidDevelopment.Web
 
                             ' If matched one is not the same with the default one
                             ' Create the matched ThemeWebControl and Update ThemePublicContentsPath
-                            If String.Compare(ThemeID, ControlThemeID) <> 0 OrElse _
+                            If String.Compare(ThemeID, ControlThemeID) <> 0 OrElse
                                 String.Compare(TranslationID, ControlTranslationID) <> 0 Then
 
                                 Me._ThemeWebControl = New Managers.ThemeWebControl(ControlThemeID, ControlTranslationID)
@@ -193,17 +194,17 @@ Namespace SolidDevelopment.Web
                             Me.PostRequestedStaticFileToClient()
                         End If
                     Else
-                        Dim IsScriptRequesting As Boolean = _
-                            String.Compare( _
-                                RequestedTemplate, _
-                                String.Format("_bi_sps_v{0}.js", Me._ThemeWebControl.BuiltInScriptVersion) _
+                        Dim IsScriptRequesting As Boolean =
+                            String.Compare(
+                                RequestedTemplate,
+                                String.Format("_bi_sps_v{0}.js", Me._ThemeWebControl.BuiltInScriptVersion)
                             ) = 0
 
                         If IsScriptRequesting Then
                             Me.PostBuildInJavaScriptToClient()
                         Else
-                            ' Mark this request is for TemplateRequest
-                            General.Context.Items.Item("_sys_TemplateRequest") = True
+                            ' Mark this request is for TemplateRequest, DO NOT USE General.Context for this line
+                            context.Items.Item("_sys_TemplateRequest") = True
 
                             ' Set Title Globals
                             General.SiteTitle = Me._ThemeWebControl.Theme.Translation.GetTranslation("SITETITLE")
@@ -221,18 +222,18 @@ Namespace SolidDevelopment.Web
 
                             If String.Compare(General.Context.Request.HttpMethod, "GET", True) = 0 Then
                                 ' Check is hashcode is assign to the requested template
-                                Dim ParentURL As String = _
+                                Dim ParentURL As String =
                                     General.Context.Request.FilePath
 
                                 ParentURL = ParentURL.Remove(0, ParentURL.IndexOf(Configurations.ApplicationRoot.BrowserSystemImplementation) + Configurations.ApplicationRoot.BrowserSystemImplementation.Length)
 
-                                Dim mR_Parent As System.Text.RegularExpressions.Match = _
+                                Dim mR_Parent As System.Text.RegularExpressions.Match =
                                     System.Text.RegularExpressions.Regex.Match(ParentURL, String.Format("\d+/{0}", RequestedTemplate))
 
                                 If Not mR_Parent.Success Then
-                                    Dim RewrittenPath As String = _
+                                    Dim RewrittenPath As String =
                                         String.Format("{0}{1}/{2}", Configurations.ApplicationRoot.BrowserSystemImplementation, General.HashCode, RequestedTemplate)
-                                    Dim QueryString As String = _
+                                    Dim QueryString As String =
                                         General.Context.Request.ServerVariables.Item("QUERY_STRING")
 
                                     If Not String.IsNullOrEmpty(QueryString) Then _
@@ -247,25 +248,24 @@ Namespace SolidDevelopment.Web
                             Else
                                 Dim MethodResultContent As String = Nothing
 
-                                If Me._ThemeWebControl.ServiceType = Managers.Theme.SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template AndAlso _
-                                    String.Compare(General.Context.Request.HttpMethod, "POST", True) = 0 AndAlso _
+                                If Me._ThemeWebControl.ServiceType = Managers.Theme.SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template AndAlso
+                                    String.Compare(General.Context.Request.HttpMethod, "POST", True) = 0 AndAlso
                                     Not String.IsNullOrEmpty(General.Context.Request.Form.Item("PostBackInformation")) Then
 
                                     Dim IsAddonsCalled As Boolean = False
                                     Dim tAssembleResultInfo As PGlobals.Execution.AssembleResultInfo
 
                                     ' Decode Encoded Call Function to Readable
-                                    Dim AssembleInfo As String = _
-                                        Managers.Assembly.DecodeCallFunction( _
+                                    Dim AssembleInfo As String =
+                                        Managers.Assembly.DecodeCallFunction(
                                             General.Context.Request.Form.Item("PostBackInformation"))
 
                                     If Me._ThemeWebControl.Theme.Addons.CurrentInstance Is Nothing Then
 PARENTCALL:
-                                        tAssembleResultInfo = _
+                                        tAssembleResultInfo =
                                             Managers.Assembly.AssemblePostBackInformation(AssembleInfo)
 
-                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                            TypeOf tAssembleResultInfo.MethodResult Is IO.FileNotFoundException AndAlso _
+                                        If tAssembleResultInfo.ReloadRequired AndAlso
                                             Not IsAddonsCalled Then
 
                                             Dim CallingDllName As String = tAssembleResultInfo.DllName
@@ -273,10 +273,10 @@ PARENTCALL:
                                                 If String.Compare(Addon.AddonID, CallingDllName, True) = 0 Then
                                                     Me._ThemeWebControl.Theme.Addons.CreateInstance(Addon)
 
-                                                    tAssembleResultInfo = _
-                                                        Managers.Assembly.AssemblePostBackInformation( _
-                                                                        Me._ThemeWebControl.Theme.CurrentID, _
-                                                                        Me._ThemeWebControl.Theme.Addons.CurrentInstance.CurrentID, _
+                                                    tAssembleResultInfo =
+                                                        Managers.Assembly.AssemblePostBackInformation(
+                                                                        Me._ThemeWebControl.Theme.CurrentID,
+                                                                        Me._ThemeWebControl.Theme.Addons.CurrentInstance.CurrentID,
                                                                         AssembleInfo, Nothing)
 
                                                     Me._ThemeWebControl.Theme.Addons.DisposeInstance()
@@ -286,17 +286,13 @@ PARENTCALL:
                                     Else
                                         IsAddonsCalled = True
 
-                                        tAssembleResultInfo = _
-                                            Managers.Assembly.AssemblePostBackInformation( _
-                                                            Me._ThemeWebControl.Theme.CurrentID, _
-                                                            Me._ThemeWebControl.Theme.Addons.CurrentInstance.CurrentID, _
+                                        tAssembleResultInfo =
+                                            Managers.Assembly.AssemblePostBackInformation(
+                                                            Me._ThemeWebControl.Theme.CurrentID,
+                                                            Me._ThemeWebControl.Theme.Addons.CurrentInstance.CurrentID,
                                                             AssembleInfo, Nothing)
 
-                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                            TypeOf tAssembleResultInfo.MethodResult Is IO.FileNotFoundException Then
-
-                                            GoTo PARENTCALL
-                                        End If
+                                        If tAssembleResultInfo.ReloadRequired Then GoTo PARENTCALL
                                     End If
 
                                     If Not tAssembleResultInfo.FunctionParams Is Nothing Then
@@ -304,44 +300,52 @@ PARENTCALL:
                                         Managers.Assembly.PrepareArguments(Nothing, tAssembleResultInfo.FunctionParams, ArgumentValueList)
 
                                         For pC As Integer = 0 To tAssembleResultInfo.FunctionParams.Length - 1
-                                            Me._ThemeWebControl.ArgumentList.Add( _
-                                                tAssembleResultInfo.FunctionParams(pC), _
-                                                ArgumentValueList(pC) _
+                                            Me._ThemeWebControl.ArgumentList.Add(
+                                                tAssembleResultInfo.FunctionParams(pC),
+                                                ArgumentValueList(pC)
                                             )
                                         Next
                                     End If
 
-                                    If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
-                                        TypeOf tAssembleResultInfo.MethodResult Is Exception Then
+                                    If tAssembleResultInfo.ReloadRequired Then
+                                        ' This is application dependency problem, force to apply auto recovery!
+                                        Me._ThemeWebControl.ClearThemeCache()
+                                        RequestModule.ReloadApplication(General.CurrentRequestID)
 
-                                        Me._ThemeWebControl.MessageResult = New PGlobals.MapControls.MessageResult(CType(tAssembleResultInfo.MethodResult, Exception).ToString())
+                                        Exit Sub
+                                    Else
+                                        If Not tAssembleResultInfo.MethodResult Is Nothing AndAlso
+                                            TypeOf tAssembleResultInfo.MethodResult Is Exception Then
 
-                                        Me.WritePage(String.Empty)
-                                    ElseIf Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
+                                            Me._ThemeWebControl.MessageResult = New PGlobals.MapControls.MessageResult(CType(tAssembleResultInfo.MethodResult, Exception).ToString())
+
+                                            Me.WritePage(String.Empty)
+                                        ElseIf Not tAssembleResultInfo.MethodResult Is Nothing AndAlso
                                             TypeOf tAssembleResultInfo.MethodResult Is SolidDevelopment.Web.PGlobals.MapControls.MessageResult Then
 
-                                        Me._ThemeWebControl.MessageResult = CType(tAssembleResultInfo.MethodResult, SolidDevelopment.Web.PGlobals.MapControls.MessageResult)
+                                            Me._ThemeWebControl.MessageResult = CType(tAssembleResultInfo.MethodResult, SolidDevelopment.Web.PGlobals.MapControls.MessageResult)
 
-                                        Me.WritePage(String.Empty)
-                                    ElseIf Not tAssembleResultInfo.MethodResult Is Nothing AndAlso _
+                                            Me.WritePage(String.Empty)
+                                        ElseIf Not tAssembleResultInfo.MethodResult Is Nothing AndAlso
                                             TypeOf tAssembleResultInfo.MethodResult Is SolidDevelopment.Web.PGlobals.MapControls.RedirectOrder Then
 
-                                        SolidDevelopment.Web.General.Context.Items.Remove("RedirectLocation")
-                                        SolidDevelopment.Web.General.Context.Items.Add( _
-                                            "RedirectLocation", _
-                                            CType(tAssembleResultInfo.MethodResult, SolidDevelopment.Web.PGlobals.MapControls.RedirectOrder).Location _
-                                        )
-                                    Else
-                                        MethodResultContent = SolidDevelopment.Web.PGlobals.Execution.GetPrimitiveValue(tAssembleResultInfo.MethodResult)
+                                            SolidDevelopment.Web.General.Context.Items.Remove("RedirectLocation")
+                                            SolidDevelopment.Web.General.Context.Items.Add(
+                                                "RedirectLocation",
+                                                CType(tAssembleResultInfo.MethodResult, SolidDevelopment.Web.PGlobals.MapControls.RedirectOrder).Location
+                                            )
+                                        Else
+                                            MethodResultContent = SolidDevelopment.Web.PGlobals.Execution.GetPrimitiveValue(tAssembleResultInfo.MethodResult)
 
-                                        Select Case Me._ThemeWebControl.ServiceType
-                                            Case Managers.Theme.SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template
-                                                Me.WritePage(MethodResultContent)
+                                            Select Case Me._ThemeWebControl.ServiceType
+                                                Case Managers.Theme.SettingsClass.ServicesClass.ServiceItem.ServiceTypes.template
+                                                    Me.WritePage(MethodResultContent)
 
-                                            Case Managers.Theme.SettingsClass.ServicesClass.ServiceItem.ServiceTypes.webservice
-                                                Me.WritePage()
+                                                Case Managers.Theme.SettingsClass.ServicesClass.ServiceItem.ServiceTypes.webservice
+                                                    Me.WritePage()
 
-                                        End Select
+                                            End Select
+                                        End If
                                     End If
                                 Else
                                     Select Case Me._ThemeWebControl.ServiceType
@@ -616,7 +620,7 @@ QUICKFINISH:
                         If Not String.IsNullOrEmpty(CurrentRequestedTemplate) AndAlso _
                             String.Compare(AuthenticationPage, CurrentRequestedTemplate, True) <> 0 Then
 
-                            General.Context.Session.Contents.Item("_sys_Referer") = _
+                            General.Context.Session.Contents.Item("_sys_Referer") =
                                 General.Context.Request.RawUrl
                         End If
 
@@ -655,6 +659,15 @@ QUICKFINISH:
             Private Overloads Sub WritePage(ByVal MethodResultContent As String)
                 ' Render Page
                 Me._ThemeWebControl.RenderService(General.CurrentRequestID)
+
+                If Not Me._ThemeWebControl.RenderedService Is Nothing AndAlso
+                    Me._ThemeWebControl.RenderedService.IndexOf("<!--_sys_ReloadApplication-->") > -1 Then
+                    ' This can be an application dependency problem, force to apply auto recovery!
+                    Me._ThemeWebControl.ClearThemeCache()
+                    RequestModule.ReloadApplication(General.CurrentRequestID)
+
+                    Exit Sub
+                End If
 
                 Dim CurrentContextCatch As System.Web.HttpContext = _
                         SolidDevelopment.Web.General.Context

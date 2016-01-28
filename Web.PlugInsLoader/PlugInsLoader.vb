@@ -9,6 +9,8 @@ Namespace SolidDevelopment.Web.Managers
         Private _PostBackPath As String
         Private _AssemblyDll As System.Reflection.Assembly
 
+        Private _MissingFileException As Boolean = False
+
         Public Sub New(ByVal PlugInsPath As String, ByVal PlugInsDllName As String)
             If String.IsNullOrEmpty(PlugInsPath) Then Throw New System.Exception("PlugInsPath can not be leave blank!")
             If String.IsNullOrEmpty(PlugInsDllName) Then Throw New System.Exception("PlugInsDllName can not be leave blank!")
@@ -16,12 +18,25 @@ Namespace SolidDevelopment.Web.Managers
             Me._PlugInsPath = PlugInsPath
             Me._PlugInsDllName = PlugInsDllName
 
-            Me._PostBackPath = System.IO.Path.Combine( _
-                                        Me._PlugInsPath, _
-                                        String.Format("{0}.dll", Me._PlugInsDllName) _
+            Me._PostBackPath = System.IO.Path.Combine(
+                                        Me._PlugInsPath,
+                                        String.Format("{0}.dll", Me._PlugInsDllName)
                                     )
-            Me._AssemblyDll = System.Reflection.Assembly.LoadFrom(Me._PostBackPath)
+
+            Try
+                Me._AssemblyDll = System.Reflection.Assembly.LoadFrom(Me._PostBackPath)
+            Catch ex As System.IO.FileNotFoundException
+                Me._MissingFileException = True
+            Catch ex As System.Exception
+                Throw ex
+            End Try
         End Sub
+
+        Public ReadOnly Property MissingFileException() As Boolean
+            Get
+                Return Me._MissingFileException
+            End Get
+        End Property
 
         Public ReadOnly Property AssemblyName() As System.Reflection.AssemblyName
             Get

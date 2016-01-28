@@ -1,0 +1,20 @@
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
+  <Metadata>
+    <Identity Id="XeoraCube.Extension.2398de3f-5623-4455-aa52-7ac72ebbf6e4" Version="2.0" Language="en-US" Publisher="JakPark Solutions" />
+    <DisplayName>XeoraCube Visual Studio Editor Extension</DisplayName>
+    <Description xml:space="preserve">For more information about XeoraCube, see the XeoraCube website at
+http://www.xeoracube.com/
+For customer support, call +90-216-3627950.
+Copyright (c) 2008-2015 JakPark Solutions.</Description>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[14.0]" />
+  </Installation>
+  <Dependencies>
+    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" Version="[4.5,)" />
+    <Dependency Id="Microsoft.VisualStudio.MPF.14.0" DisplayName="Visual Studio MPF 14.0" Version="[14.0]" />
+  </Dependencies>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.VsPackage" Path="XeoraVSExtension.pkgdef" />
+  </Assets>
+</PackageManifest>
