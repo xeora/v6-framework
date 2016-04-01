@@ -173,7 +173,10 @@ Namespace Xeora.Web.Handler
 
                             ' Extract the ChildDomainIDAccessTree and LanguageID using RequestPath
                             Dim RequestedDomainWebPath As String = RequestedFileVirtualPath
-                            RequestedDomainWebPath = RequestedDomainWebPath.Replace([Shared].Configurations.ApplicationRoot.BrowserImplementation, String.Empty)
+                            Dim BrowserImplementation As String =
+                                [Shared].Configurations.ApplicationRoot.BrowserImplementation
+                            RequestedDomainWebPath = RequestedDomainWebPath.Remove(RequestedDomainWebPath.IndexOf(BrowserImplementation), BrowserImplementation.Length)
+
                             If RequestedDomainWebPath.IndexOf([Shared].Helpers.HashCode) = 0 Then _
                                 RequestedDomainWebPath = RequestedDomainWebPath.Substring([Shared].Helpers.HashCode.Length + 1)
 
@@ -208,11 +211,10 @@ Namespace Xeora.Web.Handler
                         Else
                             Dim ScriptFileName As String =
                                 String.Format("_bi_sps_v{0}.js", Me._DomainControl.XeoraJSVersion)
+                            Dim ScriptFileNameIndex As Integer =
+                                RequestedFileVirtualPath.IndexOf(ScriptFileName)
                             Dim IsScriptRequesting As Boolean =
-                                String.Compare(
-                                    RequestedFileVirtualPath.Substring(RequestedFileVirtualPath.Length - ScriptFileName.Length),
-                                    ScriptFileName
-                                ) = 0
+                                ScriptFileNameIndex > -1 AndAlso (RequestedFileVirtualPath.Length - ScriptFileName.Length) = ScriptFileNameIndex
 
                             If IsScriptRequesting Then
                                 Me.PostBuildInJavaScriptToClient()
