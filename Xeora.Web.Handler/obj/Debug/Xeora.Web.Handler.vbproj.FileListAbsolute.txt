@@ -1,0 +1,14 @@
+P:\XeoraCube\Xeora.Web.Handler\bin\Any\Xeora.Web.Handler.dll
+P:\XeoraCube\Xeora.Web.Handler\bin\Any\Xeora.Web.Handler.pdb
+P:\XeoraCube\Xeora.Web.Handler\bin\Any\Xeora.Web.dll
+P:\XeoraCube\Xeora.Web.Handler\bin\Any\Xeora.Web.Shared.dll
+P:\XeoraCube\Xeora.Web.Handler\bin\Any\Xeora.Web.Manager.Loader.dll
+P:\XeoraCube\Xeora.Web.Handler\bin\Any\Xeora.Web.RegularExpressions.dll
+P:\XeoraCube\Xeora.Web.Handler\bin\Any\Xeora.Web.Shared.pdb
+P:\XeoraCube\Xeora.Web.Handler\bin\Any\Xeora.Web.pdb
+P:\XeoraCube\Xeora.Web.Handler\bin\Any\Xeora.Web.Manager.Loader.pdb
+P:\XeoraCube\Xeora.Web.Handler\obj\Debug\Xeora.Web.Handler.vbprojResolveAssemblyReference.cache
+P:\XeoraCube\Xeora.Web.Handler\obj\Debug\Resources.resources
+P:\XeoraCube\Xeora.Web.Handler\obj\Debug\Xeora.Web.Handler.vbproj.GenerateResource.Cache
+P:\XeoraCube\Xeora.Web.Handler\obj\Debug\Xeora.Web.Handler.dll
+P:\XeoraCube\Xeora.Web.Handler\obj\Debug\Xeora.Web.Handler.pdb
