@@ -3,7 +3,7 @@ Public Class frmMain
     Private Sub butBrowse_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles butBrowse.Click
         Dim folderBrowse As New FolderBrowserDialog
 
-        folderBrowse.Description = "Browse Theme Root Path"
+        folderBrowse.Description = "Browse Domain Root Path"
         folderBrowse.ShowNewFolderButton = False
         folderBrowse.SelectedPath = Application.StartupPath
 
@@ -30,9 +30,9 @@ Public Class frmMain
 
         If folderBrowse.ShowDialog = Windows.Forms.DialogResult.OK Then
             Dim DI As New IO.DirectoryInfo(Me.tbLocation.Text)
-            Me._OutputFileLocation = IO.Path.Combine( _
-                                            folderBrowse.SelectedPath, _
-                                            String.Format("{0}.swct", DI.Name))
+            Me._OutputFileLocation = IO.Path.Combine(
+                                            folderBrowse.SelectedPath,
+                                            "Content.xeora")
 
             Dim ContinueToCompile As Boolean = True
 
@@ -49,7 +49,7 @@ Public Class frmMain
             End If
 
             If ContinueToCompile Then
-                Dim CreateThread As New Threading.Thread(AddressOf Me.CreateThemeFile)
+                Dim CreateThread As New Threading.Thread(AddressOf Me.CreateDomainFile)
 
                 Me.butBrowse.Enabled = False
                 Me.tbPassword.Enabled = False
@@ -62,22 +62,22 @@ Public Class frmMain
         End If
     End Sub
 
-    Private Sub CreateThemeFile()
-        Dim SWCTCompiler As Compiler
+    Private Sub CreateDomainFile()
+        Dim XeoraCompiler As Compiler
 
         If Me.cbUsePassword.Checked Then
-            SWCTCompiler = New Compiler(Me.tbPassword.Text)
+            XeoraCompiler = New Compiler(Me.tbPassword.Text)
         Else
-            SWCTCompiler = New Compiler(Nothing)
+            XeoraCompiler = New Compiler(Nothing)
         End If
 
-        Me.AddFiles(Me.tbLocation.Text, SWCTCompiler)
+        Me.AddFiles(Me.tbLocation.Text, XeoraCompiler)
 
-        AddHandler SWCTCompiler.Progress, New Compiler.ProgressEventHandler(AddressOf UpdateProgress)
+        AddHandler XeoraCompiler.Progress, New Compiler.ProgressEventHandler(AddressOf UpdateProgress)
 
         Dim FileStream As New IO.FileStream(Me._OutputFileLocation, IO.FileMode.OpenOrCreate, IO.FileAccess.ReadWrite)
 
-        SWCTCompiler.CreateThemeFile(FileStream)
+        XeoraCompiler.CreateDomainFile(FileStream)
 
         FileStream.Close() : GC.SuppressFinalize(FileStream)
 
@@ -88,39 +88,40 @@ Public Class frmMain
         Me.butCompile.Enabled = True
     End Sub
 
-    Private Sub AddFiles(ByVal Path As String, ByRef SWCTCompilerObj As Compiler)
+    Private Sub AddFiles(ByVal Path As String, ByRef XeoraCompilerObj As Compiler)
         For Each dPath As String In IO.Directory.GetDirectories(Path)
             Dim dI As New IO.DirectoryInfo(dPath)
 
-            If String.Compare(dI.Name, "addons", True) <> 0 Then
-                Me.AddFiles(dPath, SWCTCompilerObj)
+            If String.Compare(dI.Name, "addons", True) <> 0 AndAlso
+                String.Compare(dI.Name, "executables", True) <> 0 Then
+                Me.AddFiles(dPath, XeoraCompilerObj)
             End If
         Next
 
         For Each filePath As String In IO.Directory.GetFiles(Path)
-            SWCTCompilerObj.AddFile( _
-                filePath.Replace(Me.tbLocation.Text, Nothing).Replace(IO.Path.GetFileName(filePath), Nothing), _
+            XeoraCompilerObj.AddFile(
+                filePath.Replace(Me.tbLocation.Text, Nothing).Replace(IO.Path.GetFileName(filePath), Nothing),
                 filePath)
         Next
     End Sub
 
-    Private Delegate Sub ShowPasswordDialogDelegate()
-    Private Sub ShowPasswordDialog()
-        If Me.InvokeRequired Then
-            Me.Invoke(New ShowPasswordDialogDelegate(AddressOf Me.ShowPasswordDialog))
-        Else
-            Dim frmThemePassword As New frmThemePassword
-            Dim Crypto As New Security.Cryptography.MD5CryptoServiceProvider
+    'Private Delegate Sub ShowPasswordDialogDelegate()
+    'Private Sub ShowPasswordDialog()
+    '    If Me.InvokeRequired Then
+    '        Me.Invoke(New ShowPasswordDialogDelegate(AddressOf Me.ShowPasswordDialog))
+    '    Else
+    '        Dim frmThemePassword As New frmDomainPassword
+    '        Dim Crypto As New Security.Cryptography.MD5CryptoServiceProvider
 
-            frmThemePassword.tbThemePassword.Text = Convert.ToBase64String( _
-                                                            Crypto.ComputeHash( _
-                                                                System.Text.Encoding.UTF8.GetBytes(Me.tbPassword.Text) _
-                                                            ) _
-                                                        )
-            frmThemePassword.Owner = Me
-            frmThemePassword.ShowDialog()
-        End If
-    End Sub
+    '        frmThemePassword.tbThemePassword.Text = Convert.ToBase64String( _
+    '                                                        Crypto.ComputeHash( _
+    '                                                            System.Text.Encoding.UTF8.GetBytes(Me.tbPassword.Text) _
+    '                                                        ) _
+    '                                                    )
+    '        frmThemePassword.Owner = Me
+    '        frmThemePassword.ShowDialog()
+    '    End If
+    'End Sub
 
     Private Sub UpdateProgress(ByVal Current As Integer, ByVal Total As Integer)
         Me.ProgressBar.Minimum = 0
@@ -128,7 +129,39 @@ Public Class frmMain
 
         Me.ProgressBar.Value = Current
 
-        If Me.cbUsePassword.Checked AndAlso Current = Total Then Me.ShowPasswordDialog()
+        If Me.cbUsePassword.Checked AndAlso Current = Total Then
+            Dim KeyFileLocation As String = IO.Path.Combine(
+                                                IO.Path.GetDirectoryName(Me._OutputFileLocation),
+                                                "Content.secure")
+
+            Dim eO As Boolean = False
+            If IO.File.Exists(KeyFileLocation) Then
+                Try
+                    IO.File.Delete(KeyFileLocation)
+                Catch ex As Exception
+                    eO = True
+
+                    MessageBox.Show("Error Occured:" & Environment.NewLine & Environment.NewLine & ex.ToString(), "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
+            End If
+
+            If Not eO Then
+                Dim Crypto As New Security.Cryptography.MD5CryptoServiceProvider
+                Dim PasswordKey As Byte() = System.Convert.FromBase64String(
+                                                        Convert.ToBase64String(
+                                                            Crypto.ComputeHash(
+                                                                System.Text.Encoding.UTF8.GetBytes(Me.tbPassword.Text)
+                                                            )
+                                                        ))
+
+                Dim fS As New IO.FileStream(KeyFileLocation, IO.FileMode.Create, IO.FileAccess.ReadWrite, IO.FileShare.None)
+
+                fS.Write(PasswordKey, 0, PasswordKey.Length)
+                fS.Close()
+
+                GC.SuppressFinalize(fS)
+            End If
+        End If
     End Sub
 
     'Private Sub Button1_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Button1.Click

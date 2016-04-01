@@ -1,4 +1,4 @@
-﻿Namespace XeoraCube.VSAddIn.Forms
+﻿Namespace Xeora.VSAddIn.Forms
     Public Class TypeSearch
         Inherits ISFormBase
 
@@ -19,7 +19,7 @@
         End Property
 
         Public Overrides Sub FillList()
-            Dim ControlTypeNames As String() = _
+            Dim ControlTypeNames As String() =
                     [Enum].GetNames(GetType(Globals.ControlTypes))
 
             For Each ControlTypeName As String In ControlTypeNames

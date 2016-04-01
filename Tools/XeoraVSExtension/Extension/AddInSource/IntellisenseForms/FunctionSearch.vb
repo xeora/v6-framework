@@ -1,4 +1,4 @@
-﻿Namespace XeoraCube.VSAddIn.Forms
+﻿Namespace Xeora.VSAddIn.Forms
     Public Class FunctionSearch
         Inherits ISFormBase
 
@@ -10,7 +10,7 @@
             MyBase.lwControls.SmallImageList = Me.ilFunctions
         End Sub
 
-        Private _SearchType As AddInLoader.SearchTypes = VSAddIn.AddInLoader.SearchTypes.Theme
+        Private _SearchType As AddInLoader.SearchTypes = VSAddIn.AddInLoader.SearchTypes.Domain
         Private _SearchPath As String = String.Empty
         Private _AssemblyID As String = String.Empty
         Private _ClassID As String = String.Empty
@@ -62,7 +62,7 @@
 
         Public Overrides Sub FillList()
             Try
-                Dim SearchPath As String = _
+                Dim SearchPath As String =
                     MyBase.LocateAssembly(Me._SearchType, Me._SearchPath, Me._AssemblyID)
 
                 If AddInControl.AssemblyCacheObject.IsLatest(SearchPath, AddInControl.AssemblyCache.QueryTypes.ClassProcedureListStatus, Me._ClassID) Then
@@ -102,9 +102,9 @@
             Catch ex As IO.FileNotFoundException
                 ' It is possibly an Addon AssemblyID, Try Addon Paths
                 Try
-                    Dim AddonsPath As String = _
-                        IO.Path.GetFullPath( _
-                            IO.Path.Combine(Me.CurrentSelection.DTE.ActiveDocument.Path, "../Addons") _
+                    Dim AddonsPath As String =
+                        IO.Path.GetFullPath(
+                            IO.Path.Combine(Me.CurrentSelection.DTE.ActiveDocument.Path, "../Addons")
                         )
 
                     If IO.Directory.Exists(AddonsPath) Then
@@ -112,8 +112,8 @@
                         Dim SearchPath As String = String.Empty
 
                         For Each AddonPath As String In IO.Directory.GetDirectories(AddonsPath)
-                            SearchPath = IO.Path.Combine(AddonPath, "Dlls")
-                            Dim SearchFile As String = _
+                            SearchPath = IO.Path.Combine(AddonPath, "Executables")
+                            Dim SearchFile As String =
                                 IO.Path.Combine(SearchPath, String.Format("{0}.dll", Me._AssemblyID))
 
                             If IO.File.Exists(SearchFile) Then IsExists = True : Exit For
@@ -121,7 +121,7 @@
 
                         If IsExists AndAlso Not String.IsNullOrEmpty(SearchPath) Then
                             If AddInControl.AssemblyCacheObject.IsLatest(SearchPath, AddInControl.AssemblyCache.QueryTypes.ClassProcedureListStatus, Me._ClassID) Then
-                                For Each cPI As AddInControl.AssemblyCache.AssemblyCacheInfo.ClassObject.ClassProcedureInfo In AddInControl.AssemblyCacheObject.GetAssemblyClassProcedureInfos(XeoraCube.VSAddIn.AddInLoader.SearchTypes.Addon, IO.Path.Combine(SearchPath, String.Format("{0}.dll", Me._AssemblyID)), Me._ClassID)
+                                For Each cPI As AddInControl.AssemblyCache.AssemblyCacheInfo.ClassObject.ClassProcedureInfo In AddInControl.AssemblyCacheObject.GetAssemblyClassProcedureInfos(Xeora.VSAddIn.AddInLoader.SearchTypes.Child, IO.Path.Combine(SearchPath, String.Format("{0}.dll", Me._AssemblyID)), Me._ClassID)
                                     Dim MethodGuid As Guid = Guid.NewGuid()
 
                                     MyBase.lwControls.Items.Add(String.Empty, 0)
@@ -137,7 +137,7 @@
                             Else
                                 Dim QueryDll As String = IO.Path.Combine(SearchPath, String.Format("{0}.dll", Me._AssemblyID))
 
-                                For Each item As Object() In MyBase.AddInLoader.GetAssembliesClassFunctions(XeoraCube.VSAddIn.AddInLoader.SearchTypes.Addon, QueryDll, Me._ClassID)
+                                For Each item As Object() In MyBase.AddInLoader.GetAssembliesClassFunctions(Xeora.VSAddIn.AddInLoader.SearchTypes.Child, QueryDll, Me._ClassID)
                                     Dim MethodGuid As Guid = Guid.NewGuid()
 
                                     MyBase.lwControls.Items.Add(String.Empty, 0)

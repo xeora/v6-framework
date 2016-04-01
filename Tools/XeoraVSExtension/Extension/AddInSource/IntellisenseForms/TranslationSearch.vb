@@ -1,4 +1,4 @@
-﻿Namespace XeoraCube.VSAddIn.Forms
+﻿Namespace Xeora.VSAddIn.Forms
     Public Class TranslationSearch
         Inherits ISFormBase
 
@@ -28,10 +28,10 @@
         Public Overrides Sub FillList()
             Me._FillList(Me._TranslationsPath)
 
-            Dim ParentDI As IO.DirectoryInfo = _
+            Dim ParentDI As IO.DirectoryInfo =
                 IO.Directory.GetParent(Me._TranslationsPath)
             If ParentDI.GetDirectories("Addons").Length = 0 Then _
-                Me._FillList(IO.Path.GetFullPath(IO.Path.Combine(Me._TranslationsPath, "../../../../Translations")))
+                Me._FillList(IO.Path.GetFullPath(IO.Path.Combine(Me._TranslationsPath, "../../../../Languages")))
 
             MyBase.Sort()
         End Sub
@@ -40,24 +40,24 @@
             Dim cFStream As IO.FileStream = Nothing
 
             Try
-                Dim TranslationFileNames As String() = _
+                Dim TranslationFileNames As String() =
                     IO.Directory.GetFiles(TranslationsPath, "*.xml")
 
                 Dim TranslationCompile As New Generic.Dictionary(Of String, Integer)
                 For Each TranslationFileName As String In TranslationFileNames
                     Try
-                        cFStream = New IO.FileStream( _
-                                        TranslationFileName, IO.FileMode.Open, _
+                        cFStream = New IO.FileStream(
+                                        TranslationFileName, IO.FileMode.Open,
                                         IO.FileAccess.Read, IO.FileShare.ReadWrite)
                         Dim xPathDocument As New Xml.XPath.XPathDocument(cFStream)
-                        Dim xPathNavigator As Xml.XPath.XPathNavigator = _
+                        Dim xPathNavigator As Xml.XPath.XPathNavigator =
                             xPathDocument.CreateNavigator()
                         Dim xPathIter As Xml.XPath.XPathNodeIterator
 
-                        xPathIter = xPathNavigator.Select("/translations/translation")
+                        xPathIter = xPathNavigator.Select("/language/translation")
 
                         Do While xPathIter.MoveNext()
-                            Dim TransID As String = _
+                            Dim TransID As String =
                                 xPathIter.Current.GetAttribute("id", xPathIter.Current.NamespaceURI)
 
                             If TranslationCompile.ContainsKey(TransID) Then _
@@ -72,7 +72,7 @@
 
                 Dim ImageIndex As Integer = 0
                 For Each TransIDKey As String In TranslationCompile.Keys
-                    If TranslationCompile.Item(TransIDKey) = TranslationFileNames.Length AndAlso _
+                    If TranslationCompile.Item(TransIDKey) = TranslationFileNames.Length AndAlso
                         Not MyBase.lwControls.Items.ContainsKey(TransIDKey) Then
 
                         MyBase.lwControls.Items.Add(TransIDKey, String.Empty, ImageIndex)

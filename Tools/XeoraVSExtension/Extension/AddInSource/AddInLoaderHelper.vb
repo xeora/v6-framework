@@ -1,13 +1,13 @@
-﻿Namespace XeoraCube.VSAddIn
+﻿Namespace Xeora.VSAddIn
     Public Class AddInLoaderHelper
         Private Shared _AppDomain As AppDomain = Nothing
-        Private Shared _AddInLoader As XeoraCube.VSAddIn.IAddInLoader = Nothing
+        Private Shared _AddInLoader As Xeora.VSAddIn.IAddInLoader = Nothing
 
         Public Shared Sub CreateAppDomain()
             If AddInLoaderHelper._AppDomain Is Nothing Then
-                Dim ExecutingAssembly As System.Reflection.Assembly = _
+                Dim ExecutingAssembly As System.Reflection.Assembly =
                     System.Reflection.Assembly.GetExecutingAssembly()
-                Dim ExecutingPath As String = _
+                Dim ExecutingPath As String =
                     IO.Path.GetDirectoryName(ExecutingAssembly.Location)
 
                 AddHandler System.AppDomain.CurrentDomain.AssemblyResolve, AddressOf AddInLoaderHelper.AssemblyResolve
@@ -21,12 +21,13 @@
                     .ShadowCopyFiles = Boolean.TrueString
                 End With
 
-                AddInLoaderHelper._AppDomain = _
-                    System.AppDomain.CreateDomain( _
-                        "XeoraAddInLoaderDomain", _
-                        System.AppDomain.CurrentDomain.Evidence, _
-                        AppDomainInfo _
+                AddInLoaderHelper._AppDomain =
+                    System.AppDomain.CreateDomain(
+                        "XeoraAddInLoaderDomain",
+                        System.AppDomain.CurrentDomain.Evidence,
+                        AppDomainInfo
                     )
+                AddHandler AddInLoaderHelper._AppDomain.AssemblyResolve, AddressOf AddInLoaderHelper.AssemblyResolve
             End If
         End Sub
 
@@ -49,7 +50,7 @@
 
                 AddInLoaderHelper._AppDomain = Nothing
 
-                Dim TempLocation As String = _
+                Dim TempLocation As String =
                     IO.Path.Combine(Environment.GetEnvironmentVariable("TEMP"), "XeoraCubeAddInTemp")
 
                 Try
@@ -60,20 +61,20 @@
             End If
         End Sub
 
-        Public Shared ReadOnly Property AddInLoader As XeoraCube.VSAddIn.IAddInLoader
+        Public Shared ReadOnly Property AddInLoader As Xeora.VSAddIn.IAddInLoader
             Get
-                If Not AddInLoaderHelper._AppDomain Is Nothing AndAlso _
+                If Not AddInLoaderHelper._AppDomain Is Nothing AndAlso
                     AddInLoaderHelper._AddInLoader Is Nothing Then
 
                     AddInLoaderHelper._AddInLoader =
                         CType(
                             AddInLoaderHelper._AppDomain.CreateInstanceAndUnwrap(
                                 "Xeora.AddInLoader",
-                                "XeoraCube.VSAddIn.AddInLoader"),
-                            XeoraCube.VSAddIn.IAddInLoader
+                                "Xeora.VSAddIn.AddInLoader"),
+                            Xeora.VSAddIn.IAddInLoader
                         )
                 End If
-                
+
                 Return AddInLoaderHelper._AddInLoader
             End Get
         End Property

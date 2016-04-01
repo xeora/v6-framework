@@ -1,7 +1,7 @@
 Option Strict On
 
 Public Class Compiler
-    Private Class swctFileInfo
+    Private Class XeoraFileInfo
         Private _RegistrationPath As String
         Private _FileLocation As String
 
@@ -21,7 +21,7 @@ Public Class Compiler
 
         Public Property FileLocation() As String
             Get
-                return Me._FileLocation
+                Return Me._FileLocation
             End Get
             Set(ByVal value As String)
                 Me._FileLocation = value
@@ -31,45 +31,45 @@ Public Class Compiler
 
     Public Event Progress(ByVal current As Integer, ByVal total As Integer)
 
-    Private _swctFiles As System.Collections.Generic.List(Of swctFileInfo)
+    Private _XeoraFiles As System.Collections.Generic.List(Of XeoraFileInfo)
     Private _PasswordHash As Byte() = Nothing
 
     Public Sub New(ByVal Password As String)
-        Me._swctFiles = New System.Collections.Generic.List(Of swctFileInfo)
+        Me._XeoraFiles = New System.Collections.Generic.List(Of XeoraFileInfo)
 
         If Not String.IsNullOrEmpty(Password) Then
             Dim MD5 As New System.Security.Cryptography.MD5CryptoServiceProvider
 
-            Me._PasswordHash = MD5.ComputeHash( _
+            Me._PasswordHash = MD5.ComputeHash(
                                     System.Text.Encoding.UTF8.GetBytes(Password))
         End If
     End Sub
 
     Public Sub AddFile(ByVal RegistrationPath As String, ByVal FileLocation As String)
-        Me._swctFiles.Add( _
-                    New swctFileInfo(RegistrationPath, FileLocation))
+        Me._XeoraFiles.Add(
+                    New XeoraFileInfo(RegistrationPath, FileLocation))
     End Sub
 
     Public Sub RemoveFile(ByVal RegistrationPath As String, ByVal FileLocation As String)
-        For fC As Integer = Me._swctFiles.Count - 1 To 0 Step -1
-            If String.Compare( _
-                    Me._swctFiles(fC).RegistrationPath, RegistrationPath) = 0 AndAlso _
-               String.Compare( _
-                    Me._swctFiles(fC).FileLocation, FileLocation) = 0 Then
+        For fC As Integer = Me._XeoraFiles.Count - 1 To 0 Step -1
+            If String.Compare(
+                    Me._XeoraFiles(fC).RegistrationPath, RegistrationPath) = 0 AndAlso
+               String.Compare(
+                    Me._XeoraFiles(fC).FileLocation, FileLocation) = 0 Then
 
-                Me._swctFiles.RemoveAt(fC)
+                Me._XeoraFiles.RemoveAt(fC)
             End If
         Next
     End Sub
 
-    Public Sub CreateThemeFile(ByRef OutputStream As IO.Stream)
-        If Me._swctFiles.Count = 0 Then Throw New Exception("File List must not be empty!")
+    Public Sub CreateDomainFile(ByRef OutputStream As IO.Stream)
+        If Me._XeoraFiles.Count = 0 Then Throw New Exception("File List must not be empty!")
         If OutputStream Is Nothing Then Throw New Exception("Output Stream must be defined!")
 
         ' 1 For File Preperation
         ' 1 For Index Creating
         ' Total 2
-        RaiseEvent Progress(0, Me._swctFiles.Count + 2)
+        RaiseEvent Progress(0, Me._XeoraFiles.Count + 2)
 
         ' Compiler Streams
         Dim IndexStream As New IO.MemoryStream, IndexBinaryWriter As New IO.BinaryWriter(IndexStream, System.Text.Encoding.UTF8)
@@ -85,10 +85,10 @@ Public Class Compiler
         Dim eC As Integer = 1
         ' !--
 
-        For Each swctFI As swctFileInfo In Me._swctFiles
+        For Each XFI As XeoraFileInfo In Me._XeoraFiles
             tContentStream = New IO.MemoryStream()
 
-            FileStream = New IO.FileStream(swctFI.FileLocation, IO.FileMode.Open, IO.FileAccess.Read)
+            FileStream = New IO.FileStream(XFI.FileLocation, IO.FileMode.Open, IO.FileAccess.Read)
             GZipStream = New IO.Compression.GZipStream(tContentStream, IO.Compression.CompressionMode.Compress, True)
 
             Do
@@ -102,13 +102,13 @@ Public Class Compiler
             FileStream.Close() : GC.SuppressFinalize(FileStream)
 
             ' CREATE INDEX
-            FI = New IO.FileInfo(swctFI.FileLocation)
+            FI = New IO.FileInfo(XFI.FileLocation)
 
             ' Write Index Info
             IndexBinaryWriter.Write(RealContentStream.Position)
 
             ' Write RegistrationPath
-            IndexBinaryWriter.Write(swctFI.RegistrationPath)
+            IndexBinaryWriter.Write(XFI.RegistrationPath)
 
             ' Write FileName
             IndexBinaryWriter.Write(FI.Name)
@@ -135,7 +135,7 @@ Public Class Compiler
                         tContentStream.Seek(-rC, IO.SeekOrigin.Current)
 
                         For bC As Integer = 0 To rC - 1
-                            tContentStream.WriteByte( _
+                            tContentStream.WriteByte(
                                 buffer(bC) Xor Me._PasswordHash(bC Mod Me._PasswordHash.Length))
                         Next
                     End If
@@ -155,7 +155,7 @@ Public Class Compiler
 
             tContentStream.Close() : GC.SuppressFinalize(tContentStream)
 
-            RaiseEvent Progress(eC, Me._swctFiles.Count + 2)
+            RaiseEvent Progress(eC, Me._XeoraFiles.Count + 2)
 
             eC += 1
         Next
@@ -190,6 +190,6 @@ Public Class Compiler
         IndexBinaryWriter.Close() : GC.SuppressFinalize(IndexBinaryWriter)
         RealContentStream.Close() : GC.SuppressFinalize(RealContentStream)
 
-        RaiseEvent Progress(eC + 1, Me._swctFiles.Count + 2)
+        RaiseEvent Progress(eC + 1, Me._XeoraFiles.Count + 2)
     End Sub
 End Class

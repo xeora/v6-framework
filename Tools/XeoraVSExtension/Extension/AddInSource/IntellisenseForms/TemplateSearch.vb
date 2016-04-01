@@ -1,4 +1,4 @@
-﻿Namespace XeoraCube.VSAddIn.Forms
+﻿Namespace Xeora.VSAddIn.Forms
     Public Class TemplateSearch
         Inherits ISFormBase
 
@@ -28,10 +28,10 @@
         Public Overrides Sub FillList()
             Me._FillList(Me._TemplatesPath)
 
-            Dim ParentDI As IO.DirectoryInfo = _
+            Dim ParentDI As IO.DirectoryInfo =
                 IO.Directory.GetParent(Me._TemplatesPath)
             If ParentDI.GetDirectories("Addons").Length = 0 Then _
-                Me._FillList(IO.Path.GetFullPath(IO.Path.Combine(Me._TemplatesPath, "../../../../Templates")))
+                Me._FillList(IO.Path.GetFullPath(IO.Path.Combine(Me._TemplatesPath, "../../../Templates")))
 
             MyBase.Sort()
         End Sub
@@ -40,14 +40,14 @@
             Dim cFStream As IO.FileStream = Nothing
 
             Try
-                Dim TemplateFileNames As String() = _
+                Dim TemplateFileNames As String() =
                     IO.Directory.GetFiles(TemplatesPath, "*.htm")
 
-                cFStream = New IO.FileStream( _
-                                IO.Path.Combine(TemplatesPath, "Configuration.xml"), _
+                cFStream = New IO.FileStream(
+                                IO.Path.Combine(TemplatesPath, "Configuration.xml"),
                                 IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
                 Dim xPathDocument As New Xml.XPath.XPathDocument(cFStream)
-                Dim xPathNavigator As Xml.XPath.XPathNavigator = _
+                Dim xPathNavigator As Xml.XPath.XPathNavigator =
                     xPathDocument.CreateNavigator()
                 Dim xPathIter As Xml.XPath.XPathNodeIterator
 

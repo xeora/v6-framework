@@ -1,6 +1,6 @@
 ﻿Option Strict On
 
-Namespace XeoraCube.VSAddIn
+Namespace Xeora.VSAddIn
     Public Class Globals
         Public Enum ControlTypes
             Textbox
@@ -44,17 +44,17 @@ Namespace XeoraCube.VSAddIn
         Public Shared Function ParseControlType(ByVal cTString As String) As Globals.ControlTypes
             Dim rControlType As Globals.ControlTypes = Globals.ControlTypes.Unknown
 
-            Dim ControlTypeNames As String() = _
+            Dim ControlTypeNames As String() =
                     [Enum].GetNames(GetType(Globals.ControlTypes))
 
             For Each ControlTypeName As String In ControlTypeNames
                 If String.Compare(ControlTypeName, cTString, True, New System.Globalization.CultureInfo("en-US")) = 0 Then
-                    rControlType = CType( _
-                                        [Enum].Parse( _
-                                            GetType(Globals.ControlTypes), _
-                                            ControlTypeName, _
-                                            True _
-                                        ),  _
+                    rControlType = CType(
+                                        [Enum].Parse(
+                                            GetType(Globals.ControlTypes),
+                                            ControlTypeName,
+                                            True
+                                        ),
                                         Globals.ControlTypes)
 
                     Exit For

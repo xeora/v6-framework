@@ -83,10 +83,10 @@
       <DependentUpon>frmMain.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="frmThemePassword.Designer.vb">
-      <DependentUpon>frmThemePassword.vb</DependentUpon>
+    <Compile Include="frmDomainPassword.Designer.vb">
+      <DependentUpon>frmDomainPassword.vb</DependentUpon>
     </Compile>
-    <Compile Include="frmThemePassword.vb">
+    <Compile Include="frmDomainPassword.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="My Project\AssemblyInfo.vb" />
@@ -110,9 +110,9 @@
       <SubType>Designer</SubType>
       <DependentUpon>frmMain.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="frmThemePassword.resx">
+    <EmbeddedResource Include="frmDomainPassword.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>frmThemePassword.vb</DependentUpon>
+      <DependentUpon>frmDomainPassword.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>

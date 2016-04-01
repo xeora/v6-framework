@@ -25,7 +25,7 @@ Public NotInheritable Class XeoraCommand
     Private ReadOnly package As Package
 
     Private _applicationObject As DTE = Nothing
-    Private _addInControl As XeoraCube.VSAddIn.AddInControl
+    Private _addInControl As Xeora.VSAddIn.AddInControl
 
     Private WithEvents _textDocumentKeyPressEvents As EnvDTE80.TextDocumentKeyPressEvents
 
@@ -55,11 +55,11 @@ Public NotInheritable Class XeoraCommand
             Dim appEvents As EnvDTE80.Events2 = CType(Me._applicationObject.Events, Events2)
             Me._textDocumentKeyPressEvents = CType(appEvents.TextDocumentKeyPressEvents(Nothing), EnvDTE80.TextDocumentKeyPressEvents)
 
-            Me._addInControl = New XeoraCube.VSAddIn.AddInControl(Me._applicationObject)
+            Me._addInControl = New Xeora.VSAddIn.AddInControl(Me._applicationObject)
 
             AddHandler Me._textDocumentKeyPressEvents.AfterKeyPress, New _dispTextDocumentKeyPressEvents_AfterKeyPressEventHandler(AddressOf Me._addInControl.event_TDAfterKeyPressed)
 
-            XeoraCube.VSAddIn.AddInLoaderHelper.CreateAppDomain()
+            Xeora.VSAddIn.AddInLoaderHelper.CreateAppDomain()
         End If
     End Sub
 

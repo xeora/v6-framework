@@ -1,4 +1,4 @@
-﻿Namespace XeoraCube.VSAddIn.Forms
+﻿Namespace Xeora.VSAddIn.Forms
     Public Class AssemblySearch
         Inherits ISFormBase
 
@@ -11,7 +11,7 @@
             MyBase.lwControls.SmallImageList = Me.ilAssembly
         End Sub
 
-        Private _SearchType As AddInLoader.SearchTypes = VSAddIn.AddInLoader.SearchTypes.Theme
+        Private _SearchType As AddInLoader.SearchTypes = VSAddIn.AddInLoader.SearchTypes.Domain
         Private _SearchPath As String = String.Empty
         Private _AssemblyID As String = String.Empty
 
@@ -39,23 +39,23 @@
 
         Public Overrides Sub FillList()
             Try
-                If Me._SearchType = VSAddIn.AddInLoader.SearchTypes.Addon Then
-                    Dim QueryPath As String = IO.Path.GetFullPath(IO.Path.Combine(Me._SearchPath, "../../../../Dlls"))
+                If Me._SearchType = VSAddIn.AddInLoader.SearchTypes.Child Then
+                    Dim QueryPath As String = IO.Path.GetFullPath(IO.Path.Combine(Me._SearchPath, "../../../Executables"))
 
                     If AddInControl.AssemblyCacheObject.IsLatest(QueryPath, AddInControl.AssemblyCache.QueryTypes.None) Then
-                        For Each AssemblyID As String In AddInControl.AssemblyCacheObject.GetAssemblyIDs(VSAddIn.AddInLoader.SearchTypes.Theme, QueryPath)
+                        For Each AssemblyID As String In AddInControl.AssemblyCacheObject.GetAssemblyIDs(VSAddIn.AddInLoader.SearchTypes.Domain, QueryPath)
                             MyBase.lwControls.Items.Add(String.Empty, 0)
                             MyBase.lwControls.Items(MyBase.lwControls.Items.Count - 1).SubItems.Add(AssemblyID)
                         Next
                     Else
-                        For Each AssemblyID As String In MyBase.AddInLoader.GetAssemblies(VSAddIn.AddInLoader.SearchTypes.Theme, QueryPath)
+                        For Each AssemblyID As String In MyBase.AddInLoader.GetAssemblies(VSAddIn.AddInLoader.SearchTypes.Domain, QueryPath)
                             MyBase.lwControls.Items.Add(String.Empty, 0)
                             MyBase.lwControls.Items(MyBase.lwControls.Items.Count - 1).SubItems.Add(AssemblyID)
 
-                            AddInControl.AssemblyCacheObject.AddAssemblyInfo( _
-                                VSAddIn.AddInLoader.SearchTypes.Theme, _
-                                IO.Path.GetFullPath(IO.Path.Combine(Me._SearchPath, "../../../../Dlls")), _
-                                AssemblyID _
+                            AddInControl.AssemblyCacheObject.AddAssemblyInfo(
+                                VSAddIn.AddInLoader.SearchTypes.Domain,
+                                IO.Path.GetFullPath(IO.Path.Combine(Me._SearchPath, "../../../Executables")),
+                                AssemblyID
                             )
                         Next
                     End If
@@ -71,40 +71,40 @@
                         MyBase.lwControls.Items.Add(String.Empty, 0)
                         MyBase.lwControls.Items(MyBase.lwControls.Items.Count - 1).SubItems.Add(AssemblyID)
 
-                        AddInControl.AssemblyCacheObject.AddAssemblyInfo( _
-                            Me._SearchType, _
-                            Me._SearchPath, _
-                            AssemblyID _
+                        AddInControl.AssemblyCacheObject.AddAssemblyInfo(
+                            Me._SearchType,
+                            Me._SearchPath,
+                            AssemblyID
                         )
                     Next
                 End If
 
-                If MyBase.lwControls.Items.Count = 0 AndAlso _
-                    Me._SearchType = VSAddIn.AddInLoader.SearchTypes.Theme Then
+                If MyBase.lwControls.Items.Count = 0 AndAlso
+                    Me._SearchType = VSAddIn.AddInLoader.SearchTypes.Domain Then
 
-                    Dim AddonsPath As String = _
-                        IO.Path.GetFullPath( _
-                            IO.Path.Combine(Me.CurrentSelection.DTE.ActiveDocument.Path, "../Addons") _
+                    Dim AddonsPath As String =
+                        IO.Path.GetFullPath(
+                            IO.Path.Combine(Me.CurrentSelection.DTE.ActiveDocument.Path, "../Addons")
                         )
 
                     If IO.Directory.Exists(AddonsPath) Then
                         For Each AddonPath As String In IO.Directory.GetDirectories(AddonsPath)
-                            Dim SearchPath As String = IO.Path.Combine(AddonPath, "Dlls")
+                            Dim SearchPath As String = IO.Path.Combine(AddonPath, "Executables")
 
                             If AddInControl.AssemblyCacheObject.IsLatest(SearchPath, AddInControl.AssemblyCache.QueryTypes.None) Then
-                                For Each AssemblyID As String In AddInControl.AssemblyCacheObject.GetAssemblyIDs(VSAddIn.AddInLoader.SearchTypes.Addon, SearchPath)
+                                For Each AssemblyID As String In AddInControl.AssemblyCacheObject.GetAssemblyIDs(VSAddIn.AddInLoader.SearchTypes.Child, SearchPath)
                                     MyBase.lwControls.Items.Add(String.Empty, 0)
                                     MyBase.lwControls.Items(MyBase.lwControls.Items.Count - 1).SubItems.Add(AssemblyID)
                                 Next
                             Else
-                                For Each AssemblyID As String In MyBase.AddInLoader.GetAssemblies(VSAddIn.AddInLoader.SearchTypes.Addon, SearchPath)
+                                For Each AssemblyID As String In MyBase.AddInLoader.GetAssemblies(VSAddIn.AddInLoader.SearchTypes.Child, SearchPath)
                                     MyBase.lwControls.Items.Add(String.Empty, 0)
                                     MyBase.lwControls.Items(MyBase.lwControls.Items.Count - 1).SubItems.Add(AssemblyID)
 
-                                    AddInControl.AssemblyCacheObject.AddAssemblyInfo( _
-                                        VSAddIn.AddInLoader.SearchTypes.Addon, _
-                                        SearchPath, _
-                                        AssemblyID _
+                                    AddInControl.AssemblyCacheObject.AddAssemblyInfo(
+                                        VSAddIn.AddInLoader.SearchTypes.Child,
+                                        SearchPath,
+                                        AssemblyID
                                     )
                                 Next
                             End If

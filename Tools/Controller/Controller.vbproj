@@ -62,6 +62,9 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="Xeora.Web.Shared">
+      <HintPath>..\..\..\BeyinPilim\SupportDlls\Xeora.Web.Shared.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Import Include="Microsoft.VisualBasic" />
@@ -120,16 +123,6 @@
       <CustomToolNamespace>My</CustomToolNamespace>
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Web.Managers\Web.Managers.vbproj">
-      <Project>{E5BC4E6F-03C4-4804-9D6E-74A1A01E5EC2}</Project>
-      <Name>Web.Managers</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Web.PlugInsHelper\Web.PlugInsHelper.vbproj">
-      <Project>{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}</Project>
-      <Name>Web.PlugInsHelper</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

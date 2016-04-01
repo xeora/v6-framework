@@ -1,0 +1,10 @@
+P:\XeoraCube\Tools\RegExLibraryCompiler\bin\Debug\RegExLibraryCompiler.exe.config
+P:\XeoraCube\Tools\RegExLibraryCompiler\bin\Debug\RegExLibraryCompiler.exe
+P:\XeoraCube\Tools\RegExLibraryCompiler\bin\Debug\RegExLibraryCompiler.pdb
+P:\XeoraCube\Tools\RegExLibraryCompiler\bin\Debug\RegExLibraryCompiler.xml
+P:\XeoraCube\Tools\RegExLibraryCompiler\obj\Debug\RegExLibraryCompiler.vbprojResolveAssemblyReference.cache
+P:\XeoraCube\Tools\RegExLibraryCompiler\obj\Debug\RegExLibraryCompiler.Resources.resources
+P:\XeoraCube\Tools\RegExLibraryCompiler\obj\Debug\RegExLibraryCompiler.vbproj.GenerateResource.Cache
+P:\XeoraCube\Tools\RegExLibraryCompiler\obj\Debug\RegExLibraryCompiler.exe
+P:\XeoraCube\Tools\RegExLibraryCompiler\obj\Debug\RegExLibraryCompiler.xml
+P:\XeoraCube\Tools\RegExLibraryCompiler\obj\Debug\RegExLibraryCompiler.pdb

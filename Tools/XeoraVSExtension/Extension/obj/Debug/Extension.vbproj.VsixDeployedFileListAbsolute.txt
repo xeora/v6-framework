@@ -5,3 +5,4 @@ C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Jak
 C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\JakPark Solutions\XeoraCube Visual Studio Editor Extension\2.0\\XeoraVSExtension.pkgdef
 C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\JakPark Solutions\XeoraCube Visual Studio Editor Extension\2.0\\extension.vsixmanifest
 C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\JakPark Solutions\XeoraCube Visual Studio Editor Extension\2.0\\Xeora.AddInLoader.pdb
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\JakPark Solutions\XeoraCube Visual Studio Editor Extension\2.0\\Xeora.Web.Shared.dll

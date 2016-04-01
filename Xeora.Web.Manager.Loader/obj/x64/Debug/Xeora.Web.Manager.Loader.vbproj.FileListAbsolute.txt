@@ -1,0 +1,13 @@
+P:\XeoraCube\Web.PlugInsLoader\bin\x64\Xeora.Web.Manager.Loader.dll
+P:\XeoraCube\Web.PlugInsLoader\bin\x64\Xeora.Web.Manager.Loader.pdb
+P:\XeoraCube\Web.PlugInsLoader\obj\x64\Debug\Resources.resources
+P:\XeoraCube\Web.PlugInsLoader\obj\x64\Debug\Xeora.Web.Manager.Loader.vbproj.GenerateResource.Cache
+P:\XeoraCube\Web.PlugInsLoader\obj\x64\Debug\Xeora.Web.Manager.Loader.dll
+P:\XeoraCube\Web.PlugInsLoader\obj\x64\Debug\Xeora.Web.Manager.Loader.pdb
+P:\XeoraCube\Xeora.Web.Manager.Loader\bin\x64\Xeora.Web.Manager.Loader.dll
+P:\XeoraCube\Xeora.Web.Manager.Loader\bin\x64\Xeora.Web.Manager.Loader.pdb
+P:\XeoraCube\Xeora.Web.Manager.Loader\obj\x64\Debug\Xeora.Web.Manager.Loader.vbprojResolveAssemblyReference.cache
+P:\XeoraCube\Xeora.Web.Manager.Loader\obj\x64\Debug\Resources.resources
+P:\XeoraCube\Xeora.Web.Manager.Loader\obj\x64\Debug\Xeora.Web.Manager.Loader.vbproj.GenerateResource.Cache
+P:\XeoraCube\Xeora.Web.Manager.Loader\obj\x64\Debug\Xeora.Web.Manager.Loader.dll
+P:\XeoraCube\Xeora.Web.Manager.Loader\obj\x64\Debug\Xeora.Web.Manager.Loader.pdb

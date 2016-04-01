@@ -1,4 +1,4 @@
-﻿Namespace XeoraCube.VSAddIn.Forms
+﻿Namespace Xeora.VSAddIn.Forms
     Public MustInherit Class ISFormBase
         Public Delegate Sub EnteredTextDelegate(ByVal CurrentText As String, ByVal BeginningOffset As Integer, ByVal Selection As EnvDTE.TextSelection, ByVal RaiseIntelliSense As Boolean)
         Public Delegate Sub BackSpaceForEmptyTextDelegate(ByVal Selection As EnvDTE.TextSelection)
@@ -17,7 +17,7 @@
             Me._BeginningOffset = BeginningOffset
         End Sub
 
-        Protected ReadOnly Property AddInLoader() As XeoraCube.VSAddIn.IAddInLoader
+        Protected ReadOnly Property AddInLoader() As Xeora.VSAddIn.IAddInLoader
             Get
                 Return AddInLoaderHelper.AddInLoader
             End Get
@@ -355,8 +355,13 @@
             Dim rItem As ListViewItem = Nothing
 
             For Each item As ListViewItem In Me.lwControls.Items
-                If item.SubItems(1).Text.IndexOf(Me._CurrentCache, 0, StringComparison.InvariantCultureIgnoreCase) = 0 Then _
-                    rItem = item : Exit For
+                If TypeOf Me Is SpecialSearch Then
+                    If item.SubItems(3).Text.IndexOf(Me._CurrentCache, 0, StringComparison.InvariantCultureIgnoreCase) = 0 Then _
+                        rItem = item : Exit For
+                Else
+                    If item.SubItems(1).Text.IndexOf(Me._CurrentCache, 0, StringComparison.InvariantCultureIgnoreCase) = 0 Then _
+                        rItem = item : Exit For
+                End If
             Next
 
             Return rItem
@@ -438,27 +443,27 @@
             Dim rString As String = String.Empty
 
             Select Case sT
-                Case VSAddIn.AddInLoader.SearchTypes.Addon
+                Case VSAddIn.AddInLoader.SearchTypes.Child
                     For Each AssemblyFile As String In IO.Directory.GetFiles(SearchPath, "*.dll")
                         If IO.Path.GetFileName(AssemblyFile).IndexOf(AssemblyID) = 0 Then _
-                            sT = VSAddIn.AddInLoader.SearchTypes.Addon : rString = IO.Path.GetDirectoryName(AssemblyFile) : Exit For
+                            sT = VSAddIn.AddInLoader.SearchTypes.Child : rString = IO.Path.GetDirectoryName(AssemblyFile) : Exit For
                     Next
 
                     If String.IsNullOrEmpty(rString) Then
-                        For Each AssemblyFile As String In IO.Directory.GetFiles(IO.Path.Combine(SearchPath, "../../../../Dlls"), "*.dll")
+                        For Each AssemblyFile As String In IO.Directory.GetFiles(IO.Path.Combine(SearchPath, "../../../Executables"), "*.dll")
                             If IO.Path.GetFileName(AssemblyFile).IndexOf(AssemblyID) = 0 Then _
-                                sT = VSAddIn.AddInLoader.SearchTypes.Theme : rString = IO.Path.GetDirectoryName(AssemblyFile) : Exit For
+                                sT = VSAddIn.AddInLoader.SearchTypes.Domain : rString = IO.Path.GetDirectoryName(AssemblyFile) : Exit For
                         Next
 
-                        If String.IsNullOrEmpty(rString) Then sT = VSAddIn.AddInLoader.SearchTypes.Theme : rString = SearchPath
+                        If String.IsNullOrEmpty(rString) Then sT = VSAddIn.AddInLoader.SearchTypes.Domain : rString = SearchPath
                     End If
-                Case VSAddIn.AddInLoader.SearchTypes.Theme
+                Case VSAddIn.AddInLoader.SearchTypes.Domain
                     For Each AssemblyFile As String In IO.Directory.GetFiles(SearchPath, "*.dll")
                         If IO.Path.GetFileName(AssemblyFile).IndexOf(AssemblyID) = 0 Then _
-                            sT = VSAddIn.AddInLoader.SearchTypes.Theme : rString = IO.Path.GetDirectoryName(AssemblyFile) : Exit For
+                            sT = VSAddIn.AddInLoader.SearchTypes.Domain : rString = IO.Path.GetDirectoryName(AssemblyFile) : Exit For
                     Next
 
-                    If String.IsNullOrEmpty(rString) Then sT = VSAddIn.AddInLoader.SearchTypes.Theme : rString = SearchPath
+                    If String.IsNullOrEmpty(rString) Then sT = VSAddIn.AddInLoader.SearchTypes.Domain : rString = SearchPath
             End Select
 
             Return rString

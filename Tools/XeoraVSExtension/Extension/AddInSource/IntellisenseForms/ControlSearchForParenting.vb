@@ -1,4 +1,4 @@
-﻿Namespace XeoraCube.VSAddIn.Forms
+﻿Namespace Xeora.VSAddIn.Forms
     Public Class ControlSearchForParenting
         Inherits ISFormBase
 
@@ -50,30 +50,30 @@
         End Sub
 
         Private Sub _FillList(ByVal TemplatesPath As String)
-            Dim editCursor As EnvDTE.EditPoint = _
+            Dim editCursor As EnvDTE.EditPoint =
                 MyBase.CurrentSelection.ActivePoint.CreateEditPoint()
 
-            Dim CurrentLine As Integer = _
+            Dim CurrentLine As Integer =
                 editCursor.Line
 
             editCursor.EndOfDocument()
-            Dim LastCharOffset As Integer = _
+            Dim LastCharOffset As Integer =
                 editCursor.AbsoluteCharOffset
 
             editCursor.StartOfDocument()
-            Dim PageContentText As String = _
+            Dim PageContentText As String =
                 editCursor.GetText(LastCharOffset)
 
             editCursor.MoveToLineAndOffset(CurrentLine, MyBase.BeginningOffset)
 
             ' Search Controls in PageContentText
-            Dim SearchMatches As System.Text.RegularExpressions.MatchCollection = _
+            Dim SearchMatches As System.Text.RegularExpressions.MatchCollection =
                 System.Text.RegularExpressions.Regex.Matches(PageContentText, "\$C(\<\d+(\+)?\>)?(\[[\.\w\-]+\])?\:(?<ControlID>[\.\w\-]+)\:")
 
             For Each regexMatch As System.Text.RegularExpressions.Match In SearchMatches
                 If regexMatch.Success Then
                     Dim ControlID As String = regexMatch.Groups.Item("ControlID").Value
-                    Dim ControlType As Globals.ControlTypes = _
+                    Dim ControlType As Globals.ControlTypes =
                         Me.GetControlType(TemplatesPath, ControlID)
 
                     If ControlType <> Globals.ControlTypes.Unknown Then
@@ -83,7 +83,7 @@
                                 MyBase.lwControls.Items(MyBase.lwControls.Items.Count - 1).SubItems.Add(ControlID)
                             End If
                         Else
-                            If Me._FilterByTypes.IndexOf(ControlType) > -1 AndAlso _
+                            If Me._FilterByTypes.IndexOf(ControlType) > -1 AndAlso
                                 Not MyBase.lwControls.Items.ContainsKey(ControlID) Then
 
                                 MyBase.lwControls.Items.Add(ControlID, String.Empty, ControlType)
@@ -100,27 +100,27 @@
             Dim cFStream As IO.FileStream = Nothing
 
             Try
-                cFStream = New IO.FileStream( _
-                                IO.Path.Combine(TemplatesPath, "ControlsMap.xml"), _
+                cFStream = New IO.FileStream(
+                                IO.Path.Combine(TemplatesPath, "ControlsMap.xml"),
                                 IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
                 Dim xPathDocument As New Xml.XPath.XPathDocument(cFStream)
-                Dim xPathNavigator As Xml.XPath.XPathNavigator = _
+                Dim xPathNavigator As Xml.XPath.XPathNavigator =
                     xPathDocument.CreateNavigator()
-                Dim xPathIter As Xml.XPath.XPathNodeIterator = _
-                    xPathNavigator.Select("//Map")
+                Dim xPathIter As Xml.XPath.XPathNodeIterator =
+                    xPathNavigator.Select("//ControlsMap/Control")
                 Dim xPathIter2 As Xml.XPath.XPathNodeIterator
 
                 Do While xPathIter.MoveNext()
                     xPathIter2 = xPathIter.Clone()
 
-                    ControlID = xPathIter.Current.GetAttribute("controlid", xPathIter.Current.NamespaceURI)
+                    ControlID = xPathIter.Current.GetAttribute("id", xPathIter.Current.NamespaceURI)
                     rControlType = Globals.ControlTypes.Unknown
 
                     If xPathIter2.Current.MoveToFirstChild() Then
                         Do
                             Select Case xPathIter2.Current.Name.ToLower(New System.Globalization.CultureInfo("en-US"))
                                 Case "type"
-                                    Dim xControlType As String = _
+                                    Dim xControlType As String =
                                             xPathIter2.Current.Value
 
                                     rControlType = Globals.ParseControlType(xControlType)
@@ -132,10 +132,10 @@
                 Loop
 
                 If rControlType = Globals.ControlTypes.Unknown Then
-                    Dim ParentDI As IO.DirectoryInfo = _
+                    Dim ParentDI As IO.DirectoryInfo =
                         IO.Directory.GetParent(Me._TemplatesPath)
                     If ParentDI.GetDirectories("Addons").Length = 0 Then _
-                        rControlType = Me.GetControlType(IO.Path.GetFullPath(IO.Path.Combine(Me._TemplatesPath, "../../../../Templates")), ControlID)
+                        rControlType = Me.GetControlType(IO.Path.GetFullPath(IO.Path.Combine(Me._TemplatesPath, "../../../Templates")), ControlID)
                 End If
             Catch ex As Exception
                 ' Just Handle Exceptions

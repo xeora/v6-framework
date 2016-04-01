@@ -65,9 +65,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Web.PlugInsHelper\Web.PlugInsHelper.vbproj">
+    <ProjectReference Include="..\Web.PlugInsHelper\Xeora.Web.Shared.vbproj">
       <Project>{3BD395F0-49E9-418C-8EC1-88FA5A3239B2}</Project>
-      <Name>Web.PlugInsHelper</Name>
+      <Name>Xeora.Web.Shared</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

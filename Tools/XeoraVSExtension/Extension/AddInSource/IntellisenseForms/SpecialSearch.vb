@@ -1,4 +1,4 @@
-﻿Namespace XeoraCube.VSAddIn.Forms
+﻿Namespace Xeora.VSAddIn.Forms
     Public Class SpecialSearch
         Inherits ISFormBase
 
@@ -13,7 +13,7 @@
             MyBase.UnmatchedAutoCompleteCloseLimit = 4
 
             Me._PropertyList = New String() {
-                "0:ThemePublicContents:ThemeContentsMarker:S",
+                "0:DomainContents:DomainContentsMarker:S",
                 "1:C:Control:C",
                 "2:F:ServerFunction:C",
                 "3:XF:ClientFunction:B",
@@ -77,7 +77,7 @@
                         MyBase.lwControls.Items(MyBase.lwControls.Items.Count - 1).SubItems.Add(PropertyID)
                     End If
                 Else
-                    If Me._FilterByTypes.IndexOf(PropertyType) > -1 AndAlso _
+                    If Me._FilterByTypes.IndexOf(PropertyType) > -1 AndAlso
                         Not MyBase.lwControls.Items.ContainsKey(PropertyID) Then
 
                         MyBase.lwControls.Items.Add(PropertyName, String.Empty, PropertyType)
@@ -116,7 +116,7 @@
         Private Sub SpecialSearch_KeyPress(sender As Object, e As KeyPressEventArgs) Handles Me.KeyPress
             Select Case e.KeyChar
                 Case ":"c
-                    If (Not Me.CurrentCache Is Nothing AndAlso Me.CurrentCache.Length > 0) OrElse _
+                    If (Not Me.CurrentCache Is Nothing AndAlso Me.CurrentCache.Length > 0) OrElse
                         MyBase.lwControls.SelectedItems.Count > 0 Then
 
                         Dim CurrentCache As String = Me.CurrentCache
@@ -129,10 +129,10 @@
                         Dim IsMatched As Boolean = False
 
                         For Each [Property] As String In Me._PropertyList
-                            Dim PropertyID As String = _
+                            Dim PropertyID As String =
                                 [Property].Split(":"c)(0)
 
-                            If PropertyID.IndexOf(CurrentCache) = 0 AndAlso _
+                            If PropertyID.IndexOf(CurrentCache) = 0 AndAlso
                                 String.Compare([Property].Split(":"c)(1), "B") = 0 Then IsMatched = True : Exit For
                         Next
 

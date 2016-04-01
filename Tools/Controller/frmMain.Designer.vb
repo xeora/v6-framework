@@ -19,114 +19,124 @@ Partial Class frmMain
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.Label1 = New System.Windows.Forms.Label
-        Me.tbThemePath = New System.Windows.Forms.TextBox
-        Me.butBrowse = New System.Windows.Forms.Button
-        Me.lbProjectThemes = New System.Windows.Forms.ListBox
-        Me.Label2 = New System.Windows.Forms.Label
-        Me.tbExamResults = New System.Windows.Forms.TextBox
-        Me.Label3 = New System.Windows.Forms.Label
-        Me.ProgressBar1 = New System.Windows.Forms.ProgressBar
+        Me.Label1 = New System.Windows.Forms.Label()
+        Me.tbDomainsPath = New System.Windows.Forms.TextBox()
+        Me.butBrowse = New System.Windows.Forms.Button()
+        Me.lbProjectDomains = New System.Windows.Forms.ListBox()
+        Me.Label2 = New System.Windows.Forms.Label()
+        Me.tbExamResults = New System.Windows.Forms.TextBox()
+        Me.Label3 = New System.Windows.Forms.Label()
+        Me.ProgressBar1 = New System.Windows.Forms.ProgressBar()
         Me.SuspendLayout()
         '
         'Label1
         '
         Me.Label1.AutoSize = True
         Me.Label1.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(162, Byte))
-        Me.Label1.Location = New System.Drawing.Point(12, 9)
+        Me.Label1.Location = New System.Drawing.Point(24, 17)
+        Me.Label1.Margin = New System.Windows.Forms.Padding(6, 0, 6, 0)
         Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(87, 13)
+        Me.Label1.Size = New System.Drawing.Size(183, 26)
         Me.Label1.TabIndex = 0
-        Me.Label1.Text = "Theme Path : "
+        Me.Label1.Text = "Domains Path : "
         '
-        'tbThemePath
+        'tbDomainsPath
         '
-        Me.tbThemePath.AllowDrop = True
-        Me.tbThemePath.Location = New System.Drawing.Point(97, 6)
-        Me.tbThemePath.Name = "tbThemePath"
-        Me.tbThemePath.ReadOnly = True
-        Me.tbThemePath.Size = New System.Drawing.Size(354, 20)
-        Me.tbThemePath.TabIndex = 1
+        Me.tbDomainsPath.AllowDrop = True
+        Me.tbDomainsPath.Location = New System.Drawing.Point(200, 12)
+        Me.tbDomainsPath.Margin = New System.Windows.Forms.Padding(6)
+        Me.tbDomainsPath.Name = "tbDomainsPath"
+        Me.tbDomainsPath.ReadOnly = True
+        Me.tbDomainsPath.Size = New System.Drawing.Size(698, 31)
+        Me.tbDomainsPath.TabIndex = 1
         '
         'butBrowse
         '
-        Me.butBrowse.Location = New System.Drawing.Point(457, 4)
+        Me.butBrowse.Location = New System.Drawing.Point(914, 8)
+        Me.butBrowse.Margin = New System.Windows.Forms.Padding(6)
         Me.butBrowse.Name = "butBrowse"
-        Me.butBrowse.Size = New System.Drawing.Size(75, 23)
+        Me.butBrowse.Size = New System.Drawing.Size(150, 44)
         Me.butBrowse.TabIndex = 2
         Me.butBrowse.Text = "Browse"
         Me.butBrowse.UseVisualStyleBackColor = True
         '
-        'lbProjectThemes
+        'lbProjectDomains
         '
-        Me.lbProjectThemes.FormattingEnabled = True
-        Me.lbProjectThemes.Location = New System.Drawing.Point(15, 50)
-        Me.lbProjectThemes.Name = "lbProjectThemes"
-        Me.lbProjectThemes.Size = New System.Drawing.Size(120, 238)
-        Me.lbProjectThemes.TabIndex = 3
+        Me.lbProjectDomains.FormattingEnabled = True
+        Me.lbProjectDomains.ItemHeight = 25
+        Me.lbProjectDomains.Location = New System.Drawing.Point(30, 96)
+        Me.lbProjectDomains.Margin = New System.Windows.Forms.Padding(6)
+        Me.lbProjectDomains.Name = "lbProjectDomains"
+        Me.lbProjectDomains.Size = New System.Drawing.Size(236, 454)
+        Me.lbProjectDomains.TabIndex = 3
         '
         'Label2
         '
         Me.Label2.AutoSize = True
         Me.Label2.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(162, Byte))
-        Me.Label2.Location = New System.Drawing.Point(12, 34)
+        Me.Label2.Location = New System.Drawing.Point(24, 65)
+        Me.Label2.Margin = New System.Windows.Forms.Padding(6, 0, 6, 0)
         Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(95, 13)
+        Me.Label2.Size = New System.Drawing.Size(188, 26)
         Me.Label2.TabIndex = 4
-        Me.Label2.Text = "Project Themes"
+        Me.Label2.Text = "Project Domains"
         '
         'tbExamResults
         '
-        Me.tbExamResults.Location = New System.Drawing.Point(141, 50)
+        Me.tbExamResults.Location = New System.Drawing.Point(282, 96)
+        Me.tbExamResults.Margin = New System.Windows.Forms.Padding(6)
         Me.tbExamResults.Multiline = True
         Me.tbExamResults.Name = "tbExamResults"
         Me.tbExamResults.ScrollBars = System.Windows.Forms.ScrollBars.Vertical
-        Me.tbExamResults.Size = New System.Drawing.Size(391, 238)
+        Me.tbExamResults.Size = New System.Drawing.Size(778, 454)
         Me.tbExamResults.TabIndex = 5
         '
         'Label3
         '
         Me.Label3.AutoSize = True
         Me.Label3.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(162, Byte))
-        Me.Label3.Location = New System.Drawing.Point(141, 34)
+        Me.Label3.Location = New System.Drawing.Point(282, 65)
+        Me.Label3.Margin = New System.Windows.Forms.Padding(6, 0, 6, 0)
         Me.Label3.Name = "Label3"
-        Me.Label3.Size = New System.Drawing.Size(119, 13)
+        Me.Label3.Size = New System.Drawing.Size(237, 26)
         Me.Label3.TabIndex = 6
-        Me.Label3.Text = "Theme Exam Result"
+        Me.Label3.Text = "Domain Exam Result"
         '
         'ProgressBar1
         '
-        Me.ProgressBar1.Location = New System.Drawing.Point(141, 294)
+        Me.ProgressBar1.Location = New System.Drawing.Point(282, 565)
+        Me.ProgressBar1.Margin = New System.Windows.Forms.Padding(6)
         Me.ProgressBar1.Name = "ProgressBar1"
-        Me.ProgressBar1.Size = New System.Drawing.Size(391, 10)
+        Me.ProgressBar1.Size = New System.Drawing.Size(782, 19)
         Me.ProgressBar1.TabIndex = 7
         '
         'frmMain
         '
-        Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
+        Me.AutoScaleDimensions = New System.Drawing.SizeF(12.0!, 25.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(543, 315)
+        Me.ClientSize = New System.Drawing.Size(1086, 606)
         Me.Controls.Add(Me.ProgressBar1)
         Me.Controls.Add(Me.Label3)
         Me.Controls.Add(Me.tbExamResults)
         Me.Controls.Add(Me.Label2)
-        Me.Controls.Add(Me.lbProjectThemes)
+        Me.Controls.Add(Me.lbProjectDomains)
         Me.Controls.Add(Me.butBrowse)
-        Me.Controls.Add(Me.tbThemePath)
+        Me.Controls.Add(Me.tbDomainsPath)
         Me.Controls.Add(Me.Label1)
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog
+        Me.Margin = New System.Windows.Forms.Padding(6)
         Me.MaximizeBox = False
         Me.Name = "frmMain"
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
-        Me.Text = "Solid Web Content Theme Controller"
+        Me.Text = "XeoraCube Domain Controller"
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
     End Sub
     Friend WithEvents Label1 As System.Windows.Forms.Label
-    Friend WithEvents tbThemePath As System.Windows.Forms.TextBox
+    Friend WithEvents tbDomainsPath As System.Windows.Forms.TextBox
     Friend WithEvents butBrowse As System.Windows.Forms.Button
-    Friend WithEvents lbProjectThemes As System.Windows.Forms.ListBox
+    Friend WithEvents lbProjectDomains As System.Windows.Forms.ListBox
     Friend WithEvents Label2 As System.Windows.Forms.Label
     Friend WithEvents tbExamResults As System.Windows.Forms.TextBox
     Friend WithEvents Label3 As System.Windows.Forms.Label

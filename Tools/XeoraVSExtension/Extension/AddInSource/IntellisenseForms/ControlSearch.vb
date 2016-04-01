@@ -1,4 +1,4 @@
-﻿Namespace XeoraCube.VSAddIn.Forms
+﻿Namespace Xeora.VSAddIn.Forms
     Public Class ControlSearch
         Inherits ISFormBase
 
@@ -44,10 +44,10 @@
         Public Overrides Sub FillList()
             Me._FillList(Me._TemplatesPath)
 
-            Dim ParentDI As IO.DirectoryInfo = _
+            Dim ParentDI As IO.DirectoryInfo =
                 IO.Directory.GetParent(Me._TemplatesPath)
             If ParentDI.GetDirectories("Addons").Length = 0 Then _
-                Me._FillList(IO.Path.GetFullPath(IO.Path.Combine(Me._TemplatesPath, "../../../../Templates")))
+                Me._FillList(IO.Path.GetFullPath(IO.Path.Combine(Me._TemplatesPath, "../../../Templates")))
 
             MyBase.Sort()
         End Sub
@@ -58,27 +58,27 @@
             Try
                 Dim ControlID As String, ControlType As Globals.ControlTypes
 
-                cFStream = New IO.FileStream( _
-                                IO.Path.Combine(TemplatesPath, "ControlsMap.xml"), _
+                cFStream = New IO.FileStream(
+                                IO.Path.Combine(TemplatesPath, "ControlsMap.xml"),
                                 IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
                 Dim xPathDocument As New Xml.XPath.XPathDocument(cFStream)
-                Dim xPathNavigator As Xml.XPath.XPathNavigator = _
+                Dim xPathNavigator As Xml.XPath.XPathNavigator =
                     xPathDocument.CreateNavigator()
-                Dim xPathIter As Xml.XPath.XPathNodeIterator = _
-                    xPathNavigator.Select("//Map")
+                Dim xPathIter As Xml.XPath.XPathNodeIterator =
+                    xPathNavigator.Select("//ControlsMap/Control")
                 Dim xPathIter2 As Xml.XPath.XPathNodeIterator
 
                 Do While xPathIter.MoveNext()
                     xPathIter2 = xPathIter.Clone()
 
-                    ControlID = xPathIter.Current.GetAttribute("controlid", xPathIter.Current.NamespaceURI)
+                    ControlID = xPathIter.Current.GetAttribute("id", xPathIter.Current.NamespaceURI)
                     ControlType = Globals.ControlTypes.Unknown
 
                     If xPathIter2.Current.MoveToFirstChild() Then
                         Do
                             Select Case xPathIter2.Current.Name.ToLower(New System.Globalization.CultureInfo("en-US"))
                                 Case "type"
-                                    Dim xControlType As String = _
+                                    Dim xControlType As String =
                                             xPathIter2.Current.Value
 
                                     ControlType = Globals.ParseControlType(xControlType)
@@ -95,7 +95,7 @@
                                 MyBase.lwControls.Items(MyBase.lwControls.Items.Count - 1).SubItems.Add(ControlID)
                             End If
                         Else
-                            If Me._FilterByTypes.IndexOf(ControlType) > -1 AndAlso _
+                            If Me._FilterByTypes.IndexOf(ControlType) > -1 AndAlso
                                 Not MyBase.lwControls.Items.ContainsKey(ControlID) Then
 
                                 MyBase.lwControls.Items.Add(ControlID, String.Empty, ControlType)
