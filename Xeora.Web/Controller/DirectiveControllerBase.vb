@@ -113,7 +113,7 @@ Namespace Xeora.Web.Controller
                             rDirectiveType = DirectiveTypes.UpdateBlock
                         Case "XF"
                             rDirectiveType = DirectiveTypes.EncodedExecution
-                        Case "MessageInformation"
+                        Case "MB"
                             rDirectiveType = DirectiveTypes.MessageBlock
                     End Select
                 End If

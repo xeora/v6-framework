@@ -21,7 +21,7 @@
                 "5:L:Translation:C",
                 "6:T:Template:C",
                 "7:P:TemplateWithSameVariablePool:C",
-                "8:MessageInformation:MessageInformation:B",
+                "8:MB:MessageBlock:B",
                 "9:S:InLineStatement:C",
                 "10:PageRenderDuration:PageRenderDuration:S"
             }
