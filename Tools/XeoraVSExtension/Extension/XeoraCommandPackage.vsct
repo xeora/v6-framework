@@ -64,11 +64,17 @@
               <CommandFlag>DefaultInvisible</CommandFlag>
               <CommandFlag>DynamicVisibility</CommandFlag>
           If you do not want an image next to your command, remove the Icon node /> -->
-      <Button guid="guidXeoraCommandPackageCmdSet" id="XeoraCommandId" priority="0x100" type="Button">
+      <Button guid="guidXeoraCommandPackageCmdSet" id="XCI_PrepareProject" priority="0x100" type="Button">
+        <Parent guid="guidXeoraCommandPackageCmdSet" id="XeoraMenuGroup"/>
+        <Strings>
+          <ButtonText>Prepare Xeora on Project</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidXeoraCommandPackageCmdSet" id="XCI_GotoDefinition" priority="0x100" type="Button">
         <Parent guid="guidXeoraCommandPackageCmdSet" id="XeoraMenuGroup" />
         <!--<Icon guid="guidImages" id="bmpPic1" />-->
         <Strings>
-          <ButtonText>Go To Definition</ButtonText>
+          <ButtonText>Goto Definition</ButtonText>
         </Strings>
       </Button>
     </Buttons>
@@ -85,7 +91,7 @@
   </Commands>
   
   <KeyBindings>
-    <KeyBinding guid="guidXeoraCommandPackageCmdSet" id="XeoraCommandId"
+    <KeyBinding guid="guidXeoraCommandPackageCmdSet" id="XCI_GotoDefinition"
         key1="D" key2="D" mod1="Control Shift" mod2="Control Shift" editor="guidVSStd97" />
   </KeyBindings>
   
@@ -97,7 +103,8 @@
     <GuidSymbol name="guidXeoraCommandPackageCmdSet" value="{4c16f99f-8402-4b02-be4e-88a3cfdbbb55}">
       <IDSymbol name="XeoraMenuId" value="100" />
       <IDSymbol name="XeoraMenuGroup" value="200" />
-      <IDSymbol name="XeoraCommandId" value="256" />
+      <IDSymbol name="XCI_GotoDefinition" value="256" />
+      <IDSymbol name="XCI_PrepareProject" value="260" />
     </GuidSymbol>
 
     <GuidSymbol name="guidImages" value="{e78b754a-6c30-4586-85ae-8d69a94eeac5}" >

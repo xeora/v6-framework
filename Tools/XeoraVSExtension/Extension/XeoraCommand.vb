@@ -13,6 +13,7 @@ Public NotInheritable Class XeoraCommand
     ''' Command ID.
     ''' </summary>
     Public Const CommandId As Integer = 256
+    Public Const CommandId_PrepareProject As Integer = 260
 
     ''' <summary>
     ''' Command menu group (command set GUID).
@@ -41,6 +42,12 @@ Public NotInheritable Class XeoraCommand
         Dim commandService As OleMenuCommandService =
             CType(Me.ServiceProvider.GetService(GetType(IMenuCommandService)), OleMenuCommandService)
         If Not commandService Is Nothing Then
+            commandService.AddCommand(
+                New MenuCommand(
+                    AddressOf Me.PrepareProject,
+                    New CommandID(CommandSet, CommandId_PrepareProject)
+                )
+            )
             commandService.AddCommand(
                 New MenuCommand(
                     AddressOf Me.GoToReferanceCallback,
@@ -94,5 +101,9 @@ Public NotInheritable Class XeoraCommand
     ''' <param name="e">Event args.</param>
     Private Sub GoToReferanceCallback(sender As Object, e As EventArgs)
         Me._addInControl.GotoControlReferance(Nothing, False, False)
+    End Sub
+
+    Private Sub PrepareProject(sender As Object, e As EventArgs)
+        Me._addInControl.PrepareProject()
     End Sub
 End Class

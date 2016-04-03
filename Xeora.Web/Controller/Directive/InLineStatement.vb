@@ -93,7 +93,21 @@ Namespace Xeora.Web.Controller.Directive
                             CType(MethodResultInfo, System.Exception).InnerException
                         )
                     Else
-                        Me.DefineRenderedValue([Shared].Execution.GetPrimitiveValue(MethodResultInfo))
+                        If Not MethodResultInfo Is Nothing AndAlso
+                            TypeOf MethodResultInfo Is ControlResult.RedirectOrder Then
+
+                            If Helpers.Context.Items.Contains("RedirectLocation") Then _
+                                Helpers.Context.Items.Remove("RedirectLocation")
+
+                            Helpers.Context.Items.Add(
+                                "RedirectLocation",
+                                CType(MethodResultInfo, ControlResult.RedirectOrder).Location
+                            )
+
+                            Me.DefineRenderedValue(String.Empty)
+                        Else
+                            Me.DefineRenderedValue([Shared].Execution.GetPrimitiveValue(MethodResultInfo))
+                        End If
                     End If
                 Else
                     Throw New Exception.EmptyBlockException()

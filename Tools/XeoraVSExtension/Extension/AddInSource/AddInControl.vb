@@ -812,6 +812,317 @@ RESEARCHPOINT:
             End Select
         End Sub
 
+        Public Sub PrepareProject()
+            Dim Projects As Projects =
+                CType(Me._applicationObject.Solution.Projects, Projects)
+
+            If Projects.Count = 0 Then Exit Sub
+
+            Dim ProjectList As New ProjectList()
+
+            For Each Project As Project In Projects
+                If String.Compare(Project.Kind, "{E24C65DC-7377-472b-9ABA-BC803B73C61A}") = 0 Then _
+                    ProjectList.ProjectList.Add(Project.Name, Project.FullName)
+            Next
+
+            ProjectList.ShowDialog(Me)
+
+            If ProjectList.DialogResult = DialogResult.OK Then
+                Dim ProjectWorking As Project = Nothing
+                For Each ProjectWorking In Projects
+                    If String.Compare(ProjectWorking.FullName, ProjectList.SelectedProject.Value) = 0 Then _
+                        Exit For
+                Next
+
+                Dim ProjectSettings As New ProjectSettings()
+                If ProjectSettings.ShowDialog(Me) = DialogResult.OK Then
+                    Dim ProjectAlreadyExists As Boolean = False
+                    For Each ProjectItem As ProjectItem In ProjectWorking.ProjectItems
+                        If String.Compare(ProjectItem.Name, "Domains") = 0 Then
+                            For Each SubProjectItem As ProjectItem In ProjectItem.ProjectItems
+                                If String.Compare(SubProjectItem.Name, ProjectSettings.DomainID, True) = 0 Then _
+                                    ProjectAlreadyExists = True : Exit For
+                            Next
+
+                            Exit For
+                        End If
+                    Next
+
+                    If ProjectAlreadyExists Then
+                        If MessageBox.Show(Me,
+                            String.Format("Xeora Domain ({0}) is already exists! Do you want override on it?", ProjectSettings.DomainID),
+                            "Question?",
+                            MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.No Then
+
+                            Exit Sub
+                        End If
+                    End If
+
+                    If Not ProjectWorking Is Nothing Then
+                        If String.IsNullOrEmpty(CType(ProjectWorking.Properties.Item("StartPage").Value, String)) Then _
+                            ProjectWorking.Properties.Item("StartPage").Value = "/"
+                        If String.Compare(CType(ProjectWorking.Properties.Item("StartAction").Value, String), "0") = 0 Then _
+                            ProjectWorking.Properties.Item("StartAction").Value = "1"
+
+                        Dim WorkingFolder As String =
+                            ProjectList.SelectedProject.Value
+                        Dim SW As IO.StreamWriter
+
+                        Dim BinProjectItem As ProjectItem =
+                            Me.CheckProjectItemExists(ProjectWorking.ProjectItems, "bin")
+                        Dim ReleasePulled As Boolean = (Not BinProjectItem Is Nothing) AndAlso (BinProjectItem.ProjectItems.Count >= 7)
+                        If BinProjectItem Is Nothing Then _
+                            BinProjectItem = ProjectWorking.ProjectItems.AddFolder("bin")
+                        Dim ProjectItem As ProjectItem =
+                            Me.CheckProjectItemExists(ProjectWorking.ProjectItems, "Domains")
+                        Dim NoOtherDomainExists As Boolean = ProjectItem Is Nothing
+                        If ProjectItem Is Nothing Then _
+                            ProjectItem = ProjectWorking.ProjectItems.AddFolder("Domains")
+
+                        Dim DomainProjectItem As ProjectItem =
+                            Me.CheckProjectItemExists(ProjectWorking.ProjectItems, String.Format("Domains\{0}", ProjectSettings.DomainID))
+                        If Not DomainProjectItem Is Nothing Then
+                            Try
+                                DomainProjectItem.Remove()
+                            Catch ex As Exception
+                                ' It is for debug exception skip purposes!
+                            End Try
+
+                            Dim DomainLocation As String =
+                                IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID)
+
+                            Try
+                                If IO.Directory.Exists(DomainLocation) Then _
+                                    IO.Directory.Delete(DomainLocation)
+                            Catch ex As Exception
+                                ' Just Handle Exceptions
+                            End Try
+                        End If
+                        ProjectItem = ProjectItem.ProjectItems.AddFolder(ProjectSettings.DomainID)
+
+                        ProjectItem.ProjectItems.AddFolder("Executables")
+
+                        Dim SubProjectItem As ProjectItem =
+                        ProjectItem.ProjectItems.AddFolder("Contents").ProjectItems.AddFolder(ProjectSettings.LanguageID)
+                        Dim StyleFileLocation As String =
+                        IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Contents", ProjectSettings.LanguageID, "styles.css")
+                        SW = IO.File.CreateText(StyleFileLocation)
+                        SW.WriteLine("/* Default CSS Stylesheet for a New Xeora Web Application project */")
+                        SW.Close()
+                        SubProjectItem.ProjectItems.AddFromFile(StyleFileLocation)
+                        ' favicon.ico should be located here
+
+                        SubProjectItem = ProjectItem.ProjectItems.AddFolder("Languages")
+                        Dim TranslationFileLocation As String =
+                        IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Languages", String.Format("{0}.xml", ProjectSettings.LanguageID))
+                        SW = IO.File.CreateText(TranslationFileLocation)
+                        SW.WriteLine("<?xml version=""1.0"" encoding=""utf-8""?>")
+                        SW.WriteLine(String.Format("<language name=""{0}"" code=""{1}"">", ProjectSettings.LanguageName, ProjectSettings.LanguageID))
+                        SW.WriteLine("  <translation id=""TEMPLATE_IDMUSTBESET"">TemplateID must be set</translation>")
+                        SW.WriteLine("  <translation id=""CONTROLSMAPNOTFOUND"">ControlsMapXML file does not exists</translation>")
+                        SW.WriteLine("  <translation id=""CONFIGURATIONNOTFOUND"">ConfigurationXML file does not exists</translation>")
+                        SW.WriteLine("  <translation id=""TEMPLATE_NOFOUND"">{0} name Template file does not exists</translation>")
+                        SW.WriteLine("  <translation id=""TEMPLATE_AUTH"">This Template requires authentication</translation>")
+                        SW.WriteLine("  <translation id=""SITETITLE"">Hello, I'm Xeora!</translation>")
+                        SW.WriteLine("")
+                        SW.WriteLine("</language>")
+                        SW.Close()
+                        SubProjectItem.ProjectItems.AddFromFile(TranslationFileLocation)
+
+                        SubProjectItem = ProjectItem.ProjectItems.AddFolder("Templates")
+                        Dim ControlsMapFileLocation As String =
+                        IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Templates", "ControlsMap.xml")
+                        SW = IO.File.CreateText(ControlsMapFileLocation)
+                        SW.WriteLine("<?xml version=""1.0"" encoding=""utf-8""?>")
+                        SW.WriteLine("<ControlsMap />")
+                        SW.Close()
+                        SubProjectItem.ProjectItems.AddFromFile(ControlsMapFileLocation)
+
+                        Dim ConfigurationFileLocation As String =
+                        IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Templates", "Configuration.xml")
+                        SW = IO.File.CreateText(ConfigurationFileLocation)
+                        SW.WriteLine("<?xml version=""1.0"" encoding=""utf-8""?>")
+                        SW.WriteLine("<Settings>")
+                        SW.WriteLine("  <Configuration>")
+                        SW.WriteLine("      <Item key=""authenticationpage"" value=""main"" />")
+                        SW.WriteLine("      <Item key=""defaultpage"" value=""main"" />")
+                        SW.WriteLine(String.Format("      <Item key=""defaultlanguage"" value=""{0}"" />", ProjectSettings.LanguageID))
+                        SW.WriteLine(String.Format("      <Item key=""defaultcaching"" value=""{0}"" />", ProjectSettings.CachingType))
+                        SW.WriteLine("  </Configuration>")
+                        SW.WriteLine("  <Services>")
+                        SW.WriteLine("      <AuthenticationKeys />")
+                        SW.WriteLine("      <Item type=""template"" id=""main"" />")
+                        SW.WriteLine("  </Services>")
+                        SW.WriteLine("</Settings>")
+                        SW.Close()
+                        SubProjectItem.ProjectItems.AddFromFile(ConfigurationFileLocation)
+
+                        Dim DefaultTemplateFileLocation As String =
+                        IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Templates", "main.htm")
+                        SW = IO.File.CreateText(DefaultTemplateFileLocation)
+                        SW.WriteLine("$S:HelloXeora:{!NOCACHE")
+                        SW.WriteLine("  return ""Hello, Xeora Framework is ready!"";")
+                        SW.WriteLine("}:HelloXeora$")
+                        SW.Close()
+                        SubProjectItem.ProjectItems.AddFromFile(DefaultTemplateFileLocation)
+
+                        ProjectItem = Me.CheckProjectItemExists(ProjectWorking.ProjectItems, "web.config")
+                        Dim WebConfigFileLocation As String =
+                            IO.Path.Combine(WorkingFolder, "web.config")
+
+                        If ProjectItem Is Nothing OrElse NoOtherDomainExists Then
+                            SW = IO.File.CreateText(WebConfigFileLocation)
+                            SW.WriteLine("<?xml version=""1.0""?>")
+                            SW.WriteLine("<configuration>")
+                            SW.WriteLine("  <appSettings>")
+                            SW.WriteLine("      <!--  You have to put ""\"" at the end of the value attribute of ApplicationRoot")
+                            SW.WriteLine("            If there is not ""\"" exists...")
+                            SW.WriteLine("")
+                            SW.WriteLine("            LoggingRoot Directory HAVE TO HAVE the PERMISSION to write And read file for ASP.NET account...")
+                            SW.WriteLine("      -->")
+                            SW.WriteLine(String.Format("      <add key=""DefaultDomain"" value=""{0}"" />", ProjectSettings.DomainID))
+                            SW.WriteLine(String.Format("      <add key=""VirtualRoot"" value=""{0}"" /> <!-- You may need to set to the proper virtual directory path according to your IIS settings -->", ProjectSettings.VirtualPath))
+                            SW.WriteLine("      <add key=""PyhsicalRoot"" value=""" & WorkingFolder & """ />")
+                            SW.WriteLine("      <add key=""ApplicationRoot"" value="".\"" />")
+                            SW.WriteLine(String.Format("      <add key=""Debugging"" value=""{0}"" />", ProjectSettings.DebuggingActive.ToString()))
+                            SW.WriteLine(String.Format("      <add key=""VariablePoolServicePort"" value=""{0}"" /> <!-- VariablePoolServicePort should be unique for each Xeora Application in the server -->", ProjectSettings.VariablePoolServicePort))
+                            SW.WriteLine(String.Format("      <add key=""ScheduledTasksServicePort"" value=""{0}"" />", ProjectSettings.ScheduledTasksServicePort))
+                            SW.WriteLine("      <add key=""Bandwidth"" value=""0"" />")
+                            SW.WriteLine("      <add key=""RequestTagFiltering"" value=""None"" />")
+                            SW.WriteLine("      <add key=""RequestTagFilteringItems"" value=""&gt;script"" />")
+                            SW.WriteLine("      <add key=""RequestTagFilteringExceptions"" value="""" />")
+                            SW.WriteLine("      <add key=""LoggingPath"" value=""" & IO.Path.Combine(WorkingFolder, "XeoraLogs") & """ />")
+                            SW.WriteLine("  </appSettings>")
+                            SW.WriteLine("  <connectionStrings />")
+                            SW.WriteLine("  <system.web>")
+                            SW.WriteLine("      <httpRuntime executionTimeout = ""86400"" maxRequestLength=""2048000"" requestValidationMode=""2.0"" />")
+                            SW.WriteLine("      <!-- ")
+                            SW.WriteLine("          Set compilation debug=""True"" To insert debugging ")
+                            SW.WriteLine("          symbols into the compiled page. Because this ")
+                            SW.WriteLine("          affects performance, set this value to true only ")
+                            SW.WriteLine("          during development.")
+                            SW.WriteLine("      -->")
+                            SW.WriteLine("      <compilation debug=""true"" />")
+                            SW.WriteLine("      <!--")
+                            SW.WriteLine("          The <authentication> section enables configuration ")
+                            SW.WriteLine("          of the security authentication mode used by ")
+                            SW.WriteLine("          ASP.NET to identify an incoming user. ")
+                            SW.WriteLine("      -->")
+                            SW.WriteLine("      <authentication mode=""Windows"" />")
+                            SW.WriteLine("      <sessionState mode=""Off"" stateNetworkTimeout=""10"" timeout=""20"" compressionEnabled=""false"" />")
+                            SW.WriteLine("      <!--")
+                            SW.WriteLine("          The <customErrors> section enables configuration ")
+                            SW.WriteLine("          of what to do if/when an unhandled error occurs ")
+                            SW.WriteLine("          during the execution of a request. Specifically, ")
+                            SW.WriteLine("          it enables developers To configure html Error pages ")
+                            SW.WriteLine("          To be displayed In place Of a Error stack trace.")
+                            SW.WriteLine("")
+                            SW.WriteLine("          <customErrors mode=""RemoteOnly"" defaultRedirect=""GenericErrorPage.htm"">")
+                            SW.WriteLine("              <Error statusCode=""403"" redirect=""NoAccess.htm"" />")
+                            SW.WriteLine("              <Error statusCode=""404"" redirect=""FileNotFound.htm"" />")
+                            SW.WriteLine("          </customErrors>")
+                            SW.WriteLine("      -->")
+                            SW.WriteLine("  </system.web>")
+                            SW.WriteLine("  <system.webServer>")
+                            SW.WriteLine("      <handlers>")
+                            SW.WriteLine("          <add name=""XeoraCubeHandler"" path=""*"" verb=""*"" type=""Xeora.Web.Handler.RequestHandlerFactory"" resourceType=""Unspecified"" requireAccess=""Script"" preCondition=""integratedMode"" />")
+                            SW.WriteLine("      </handlers>")
+                            SW.WriteLine("      <modules>")
+                            SW.WriteLine("          <add name=""XeoraCubeModule"" type=""Xeora.Web.Handler.RequestModule"" />")
+                            SW.WriteLine("      </modules>")
+                            SW.WriteLine("  </system.webServer>")
+                            SW.WriteLine("</configuration>")
+                            SW.Close()
+
+                            ProjectWorking.ProjectItems.AddFromFile(WebConfigFileLocation)
+                            'Else
+                            '    Dim ConfigurationFI As New IO.FileInfo(IO.Path.Combine(WorkingFolder, "web.config"))
+                            '    Dim VDMForConfig As New Web.Configuration.VirtualDirectoryMapping(ConfigurationFI.DirectoryName, True, ConfigurationFI.Name)
+                            '    Dim WCFM As New Web.Configuration.WebConfigurationFileMap()
+                            '    WCFM.VirtualDirectories.Add("/", VDMForConfig)
+
+                            '    Dim Configuration As System.Configuration.Configuration =
+                            '        Web.Configuration.WebConfigurationManager.OpenMappedWebConfiguration(WCFM, "/")
+
+                            '    Configuration.AppSettings.Settings.Item("DefaultDomain").Value = ProjectSettings.DomainID
+                            '    Configuration.AppSettings.Settings.Item("VirtualRoot").Value = ProjectSettings.VirtualPath
+                            '    Configuration.AppSettings.Settings.Item("Debugging").Value = ProjectSettings.DebuggingActive.ToString()
+                            '    Configuration.AppSettings.Settings.Item("VariablePoolServicePort").Value = ProjectSettings.VariablePoolServicePort
+                            '    Configuration.AppSettings.Settings.Item("ScheduledTasksServicePort").Value = ProjectSettings.ScheduledTasksServicePort
+
+                            '    Dim SystemWebServerHandlerSection As Web.Configuration.HttpHandlersSection =
+                            '        CType(Configuration.GetSection("system.webServer/handlers"), Web.Configuration.HttpHandlersSection)
+
+                            '    Dim HandlerExists As Boolean = False
+                            '    For Each handler As Web.Configuration.HttpHandlerAction In SystemWebServerHandlerSection.Handlers
+                            '        If String.Compare(handler.Type, "Xeora.Web.Handler.RequestHandlerFactory") = 0 Then _
+                            '            HandlerExists = True : Exit For
+                            '    Next
+                            '    If Not HandlerExists Then
+                            '        SystemWebServerHandlerSection.Handlers.Add(
+                            '            New Web.Configuration.HttpHandlerAction("*", "Xeora.Web.Handler.RequestHandlerFactory", "*"))
+                            '    End If
+
+                            '    Dim SystemWebServerModuleSection As Web.Configuration.HttpModulesSection =
+                            '        CType(Configuration.GetSection("system.webServer/modules"), Web.Configuration.HttpModulesSection)
+
+                            '    Dim ModuleExists As Boolean = False
+                            '    For Each [module] As Web.Configuration.HttpModuleAction In SystemWebServerModuleSection.Modules
+                            '        If String.Compare([module].Type, "Xeora.Web.Handler.RequestModule") = 0 Then _
+                            '            ModuleExists = True Exit For
+                            '    Next
+                            '    If Not ModuleExists Then
+                            '        SystemWebServerModuleSection.Modules.Add(
+                            '            New Web.Configuration.HttpModuleAction("XeoraCubeModule", "Xeora.Web.Handler.RequestModule"))
+                            '    End If
+
+                            '    Configuration.Save()
+                        End If
+
+                        If Not ReleasePulled Then
+                            Dim DownloadProgress As New DownloadProgress()
+                            DownloadProgress.StartDownloading(IO.Path.Combine(WorkingFolder, "bin"), ProjectSettings.Use64bitRelease, Me)
+
+                            If DownloadProgress.DialogResult = DialogResult.OK Then
+                                For Each File As String In DownloadProgress.DownloadedFiles
+                                    Dim ItemExists As ProjectItem =
+                                        Me.CheckProjectItemExists(BinProjectItem.ProjectItems, File)
+                                    If Not ItemExists Is Nothing Then
+                                        Try
+                                            ItemExists.Remove()
+                                        Catch ex As Exception
+                                            ' This exception handling is for debug limitation
+                                        End Try
+                                    End If
+
+                                    BinProjectItem.ProjectItems.AddFromFile(IO.Path.Combine(WorkingFolder, "bin", File))
+                                Next
+                            End If
+                        End If
+                    End If
+                End If
+            End If
+        End Sub
+
+        Private Function CheckProjectItemExists(ByVal SearchingProjectItems As ProjectItems, ByVal SearchPath As String) As ProjectItem
+            Dim rProjectItem As ProjectItem = Nothing
+            Dim SearchPaths As String() = SearchPath.Split("\"c)
+
+            Dim WorkingProjectItems As ProjectItems = SearchingProjectItems
+            For Each SP As String In SearchPaths
+                For Each WPI As ProjectItem In WorkingProjectItems
+                    If String.Compare(WPI.Name, SP) = 0 Then
+                        rProjectItem = WPI
+                        WorkingProjectItems = WPI.ProjectItems
+
+                        Exit For
+                    End If
+                Next
+            Next
+
+            Return rProjectItem
+        End Function
+
         Private Function GetDefinitionLineNumber(ByVal LanguageID As String, ByVal [Namespace] As String, ByVal JoinedTypeName As String, ByVal MethodName As String, ByVal ParameterLength As Integer, ByVal DocumentContent As String) As Integer
             Dim rInteger As Integer = -1
 

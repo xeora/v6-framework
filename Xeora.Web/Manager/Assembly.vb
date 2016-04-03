@@ -316,9 +316,9 @@ QUICKEXIT:
 
                 If Not objAssembly Is Nothing Then
                     Dim AssemblyObject As Type =
-                        objAssembly.CreateInstance(String.Format("ExternalCall.{0}", BlockKey)).GetType()
+                        objAssembly.CreateInstance(String.Format("InLineStatement.{0}", BlockKey)).GetType()
                     Dim MethodObject As Reflection.MethodInfo =
-                        AssemblyObject.GetMethod("ExternalCallMethod")
+                        AssemblyObject.GetMethod("Execute")
 
                     rMethodResult = MethodObject.Invoke(AssemblyObject,
                                                         Reflection.BindingFlags.DeclaredOnly Or
@@ -478,7 +478,7 @@ QUICKEXIT:
                     CodeBlock.AppendLine("{")
                     CodeBlock.AppendFormat("public class {0}", BlockKey)
                     CodeBlock.AppendLine("{")
-                    CodeBlock.AppendLine("public static object InLineStatementMethod()")
+                    CodeBlock.AppendLine("public static object Execute()")
                     CodeBlock.AppendLine("{")
                     CodeBlock.AppendFormat("{0}", Statement)
                     CodeBlock.AppendLine("} // method")
@@ -500,7 +500,7 @@ QUICKEXIT:
                         AppDomain.CurrentDomain.GetAssemblies()
 
                     For Each Assembly As Reflection.Assembly In CurrentDomainAssemblies
-                        CompilerParams.ReferencedAssemblies.Add(Assembly.FullName)
+                        CompilerParams.ReferencedAssemblies.Add(Assembly.Location)
                     Next
 
                     Dim CompilerResults As CodeDom.Compiler.CompilerResults

@@ -106,6 +106,24 @@
     <Compile Include="AddInSource\IntellisenseForms\TypeSearch.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="PrepareProject\DownloadProgress.Designer.vb">
+      <DependentUpon>DownloadProgress.vb</DependentUpon>
+    </Compile>
+    <Compile Include="PrepareProject\DownloadProgress.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PrepareProject\ProjectList.Designer.vb">
+      <DependentUpon>ProjectList.vb</DependentUpon>
+    </Compile>
+    <Compile Include="PrepareProject\ProjectList.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PrepareProject\ProjectSettings.Designer.vb">
+      <DependentUpon>ProjectSettings.vb</DependentUpon>
+    </Compile>
+    <Compile Include="PrepareProject\ProjectSettings.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="XeoraCommand.vb" />
     <Compile Include="XeoraCommandPackage.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
@@ -218,9 +236,11 @@
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Design" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -264,6 +284,15 @@
     <EmbeddedResource Include="AddInSource\IntellisenseForms\TypeSearch.resx">
       <DependentUpon>TypeSearch.vb</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PrepareProject\DownloadProgress.resx">
+      <DependentUpon>DownloadProgress.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PrepareProject\ProjectList.resx">
+      <DependentUpon>ProjectList.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PrepareProject\ProjectSettings.resx">
+      <DependentUpon>ProjectSettings.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="VSPackage.resx">
       <MergeWithCTO>true</MergeWithCTO>
