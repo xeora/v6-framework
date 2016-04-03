@@ -14,6 +14,7 @@ Public NotInheritable Class XeoraCommand
     ''' </summary>
     Public Const CommandId As Integer = 256
     Public Const CommandId_PrepareProject As Integer = 260
+    Public Const CommandId_RePullRelease As Integer = 265
 
     ''' <summary>
     ''' Command menu group (command set GUID).
@@ -46,6 +47,12 @@ Public NotInheritable Class XeoraCommand
                 New MenuCommand(
                     AddressOf Me.PrepareProject,
                     New CommandID(CommandSet, CommandId_PrepareProject)
+                )
+            )
+            commandService.AddCommand(
+                New MenuCommand(
+                    AddressOf Me.RePullRelease,
+                    New CommandID(CommandSet, CommandId_RePullRelease)
                 )
             )
             commandService.AddCommand(
@@ -105,5 +112,9 @@ Public NotInheritable Class XeoraCommand
 
     Private Sub PrepareProject(sender As Object, e As EventArgs)
         Me._addInControl.PrepareProject()
+    End Sub
+
+    Private Sub RePullRelease(sender As Object, e As EventArgs)
+        Me._addInControl.RePullRelease()
     End Sub
 End Class

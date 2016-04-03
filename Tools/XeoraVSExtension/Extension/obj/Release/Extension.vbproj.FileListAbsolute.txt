@@ -76,3 +76,6 @@ P:\XeoraCube\Tools\XeoraVSExtension\Extension\obj\Release\Xeora.VSAddIn.Forms.Sp
 P:\XeoraCube\Tools\XeoraVSExtension\Extension\obj\Release\Xeora.VSAddIn.Forms.TemplateSearch.resources
 P:\XeoraCube\Tools\XeoraVSExtension\Extension\obj\Release\Xeora.VSAddIn.Forms.TranslationSearch.resources
 P:\XeoraCube\Tools\XeoraVSExtension\Extension\obj\Release\Xeora.VSAddIn.Forms.TypeSearch.resources
+P:\XeoraCube\Tools\XeoraVSExtension\Extension\obj\Release\DownloadProgress.resources
+P:\XeoraCube\Tools\XeoraVSExtension\Extension\obj\Release\ProjectList.resources
+P:\XeoraCube\Tools\XeoraVSExtension\Extension\obj\Release\ProjectSettings.resources

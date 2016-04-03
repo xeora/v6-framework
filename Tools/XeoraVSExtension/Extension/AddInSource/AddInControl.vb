@@ -1104,6 +1104,64 @@ RESEARCHPOINT:
             End If
         End Sub
 
+        Public Sub RePullRelease()
+            Dim Projects As Projects =
+                CType(Me._applicationObject.Solution.Projects, Projects)
+
+            If Projects.Count = 0 Then Exit Sub
+
+            Dim ProjectList As New ProjectList()
+
+            For Each Project As Project In Projects
+                If String.Compare(Project.Kind, "{E24C65DC-7377-472b-9ABA-BC803B73C61A}") = 0 Then _
+                    ProjectList.ProjectList.Add(Project.Name, Project.FullName)
+            Next
+
+            ProjectList.ShowDialog(Me)
+
+            If ProjectList.DialogResult = DialogResult.OK Then
+                Dim WorkingFolder As String =
+                    ProjectList.SelectedProject.Value
+
+                Dim ProjectWorking As Project = Nothing
+                For Each ProjectWorking In Projects
+                    If String.Compare(ProjectWorking.FullName, ProjectList.SelectedProject.Value) = 0 Then _
+                        Exit For
+                Next
+
+                Dim BinProjectItem As ProjectItem = Nothing, DomainsProjectItem As ProjectItem = Nothing
+                For Each ProjectItem As ProjectItem In ProjectWorking.ProjectItems
+                    If String.Compare(ProjectItem.Name, "Bin", True) = 0 Then _
+                        BinProjectItem = ProjectItem
+
+                    If String.Compare(ProjectItem.Name, "Domains") = 0 Then _
+                        DomainsProjectItem = ProjectItem
+                Next
+
+                If Not BinProjectItem Is Nothing AndAlso Not DomainsProjectItem Is Nothing Then
+                    ' TODO: System should find which version it has and which CPU version installed
+                    Dim DownloadProgress As New DownloadProgress()
+                    DownloadProgress.StartDownloading(IO.Path.Combine(WorkingFolder, "bin"), True, Me)
+
+                    If DownloadProgress.DialogResult = DialogResult.OK Then
+                        For Each File As String In DownloadProgress.DownloadedFiles
+                            Dim ItemExists As ProjectItem =
+                                Me.CheckProjectItemExists(BinProjectItem.ProjectItems, File)
+                            If Not ItemExists Is Nothing Then
+                                Try
+                                    ItemExists.Remove()
+                                Catch ex As Exception
+                                    ' This exception handling is for debug limitation
+                                End Try
+                            End If
+
+                            BinProjectItem.ProjectItems.AddFromFile(IO.Path.Combine(WorkingFolder, "bin", File))
+                        Next
+                    End If
+                End If
+            End If
+        End Sub
+
         Private Function CheckProjectItemExists(ByVal SearchingProjectItems As ProjectItems, ByVal SearchPath As String) As ProjectItem
             Dim rProjectItem As ProjectItem = Nothing
             Dim SearchPaths As String() = SearchPath.Split("\"c)
@@ -1111,7 +1169,7 @@ RESEARCHPOINT:
             Dim WorkingProjectItems As ProjectItems = SearchingProjectItems
             For Each SP As String In SearchPaths
                 For Each WPI As ProjectItem In WorkingProjectItems
-                    If String.Compare(WPI.Name, SP) = 0 Then
+                    If String.Compare(WPI.Name, SP, True) = 0 Then
                         rProjectItem = WPI
                         WorkingProjectItems = WPI.ProjectItems
 

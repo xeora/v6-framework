@@ -51,6 +51,9 @@
       <Group guid="guidXeoraCommandPackageCmdSet" id="XeoraMenuGroup" priority="0x100">
         <Parent guid="guidXeoraCommandPackageCmdSet" id="XeoraMenuId"/>
       </Group>
+      <Group guid="guidXeoraCommandPackageCmdSet" id="XeoraMenuSetupGroup" priority="0x110">
+        <Parent guid="guidXeoraCommandPackageCmdSet" id="XeoraMenuId"/>
+      </Group>
     </Groups>
 
     <!--Buttons section. -->
@@ -64,17 +67,23 @@
               <CommandFlag>DefaultInvisible</CommandFlag>
               <CommandFlag>DynamicVisibility</CommandFlag>
           If you do not want an image next to your command, remove the Icon node /> -->
-      <Button guid="guidXeoraCommandPackageCmdSet" id="XCI_PrepareProject" priority="0x100" type="Button">
-        <Parent guid="guidXeoraCommandPackageCmdSet" id="XeoraMenuGroup"/>
+      <Button guid="guidXeoraCommandPackageCmdSet" id="XCI_PrepareProject" priority="0x110" type="Button">
+        <Parent guid="guidXeoraCommandPackageCmdSet" id="XeoraMenuSetupGroup"/>
         <Strings>
-          <ButtonText>Prepare Xeora on Project</ButtonText>
+          <ButtonText>Apply Framework on Project</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidXeoraCommandPackageCmdSet" id="XCI_RePullRelease" priority="0x120" type="Button">
+        <Parent guid="guidXeoraCommandPackageCmdSet" id="XeoraMenuSetupGroup"/>
+        <Strings>
+          <ButtonText>Refresh with Latest Release</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidXeoraCommandPackageCmdSet" id="XCI_GotoDefinition" priority="0x100" type="Button">
         <Parent guid="guidXeoraCommandPackageCmdSet" id="XeoraMenuGroup" />
         <!--<Icon guid="guidImages" id="bmpPic1" />-->
         <Strings>
-          <ButtonText>Goto Definition</ButtonText>
+          <ButtonText>Goto Control Definition</ButtonText>
         </Strings>
       </Button>
     </Buttons>
@@ -103,8 +112,10 @@
     <GuidSymbol name="guidXeoraCommandPackageCmdSet" value="{4c16f99f-8402-4b02-be4e-88a3cfdbbb55}">
       <IDSymbol name="XeoraMenuId" value="100" />
       <IDSymbol name="XeoraMenuGroup" value="200" />
+      <IDSymbol name="XeoraMenuSetupGroup" value="300" />
       <IDSymbol name="XCI_GotoDefinition" value="256" />
       <IDSymbol name="XCI_PrepareProject" value="260" />
+      <IDSymbol name="XCI_RePullRelease" value="265" />      
     </GuidSymbol>
 
     <GuidSymbol name="guidImages" value="{e78b754a-6c30-4586-85ae-8d69a94eeac5}" >
