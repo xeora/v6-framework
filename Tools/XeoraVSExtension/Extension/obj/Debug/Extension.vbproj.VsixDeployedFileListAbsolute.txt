@@ -13,3 +13,10 @@ C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tun
 C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\2.1\\XeoraVSExtension.pkgdef
 C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\2.1\\extension.vsixmanifest
 C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\2.1\\Xeora.AddInLoader.pdb
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\2.2\\XeoraVSExtension.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\2.2\\XeoraVSExtension.pdb
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\2.2\\ICSharpCode.NRefactory.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\2.2\\Xeora.AddInLoader.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\2.2\\XeoraVSExtension.pkgdef
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\2.2\\extension.vsixmanifest
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\2.2\\Xeora.AddInLoader.pdb
