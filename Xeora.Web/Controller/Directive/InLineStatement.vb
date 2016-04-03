@@ -10,8 +10,10 @@ Namespace Xeora.Web.Controller.Directive
         Implements IParsingRequires
         Implements IInstanceRequires
         Implements INamable
+        Implements IBoundable
 
         Private _ControlID As String
+        Private _BoundControlID As String
 
         Public Event ParseRequested(DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
@@ -20,11 +22,18 @@ Namespace Xeora.Web.Controller.Directive
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.InLineStatement, ContentArguments)
 
             Me._ControlID = Me.CaptureControlID()
+            Me._BoundControlID = Me.CaptureBoundControlID()
         End Sub
 
         Public ReadOnly Property ControlID As String Implements INamable.ControlID
             Get
                 Return Me._ControlID
+            End Get
+        End Property
+
+        Public ReadOnly Property BoundControlID As String Implements IBoundable.BoundControlID
+            Get
+                Return Me._BoundControlID
             End Get
         End Property
 
@@ -35,6 +44,46 @@ Namespace Xeora.Web.Controller.Directive
                 Exit Sub
             End If
 
+            If Not String.IsNullOrEmpty(Me.BoundControlID) Then
+                If Me.IsRendered Then Exit Sub
+
+                If Not Me.BoundControlRenderWaiting Then
+                    Dim Controller As ControllerBase = Me
+
+                    Do Until Controller.Parent Is Nothing
+                        If TypeOf Controller.Parent Is ControllerBase AndAlso
+                            TypeOf Controller.Parent Is INamable Then
+
+                            If String.Compare(
+                                CType(Controller.Parent, INamable).ControlID, Me.BoundControlID, True) = 0 Then
+
+                                Throw New Exception.InternalParentException(Exception.InternalParentException.ChildDirectiveTypes.Control)
+                            End If
+                        End If
+
+                        Controller = Controller.Parent
+                    Loop
+
+                    Me.RegisterToRenderCompleted()
+                End If
+
+                If TypeOf SenderController Is ControlBase AndAlso
+                    TypeOf SenderController Is INamable Then
+
+                    If String.Compare(
+                        CType(SenderController, INamable).ControlID, Me.BoundControlID, True) <> 0 Then
+
+                        Exit Sub
+                    Else
+                        Me.RenderInternal()
+                    End If
+                End If
+            Else
+                Me.RenderInternal()
+            End If
+        End Sub
+
+        Private Sub RenderInternal()
             ' Parse Block Content
             Dim controlValueSplitted As String() =
                 Me.InsideValue.Split(":"c)
