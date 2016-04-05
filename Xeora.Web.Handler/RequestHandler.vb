@@ -119,32 +119,46 @@ Namespace Xeora.Web.Handler
                     If [Shared].Helpers.Context.Response.ContentEncoding Is Nothing Then _
                         [Shared].Helpers.Context.Response.ContentEncoding = Text.Encoding.UTF8
 
-                    ' Let define server and user side page caching
-                    If Not [Shared].Helpers.Context.Request.QueryString.Item("nocache") Is Nothing Then
+                    ' Lets prepare the caching settings in server and on client
+                    Dim CurrentCaching As [Shared].Globals.PageCachingTypes
+                    If Not [Enum].TryParse(Of [Shared].Globals.PageCachingTypes)(
+                            [Shared].Helpers.Context.Request.QueryString.Item("nocache"),
+                            CurrentCaching
+                        ) Then _
+                        CurrentCaching = Site.DomainControl.Domain.Settings.Configurations.DefaultCaching
+
+                    If CurrentCaching <> [Shared].Globals.PageCachingTypes.AllContent AndAlso
+                        CurrentCaching <> [Shared].Globals.PageCachingTypes.AllContentCookiless Then
+
                         [Shared].Helpers.Context.Response.CacheControl = "no-cache"
                         [Shared].Helpers.Context.Response.AddHeader("Pragma", "no-cache")
                         [Shared].Helpers.Context.Response.Expires = -1
                         [Shared].Helpers.Context.Response.ExpiresAbsolute = Date.Today.AddMilliseconds(-1)
 
-                        Select Case [Shared].Helpers.Context.Request.QueryString.Item("nocache")
-                            Case "L2", "L2XC"
+                        Select Case CurrentCaching
+                            Case [Shared].Globals.PageCachingTypes.NoCache,
+                                 [Shared].Globals.PageCachingTypes.NoCacheCookiless
+
                                 System.Web.HttpResponse.RemoveOutputCacheItem([Shared].Helpers.Context.Request.FilePath)
                         End Select
-
-                        ' Session Cookie Option
-                        Dim CookilessSessionString As String =
-                            String.Format("{0}_Cookieless", [Shared].Configurations.VirtualRoot.Replace("/"c, "_"c))
-                        Select Case [Shared].Helpers.Context.Request.QueryString.Item("nocache")
-                            Case "L0XC", "L1XC", "L2XC"
-                                [Shared].Helpers.Context.Session.Contents.Item(CookilessSessionString) = True
-                            Case Else
-                                [Shared].Helpers.Context.Session.Contents.Item(CookilessSessionString) = False
-                        End Select
-                        ' !--
                     Else
                         ' 1 year cache! my god!
                         [Shared].Helpers.Context.Response.ExpiresAbsolute = Date.Today.AddYears(1)
                     End If
+
+                    ' Session Cookie Option
+                    Dim CookilessSessionString As String =
+                        String.Format("{0}_Cookieless", [Shared].Configurations.VirtualRoot.Replace("/"c, "_"c))
+                    Select Case CurrentCaching
+                        Case [Shared].Globals.PageCachingTypes.AllContentCookiless,
+                             [Shared].Globals.PageCachingTypes.NoCacheCookiless,
+                             [Shared].Globals.PageCachingTypes.TextsOnlyCookiless
+
+                            [Shared].Helpers.Context.Session.Contents.Item(CookilessSessionString) = True
+                        Case Else
+                            [Shared].Helpers.Context.Session.Contents.Item(CookilessSessionString) = False
+                    End Select
+                    ' !--
 
                     ' Let's check if the browser accept compressed output
                     Dim AcceptEncodings As String =

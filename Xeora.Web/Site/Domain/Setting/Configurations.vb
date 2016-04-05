@@ -38,13 +38,8 @@ Namespace Xeora.Web.Site.Setting
                 Dim rPageCaching As [Shared].Globals.PageCachingTypes = [Shared].Globals.PageCachingTypes.AllContent
                 Dim configString As String = Me.ReadConfiguration("defaultcaching")
 
-                For Each nItem As String In [Enum].GetNames(GetType([Shared].Globals.PageCachingTypes))
-                    If String.Compare(nItem, configString, True) = 0 Then
-                        rPageCaching = CType([Enum].Parse(GetType([Shared].Globals.PageCachingTypes), nItem), [Shared].Globals.PageCachingTypes)
-
-                        Exit For
-                    End If
-                Next
+                If Not [Enum].TryParse(Of [Shared].Globals.PageCachingTypes)(configString, rPageCaching) Then _
+                    rPageCaching = [Shared].Globals.PageCachingTypes.AllContent
 
                 Return rPageCaching
             End Get
