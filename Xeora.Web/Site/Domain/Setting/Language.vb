@@ -4,17 +4,15 @@ Namespace Xeora.Web.Site.Setting
     Public Class Language
         Implements [Shared].IDomain.ILanguage
 
-        Private _Parent As [Shared].IDomain
-
         Private _ID As String
         Private _Name As String
 
         Private _XPathStream As IO.StringReader = Nothing
         Private _XPathNavigator As Xml.XPath.XPathNavigator
 
-        Public Sub New(ByVal Parent As [Shared].IDomain, ByVal LanguageXMLContent As String)
-            Me._Parent = Parent
+        Public Event ResolveTranslationRequested As [Shared].IDomain.ILanguage.ResolveTranslationRequestedEventHandler Implements [Shared].IDomain.ILanguage.ResolveTranslationRequested
 
+        Public Sub New(ByVal LanguageXMLContent As String)
             If LanguageXMLContent Is Nothing OrElse
                 LanguageXMLContent.Trim().Length = 0 Then
 
@@ -73,16 +71,8 @@ Namespace Xeora.Web.Site.Setting
 
                 If xPathIter.MoveNext() Then rString = xPathIter.Current.Value
 
-                If String.IsNullOrEmpty(rString) Then
-                    Dim WorkingInstance As [Shared].IDomain = Me._Parent
-
-                    Do Until WorkingInstance Is Nothing OrElse Not String.IsNullOrEmpty(rString)
-                        WorkingInstance = WorkingInstance.Parent
-
-                        If Not WorkingInstance Is Nothing Then _
-                            rString = WorkingInstance.Language.Get(TranslationID)
-                    Loop
-                End If
+                If String.IsNullOrEmpty(rString) Then _
+                    RaiseEvent ResolveTranslationRequested(TranslationID, rString)
             Catch ex As System.Exception
                 ' Just Handle Exceptions
             End Try

@@ -4,12 +4,6 @@ Namespace Xeora.Web.Site.Setting
     Public Class WebService
         Implements [Shared].IDomain.IWebService
 
-        Private _Parent As [Shared].IDomain
-
-        Public Sub New(ByVal Parent As [Shared].IDomain)
-            Me._Parent = Parent
-        End Sub
-
         Public Function CreateWebServiceAuthentication(ByVal ParamArray dItems() As DictionaryEntry) As String Implements [Shared].IDomain.IWebService.CreateWebServiceAuthentication
             Dim rString As String = Nothing
 

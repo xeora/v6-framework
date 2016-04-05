@@ -367,7 +367,7 @@ Namespace Xeora.Web.Shared
             DomainAsm = Reflection.Assembly.Load("Xeora.Web")
             objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
 
-            rIDomain = CType(objDomain.InvokeMember("Domain", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, Nothing), IDomain)
+            rIDomain = CType(objDomain.InvokeMember("Domain", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomain)
 
             Return rIDomain
         End Function

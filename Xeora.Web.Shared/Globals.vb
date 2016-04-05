@@ -12,13 +12,20 @@ Namespace Xeora.Web.Shared
                 NoCacheCookiless
             End Enum
 
-            Private Shared _DefaultType As Types = Types.AllContent
             Public Shared Property DefaultType() As Types
                 Get
-                    Return PageCaching._DefaultType
+                    Dim rType As Types
+
+                    Try
+                        rType = CType(Helpers.Context.Session.Contents.Item("_sys_defaultcaching"), Types)
+                    Catch ex As Exception
+                        rType = Types.AllContent
+                    End Try
+
+                    Return rType
                 End Get
                 Set(ByVal value As Types)
-                    PageCaching._DefaultType = value
+                    Helpers.Context.Session.Contents.Item("_sys_defaultcaching") = value
                 End Set
             End Property
 
@@ -42,7 +49,7 @@ Namespace Xeora.Web.Shared
             End Function
 
             Public Shared Function ParseFromQueryString(ByVal TypeQueryString As String) As Types
-                Dim rType As Types = PageCaching._DefaultType
+                Dim rType As Types = PageCaching.DefaultType
 
                 Select Case TypeQueryString
                     Case "L0XC"

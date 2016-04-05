@@ -72,8 +72,7 @@ Namespace Xeora.Web.Handler
                 Me._SupportCompression = False
 
                 ' Make Available Context for Current Async Call
-                [Shared].Helpers.AssignRequestID(
-                    CType(Context.Items.Item("RequestID"), String))
+                [Shared].Helpers.AssignRequestID(Me._RequestID)
                 ' !--
 
                 ' DO NOT USE General.Context for this line
@@ -88,10 +87,10 @@ Namespace Xeora.Web.Handler
                     ' default domain default language id
                     Dim LanguageID As String = [Shared].Helpers.CurrentDomainLanguageID
                     ' Create with default ones
-                    Me._DomainControl = New Site.DomainControl(DomainIDAccessTree, LanguageID)
+                    Me._DomainControl = New Site.DomainControl(Me._RequestID, DomainIDAccessTree, LanguageID)
 
                     ' Reset the languageID because it may changed on false language id
-                    LanguageID = Site.DomainControl.Domain.Language.ID
+                    LanguageID = Site.DomainControl.Domain(Me._RequestID).Language.ID
 
                     ' Resolve If Request is Mapped (and if urlmapping is active)
                     If Me._DomainControl.URLMapping.IsActive Then
@@ -204,7 +203,7 @@ Namespace Xeora.Web.Handler
                                         ChildDomainIDAccessTree = SplittedRequestedDomainWebPath(0).Split("-"c)
                                         ChildDomainLanguageID = SplittedRequestedDomainWebPath(1)
 
-                                        Me._DomainControl = New Site.DomainControl(ChildDomainIDAccessTree, ChildDomainLanguageID)
+                                        Me._DomainControl = New Site.DomainControl(Me._RequestID, ChildDomainIDAccessTree, ChildDomainLanguageID)
 
                                         DomainContentsPath = [Shared].Helpers.GetDomainContentsPath(ChildDomainIDAccessTree, ChildDomainLanguageID)
                                     End If
@@ -238,7 +237,7 @@ Namespace Xeora.Web.Handler
                         Context.Items.Item("_sys_TemplateRequest") = True
 
                         ' Set Title Globals
-                        [Shared].Helpers.SiteTitle = Site.DomainControl.Domain.Language.Get("SITETITLE")
+                        [Shared].Helpers.SiteTitle = Site.DomainControl.Domain(Me._RequestID).Language.Get("SITETITLE")
 
                         If String.Compare([Shared].Helpers.Context.Request.HttpMethod, "GET", True) = 0 Then
                             ' Check if hashcode is assign to the requested template
@@ -285,7 +284,7 @@ Namespace Xeora.Web.Handler
                                 ' Parse Required Values Of BindInfo ProcedureParams
                                 If Not BindInfo Is Nothing Then _
                                     ParameterValues = Controller.PropertyController.ParseProperties(Nothing, Nothing, BindInfo.ProcedureParams, New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
-                                                                                                                                                                                                                             Instance = Site.DomainControl.Domain
+                                                                                                                                                                                                                             Instance = Site.DomainControl.Domain(Me._RequestID)
                                                                                                                                                                                                                          End Sub))
 
                                 Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
@@ -441,8 +440,8 @@ QUICKFINISH:
                                     CurrentContextCatch.Request.ServerVariables("HTTP_HOST"),
                                     [Shared].Helpers.GetRedirectURL(
                                         False,
-                                        Site.DomainControl.Domain.Settings.Configurations.DefaultPage,
-                                        Site.DomainControl.Domain.Settings.Configurations.DefaultCaching
+                                        Site.DomainControl.Domain(Me._RequestID).Settings.Configurations.DefaultPage,
+                                        Site.DomainControl.Domain(Me._RequestID).Settings.Configurations.DefaultCaching
                                     )
                                 )
                             )
@@ -567,7 +566,7 @@ QUICKFINISH:
                     Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
                         ' Get AuthenticationPage 
                         Dim AuthenticationPage As String =
-                            Site.DomainControl.Domain.Settings.Configurations.AuthenticationPage
+                            Site.DomainControl.Domain(Me._RequestID).Settings.Configurations.AuthenticationPage
 
                         If Not String.IsNullOrEmpty(CurrentRequestedTemplate) AndAlso
                             String.Compare(AuthenticationPage, CurrentRequestedTemplate, True) <> 0 Then
@@ -745,8 +744,8 @@ QUICKFINISH:
                             "<link type=""text/css"" rel=""stylesheet"" href=""{0}"" />",
                             IO.Path.Combine(
                                 [Shared].Helpers.GetDomainContentsPath(
-                                    Site.DomainControl.Domain.IDAccessTree,
-                                    Site.DomainControl.Domain.Language.ID
+                                    Site.DomainControl.Domain(Me._RequestID).IDAccessTree,
+                                    Site.DomainControl.Domain(Me._RequestID).Language.ID
                                 ), "styles.css").Replace("\"c, "/"c)
                         )
                     )

@@ -21,6 +21,7 @@ Namespace Xeora.Web.Site
                 DomainIDAccessTree = New String() {[Shared].Configurations.DefaultDomain}
 
             Me._Deployment = New Deployment.DomainDeployment(DomainIDAccessTree, LanguageID)
+            AddHandler Me._Deployment.Language.ResolveTranslationRequested, AddressOf Me.ResolveTranslationRequest
 
             If DomainIDAccessTree.Length > 1 Then
                 Dim DomainIDAccessTreeA As New Generic.List(Of String)
@@ -40,6 +41,16 @@ Namespace Xeora.Web.Site
             End If
 
             Me._Renderer = New Renderer(Me)
+        End Sub
+
+        Private Sub ResolveTranslationRequest(ByVal TranslationID As String, ByRef Value As String)
+            Dim WorkingInstance As [Shared].IDomain = Me._Parent
+
+            Do Until WorkingInstance Is Nothing OrElse Not String.IsNullOrEmpty(Value)
+                Value = WorkingInstance.Language.Get(TranslationID)
+
+                WorkingInstance = WorkingInstance.Parent
+            Loop
         End Sub
 
 #End Region

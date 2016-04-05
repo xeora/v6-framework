@@ -55,19 +55,17 @@ Namespace Xeora.Web.Deployment
 
             Try
                 Me._Language = New Site.Setting.Language(
-                                    Nothing,
                                     Me.ProvideLanguageContent(Me.LanguageID)
                                 )
             Catch ex As System.Exception
                 MyBase.LanguageID = Me._Settings.Configurations.DefaultLanguage
 
                 Me._Language = New Site.Setting.Language(
-                                    Nothing,
                                     Me.ProvideLanguageContent(Me.LanguageID)
                                 )
             End Try
 
-            Me._WebService = New Site.Setting.WebService(Nothing)
+            Me._WebService = New Site.Setting.WebService()
 
             ' Compile Children Domains
             Me._Children = New [Shared].DomainInfo.DomainInfoCollection()
