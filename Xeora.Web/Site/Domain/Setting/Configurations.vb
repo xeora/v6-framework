@@ -33,13 +33,13 @@ Namespace Xeora.Web.Site.Setting
             End Get
         End Property
 
-        Public ReadOnly Property DefaultCaching() As [Shared].Globals.PageCachingTypes Implements [Shared].IDomain.ISettings.IConfigurations.DefaultCaching
+        Public ReadOnly Property DefaultCaching() As [Shared].Globals.PageCaching.Types Implements [Shared].IDomain.ISettings.IConfigurations.DefaultCaching
             Get
-                Dim rPageCaching As [Shared].Globals.PageCachingTypes = [Shared].Globals.PageCachingTypes.AllContent
+                Dim rPageCaching As [Shared].Globals.PageCaching.Types = [Shared].Globals.PageCaching.Types.AllContent
                 Dim configString As String = Me.ReadConfiguration("defaultcaching")
 
-                If Not [Enum].TryParse(Of [Shared].Globals.PageCachingTypes)(configString, rPageCaching) Then _
-                    rPageCaching = [Shared].Globals.PageCachingTypes.AllContent
+                If Not [Enum].TryParse(Of [Shared].Globals.PageCaching.Types)(configString, rPageCaching) Then _
+                    rPageCaching = [Shared].Globals.PageCaching.Types.AllContent
 
                 Return rPageCaching
             End Get

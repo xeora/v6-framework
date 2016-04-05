@@ -28,6 +28,7 @@ Namespace Xeora.Web.Site
 
             [Shared].Helpers.CurrentDomainIDAccessTree = DomainControl._Domain.IDAccessTree
             [Shared].Helpers.CurrentDomainLanguageID = DomainControl._Domain.Language.ID
+            [Shared].Globals.PageCaching.DefaultType = DomainControl._Domain.Settings.Configurations.DefaultCaching
         End Sub
 
         Public Shared ReadOnly Property Domain() As [Shared].IDomain

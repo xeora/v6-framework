@@ -47,24 +47,14 @@ Namespace Xeora.Web.Shared
             End Set
         End Property
 
-        Public Overloads Shared Function GetRedirectURL(ByVal UseSameVariablePool As Boolean, ByVal TemplateID As String, ByVal CachingType As Globals.PageCachingTypes, ByVal ParamArray QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
+        Public Overloads Shared Function GetRedirectURL(ByVal UseSameVariablePool As Boolean, ByVal TemplateID As String, ByVal CachingType As Globals.PageCaching.Types, ByVal ParamArray QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
             Dim rString As String
 
             Dim URLQueryDictionary As URLQueryDictionary =
                 URLQueryDictionary.Make(QueryStrings)
 
-            Select Case CachingType
-                Case Globals.PageCachingTypes.AllContentCookiless
-                    URLQueryDictionary.Item("nocache") = "L0XC"
-                Case Globals.PageCachingTypes.TextsOnly
-                    URLQueryDictionary.Item("nocache") = "L1"
-                Case Globals.PageCachingTypes.TextsOnlyCookiless
-                    URLQueryDictionary.Item("nocache") = "L1XC"
-                Case Globals.PageCachingTypes.NoCache
-                    URLQueryDictionary.Item("nocache") = "L2"
-                Case Globals.PageCachingTypes.NoCacheCookiless
-                    URLQueryDictionary.Item("nocache") = "L2XC"
-            End Select
+            If CachingType <> Globals.PageCaching.DefaultType Then _
+                URLQueryDictionary.Item("nocache") = Globals.PageCaching.ParseForQueryString(CachingType)
 
             If Not UseSameVariablePool Then
                 rString = String.Format("{0}{1}", Configurations.ApplicationRoot.BrowserImplementation, TemplateID)
@@ -487,10 +477,10 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
-        Public Shared ReadOnly Property CachingType() As Globals.PageCachingTypes
+        Public Shared ReadOnly Property CachingType() As Globals.PageCaching.Types
             Get
-                Dim _CachingType As Globals.PageCachingTypes =
-                    Globals.PageCachingTypes.AllContent
+                Dim _CachingType As Globals.PageCaching.Types =
+                    Globals.PageCaching.Types.AllContent
 
                 SyncLock URLMapping.InstanceLock
                     Dim URLMI As URLMapping = URLMapping.Current
@@ -507,57 +497,17 @@ Namespace Xeora.Web.Shared
                                 RequestCaching = SHCMatch.Value.Substring(rCIdx + 1, SHCMatch.Length - (rCIdx + 2))
                             ' !--
 
-                            Select Case RequestCaching
-                                Case "L1"
-                                    _CachingType = Globals.PageCachingTypes.TextsOnly
-                                Case "L2"
-                                    _CachingType = Globals.PageCachingTypes.NoCache
-                                Case "L0XC"
-                                    _CachingType = Globals.PageCachingTypes.AllContentCookiless
-                                Case "L1XC"
-                                    _CachingType = Globals.PageCachingTypes.TextsOnlyCookiless
-                                Case "L2XC"
-                                    _CachingType = Globals.PageCachingTypes.NoCacheCookiless
-                            End Select
+                            _CachingType = Globals.PageCaching.ParseFromQueryString(RequestCaching)
                         End If
                     Else
-                        Select Case Helpers.Context.Request.QueryString.Item("nocache")
-                            Case "L1"
-                                _CachingType = Globals.PageCachingTypes.TextsOnly
-                            Case "L2"
-                                _CachingType = Globals.PageCachingTypes.NoCache
-                            Case "L0XC"
-                                _CachingType = Globals.PageCachingTypes.AllContentCookiless
-                            Case "L1XC"
-                                _CachingType = Globals.PageCachingTypes.TextsOnlyCookiless
-                            Case "L2XC"
-                                _CachingType = Globals.PageCachingTypes.NoCacheCookiless
-                        End Select
+                        _CachingType = Globals.PageCaching.ParseFromQueryString(
+                                        Helpers.Context.Request.QueryString.Item("nocache"))
                     End If
                 End SyncLock
 
                 Return _CachingType
             End Get
         End Property
-
-        Public Shared Function GetCachingTypeText(ByVal CachingType As Globals.PageCachingTypes) As String
-            Dim rCachingTypeText As String = String.Empty
-
-            Select Case CachingType
-                Case Globals.PageCachingTypes.TextsOnly
-                    rCachingTypeText = "L1"
-                Case Globals.PageCachingTypes.NoCache
-                    rCachingTypeText = "L2"
-                Case Globals.PageCachingTypes.AllContentCookiless
-                    rCachingTypeText = "L0XC"
-                Case Globals.PageCachingTypes.TextsOnlyCookiless
-                    rCachingTypeText = "L1XC"
-                Case Globals.PageCachingTypes.NoCacheCookiless
-                    rCachingTypeText = "L2XC"
-            End Select
-
-            Return rCachingTypeText
-        End Function
 
         Public Shared Sub ReloadApplication()
             Dim RequestAsm As Reflection.Assembly, objRequest As Type

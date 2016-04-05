@@ -23,7 +23,7 @@ Namespace Xeora.Web.Shared
                 ReadOnly Property AuthenticationPage() As String
                 ReadOnly Property DefaultPage() As String
                 ReadOnly Property DefaultLanguage() As String
-                ReadOnly Property DefaultCaching() As Globals.PageCachingTypes
+                ReadOnly Property DefaultCaching() As Globals.PageCaching.Types
                 ReadOnly Property DefaultSecurityBind() As String
             End Interface
 

@@ -120,24 +120,21 @@ Namespace Xeora.Web.Handler
                         [Shared].Helpers.Context.Response.ContentEncoding = Text.Encoding.UTF8
 
                     ' Lets prepare the caching settings in server and on client
-                    Dim CurrentCaching As [Shared].Globals.PageCachingTypes
-                    If Not [Enum].TryParse(Of [Shared].Globals.PageCachingTypes)(
-                            [Shared].Helpers.Context.Request.QueryString.Item("nocache"),
-                            CurrentCaching
-                        ) Then _
-                        CurrentCaching = Site.DomainControl.Domain.Settings.Configurations.DefaultCaching
+                    Dim RequestedCaching As [Shared].Globals.PageCaching.Types =
+                        [Shared].Globals.PageCaching.ParseFromQueryString(
+                            [Shared].Helpers.Context.Request.QueryString.Item("nocache"))
 
-                    If CurrentCaching <> [Shared].Globals.PageCachingTypes.AllContent AndAlso
-                        CurrentCaching <> [Shared].Globals.PageCachingTypes.AllContentCookiless Then
+                    If RequestedCaching <> [Shared].Globals.PageCaching.Types.AllContent AndAlso
+                        RequestedCaching <> [Shared].Globals.PageCaching.Types.AllContentCookiless Then
 
                         [Shared].Helpers.Context.Response.CacheControl = "no-cache"
                         [Shared].Helpers.Context.Response.AddHeader("Pragma", "no-cache")
                         [Shared].Helpers.Context.Response.Expires = -1
                         [Shared].Helpers.Context.Response.ExpiresAbsolute = Date.Today.AddMilliseconds(-1)
 
-                        Select Case CurrentCaching
-                            Case [Shared].Globals.PageCachingTypes.NoCache,
-                                 [Shared].Globals.PageCachingTypes.NoCacheCookiless
+                        Select Case RequestedCaching
+                            Case [Shared].Globals.PageCaching.Types.NoCache,
+                                 [Shared].Globals.PageCaching.Types.NoCacheCookiless
 
                                 System.Web.HttpResponse.RemoveOutputCacheItem([Shared].Helpers.Context.Request.FilePath)
                         End Select
@@ -149,10 +146,10 @@ Namespace Xeora.Web.Handler
                     ' Session Cookie Option
                     Dim CookilessSessionString As String =
                         String.Format("{0}_Cookieless", [Shared].Configurations.VirtualRoot.Replace("/"c, "_"c))
-                    Select Case CurrentCaching
-                        Case [Shared].Globals.PageCachingTypes.AllContentCookiless,
-                             [Shared].Globals.PageCachingTypes.NoCacheCookiless,
-                             [Shared].Globals.PageCachingTypes.TextsOnlyCookiless
+                    Select Case RequestedCaching
+                        Case [Shared].Globals.PageCaching.Types.AllContentCookiless,
+                             [Shared].Globals.PageCaching.Types.NoCacheCookiless,
+                             [Shared].Globals.PageCaching.Types.TextsOnlyCookiless
 
                             [Shared].Helpers.Context.Session.Contents.Item(CookilessSessionString) = True
                         Case Else
@@ -587,7 +584,7 @@ QUICKFINISH:
                             [Shared].Helpers.GetRedirectURL(
                                 True,
                                 AuthenticationPage,
-                                [Shared].Globals.PageCachingTypes.TextsOnly
+                                [Shared].Globals.PageCaching.DefaultType
                             )
                         )
 
