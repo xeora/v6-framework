@@ -12,20 +12,26 @@ Namespace Xeora.Web.Shared
                 NoCacheCookiless
             End Enum
 
+            Private Shared _DefaultType As Hashtable = Hashtable.Synchronized(New Hashtable)
             Public Shared Property DefaultType() As Types
                 Get
-                    Dim rType As Types
+                    Dim rType As Types = Types.AllContent
 
-                    Try
-                        rType = CType(Helpers.Context.Session.Contents.Item("_sys_defaultcaching"), Types)
-                    Catch ex As Exception
-                        rType = Types.AllContent
-                    End Try
+                    If PageCaching._DefaultType.ContainsKey(Helpers.CurrentRequestID) Then _
+                        rType = CType(PageCaching._DefaultType.Item(Helpers.CurrentRequestID), Types)
 
                     Return rType
                 End Get
                 Set(ByVal value As Types)
-                    Helpers.Context.Session.Contents.Item("_sys_defaultcaching") = value
+                    Threading.Monitor.Enter(PageCaching._DefaultType.SyncRoot)
+                    Try
+                        If PageCaching._DefaultType.ContainsKey(Helpers.CurrentRequestID) Then _
+                            PageCaching._DefaultType.Remove(Helpers.CurrentRequestID)
+
+                        PageCaching._DefaultType.Add(Helpers.CurrentRequestID, value)
+                    Finally
+                        Threading.Monitor.Exit(PageCaching._DefaultType.SyncRoot)
+                    End Try
                 End Set
             End Property
 
