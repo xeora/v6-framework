@@ -47,6 +47,18 @@ Namespace Xeora.Web.Shared
             End Set
         End Property
 
+        Public Overloads Shared Function GetRedirectURL(ByVal TemplateID As String, ParamArray ByVal QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
+            Return Helpers.GetRedirectURL(True, TemplateID, Globals.PageCaching.DefaultType, QueryStrings)
+        End Function
+
+        Public Overloads Shared Function GetRedirectURL(ByVal TemplateID As String, ByVal CachingType As Globals.PageCaching.Types, ParamArray ByVal QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
+            Return Helpers.GetRedirectURL(True, TemplateID, CachingType, QueryStrings)
+        End Function
+
+        Public Overloads Shared Function GetRedirectURL(ByVal UseSameVariablePool As Boolean, ByVal TemplateID As String, ParamArray ByVal QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
+            Return Helpers.GetRedirectURL(UseSameVariablePool, TemplateID, Globals.PageCaching.DefaultType, QueryStrings)
+        End Function
+
         Public Overloads Shared Function GetRedirectURL(ByVal UseSameVariablePool As Boolean, ByVal TemplateID As String, ByVal CachingType As Globals.PageCaching.Types, ByVal ParamArray QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
             Dim rString As String
 
