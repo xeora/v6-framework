@@ -13,11 +13,8 @@ Namespace Xeora.Web.Controller.Directive.Control
         End Sub
 
         Public Overrides Sub Render(ByRef SenderController As ControllerBase)
-            If Me.IsUpdateBlockRequest AndAlso Not Me.InRequestedUpdateBlock Then
-                Me.DefineRenderedValue(String.Empty)
-
-                Exit Sub
-            End If
+            ' UpdateBlock can be located under a variable block because of this
+            ' Variable block should be rendered with its current settings all the time
 
             If Not String.IsNullOrEmpty(Me.BoundControlID) Then
                 If Me.IsRendered Then Exit Sub

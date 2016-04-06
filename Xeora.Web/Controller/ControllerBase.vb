@@ -235,7 +235,7 @@ Namespace Xeora.Web.Controller
 
                     If Me.IsUpdateBlockRequest Then
                         If Me.InRequestedUpdateBlock OrElse Me.UpdateBlockRendered Then _
-                        WorkingInsideValue.Append(Child.RenderedValue)
+                            WorkingInsideValue.Append(Child.RenderedValue)
                     Else
                         WorkingInsideValue.Append(Child.RenderedValue)
                     End If

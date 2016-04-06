@@ -30,11 +30,8 @@ Namespace Xeora.Web.Controller.Directive
         End Property
 
         Public Overrides Sub Render(ByRef SenderController As ControllerBase)
-            If Me.IsUpdateBlockRequest AndAlso Not Me.InRequestedUpdateBlock Then
-                Me.RenderInternal(SenderController)
-
-                Exit Sub
-            End If
+            ' Template should always included with security check in render process in UpdateBlockRequest because
+            ' UpdateBlock can be located under a template included in another template
 
             Dim Instance As IDomain = Nothing
             RaiseEvent InstanceRequested(Instance)
