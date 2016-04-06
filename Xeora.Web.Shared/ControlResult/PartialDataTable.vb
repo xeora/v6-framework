@@ -25,14 +25,10 @@ Namespace Xeora.Web.Shared.ControlResult
         End Property
 
         Public Sub Replace(ByVal Source As DataTable)
-            If Source Is Nothing Then
-                Me.Clear()
-            Else
+            Me.Clear()
+
+            If Not Source Is Nothing Then _
                 Me.Merge(Source, False, MissingSchemaAction.Add)
-                'Dim DRS As DataRow() =
-                '    Me.NewRowArray(Source.Rows.Count)
-                'Source.Rows.CopyTo(DRS, 0)
-            End If
         End Sub
 
         Public Property Total() As Integer
