@@ -84,12 +84,12 @@ Namespace Xeora.Web.Shared
             Return Helpers.GetDomainContentsPath(Helpers.CurrentDomainIDAccessTree, Helpers.CurrentDomainLanguageID)
         End Function
 
-        Public Overloads Shared Function GetDomainContentsPath(ByVal DomainIDAccessTree As String(), ByVal DomainTranslationID As String) As String
+        Public Overloads Shared Function GetDomainContentsPath(ByVal DomainIDAccessTree As String(), ByVal DomainLanguageID As String) As String
             Dim DomainWebPath As String =
                 String.Format("{0}{1}_{2}",
                     Configurations.ApplicationRoot.BrowserImplementation,
                     String.Join(Of String)("-", DomainIDAccessTree),
-                    DomainTranslationID)
+                    DomainLanguageID)
 
             Return DomainWebPath
         End Function
@@ -376,14 +376,14 @@ Namespace Xeora.Web.Shared
             Return Helpers.CreateDomainInstance(DomainIDAccessTree, Nothing)
         End Function
 
-        Public Overloads Shared Function CreateDomainInstance(ByVal DomainIDAccessTree As String(), ByVal DomainTranslationID As String) As IDomain
+        Public Overloads Shared Function CreateDomainInstance(ByVal DomainIDAccessTree As String(), ByVal DomainLanguageID As String) As IDomain
             Dim rIDomain As IDomain
             Dim DomainAsm As Reflection.Assembly, objDomain As Type
 
             DomainAsm = Reflection.Assembly.Load("Xeora.Web")
             objDomain = DomainAsm.GetType("Xeora.Web.Site.Domain", False, True)
 
-            rIDomain = CType(Activator.CreateInstance(objDomain, New Object() {DomainIDAccessTree, DomainTranslationID}), IDomain)
+            rIDomain = CType(Activator.CreateInstance(objDomain, New Object() {DomainIDAccessTree, DomainLanguageID}), IDomain)
 
             Return rIDomain
         End Function

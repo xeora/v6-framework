@@ -2,17 +2,17 @@
 
 Namespace Xeora.Web.Controller.Directive.Control
     Public Class AttributeInfo
-        Private _ID As String
+        Private _Key As String
         Private _Value As String
 
-        Public Sub New(ByVal ID As String, ByVal Value As String)
-            Me._ID = ID
+        Public Sub New(ByVal Key As String, ByVal Value As String)
+            Me._Key = Key
             Me._Value = Value
         End Sub
 
-        Public ReadOnly Property ID() As String
+        Public ReadOnly Property Key() As String
             Get
-                Return Me._ID
+                Return Me._Key
             End Get
         End Property
 
@@ -29,17 +29,17 @@ Namespace Xeora.Web.Controller.Directive.Control
                 MyBase.New()
             End Sub
 
-            Public Shadows Sub Add(ByVal ID As String, ByVal Value As String)
-                MyBase.Add(New AttributeInfo(ID, Value))
+            Public Shadows Sub Add(ByVal Key As String, ByVal Value As String)
+                MyBase.Add(New AttributeInfo(Key, Value))
             End Sub
 
             Public Shadows Sub Add(ByVal Item As AttributeInfo)
                 MyBase.Add(Item)
             End Sub
 
-            Public Shadows Sub Remove(ByVal ID As String)
+            Public Shadows Sub Remove(ByVal Key As String)
                 For Each Item As AttributeInfo In Me
-                    If String.Compare(ID, Item.ID, True) = 0 Then
+                    If String.Compare(Key, Item.Key, True) = 0 Then
                         MyBase.Remove(Item)
 
                         Exit For
@@ -51,12 +51,12 @@ Namespace Xeora.Web.Controller.Directive.Control
                 MyBase.Remove(Item)
             End Sub
 
-            Public Shadows Property Item(ByVal ID As String) As String
+            Public Shadows Property Item(ByVal Key As String) As String
                 Get
                     Dim rString As String = Nothing
 
                     For Each aI As AttributeInfo In Me
-                        If String.Compare(ID, aI.ID, True) = 0 Then
+                        If String.Compare(Key, aI.Key, True) = 0 Then
                             rString = aI.Value
 
                             Exit For
@@ -66,8 +66,8 @@ Namespace Xeora.Web.Controller.Directive.Control
                     Return rString
                 End Get
                 Set(ByVal Value As String)
-                    Me.Remove(ID)
-                    Me.Add(ID, Value)
+                    Me.Remove(Key)
+                    Me.Add(Key, Value)
                 End Set
             End Property
 
@@ -88,15 +88,15 @@ Namespace Xeora.Web.Controller.Directive.Control
                 Dim AttributeValue As String
 
                 For Each aI As AttributeInfo In Me
-                    If CompareCulture.CompareInfo.Compare(aI.ID, "id", Globalization.CompareOptions.IgnoreCase) <> 0 Then
+                    If CompareCulture.CompareInfo.Compare(aI.Key, "key", Globalization.CompareOptions.IgnoreCase) <> 0 Then
                         AttributeValue = aI.Value
 
-                        If aI.ID Is Nothing OrElse
-                            aI.ID.Trim().Length = 0 Then
+                        If aI.Key Is Nothing OrElse
+                            aI.Key.Trim().Length = 0 Then
 
                             rSB.AppendFormat(" {0}", AttributeValue)
                         Else
-                            rSB.AppendFormat(" {0}=""{1}""", aI.ID, AttributeValue.Replace("""", "\"""))
+                            rSB.AppendFormat(" {0}=""{1}""", aI.Key, AttributeValue.Replace("""", "\"""))
                         End If
                     End If
                 Next

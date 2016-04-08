@@ -148,7 +148,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                 Me.RequestParse(Item.Value, DummyControllerContainer)
                 DummyControllerContainer.Render(Me)
 
-                Me.Attributes.Item(aC) = New AttributeInfo(Item.ID, DummyControllerContainer.RenderedValue)
+                Me.Attributes.Item(aC) = New AttributeInfo(Item.Key, DummyControllerContainer.RenderedValue)
             Next
             ' !--
 

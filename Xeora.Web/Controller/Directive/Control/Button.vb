@@ -5,27 +5,14 @@ Namespace Xeora.Web.Controller.Directive.Control
     Public Class Button
         Inherits ControlBase
         Implements IHasText
-        Implements IHasDefaultButton
 
-        Private _DefaultButtonID As String
         Private _Text As String
 
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ControlTypes.Button, ContentArguments)
 
-            Me._DefaultButtonID = String.Empty
             Me._Text = String.Empty
         End Sub
-
-        Public Property DefaultButtonID As String Implements IHasDefaultButton.DefaultButtonID
-            Get
-                Return Me._DefaultButtonID
-            End Get
-            Set(ByVal value As String)
-                Me._DefaultButtonID = value
-                If String.IsNullOrEmpty(Me._DefaultButtonID) Then Me._DefaultButtonID = String.Empty
-            End Set
-        End Property
 
         Public Property Text() As String Implements IHasText.Text
             Get
@@ -156,7 +143,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                 Me.RequestParse(Item.Value, DummyControllerContainer)
                 DummyControllerContainer.Render(Me)
 
-                Me.Attributes.Item(aC) = New AttributeInfo(Item.ID, DummyControllerContainer.RenderedValue)
+                Me.Attributes.Item(aC) = New AttributeInfo(Item.Key, DummyControllerContainer.RenderedValue)
             Next
             ' !--
 

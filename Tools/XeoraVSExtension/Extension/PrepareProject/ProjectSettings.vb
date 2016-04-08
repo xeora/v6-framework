@@ -156,7 +156,7 @@
         If CType(sender, TextBox).Text.Length = 0 Then
             Select Case CType(sender, TextBox).Name
                 Case "tbVariablePoolServicePort"
-                    CType(sender, TextBox).Text = "12010"
+                    CType(sender, TextBox).Text = "12005"
                 Case "tbScheduledTasksServicePort"
                     CType(sender, TextBox).Text = "0"
             End Select

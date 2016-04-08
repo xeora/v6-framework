@@ -259,7 +259,7 @@ Namespace Xeora.Web.Controller.Directive
                                     If ChildReader.MoveToFirstChild() Then
                                         Do
                                             Me._Attributes.Add(
-                                                ChildReader.GetAttribute("id", ChildReader.BaseURI).ToLower(),
+                                                ChildReader.GetAttribute("key", ChildReader.BaseURI).ToLower(),
                                                 ChildReader.Value
                                             )
                                         Loop While ChildReader.MoveToNext()

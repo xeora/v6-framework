@@ -28,9 +28,14 @@ Namespace Xeora.Web.Controller.Directive
         End Property
 
         Public Overrides Sub Render(ByRef SenderController As ControllerBase)
+            If Me.IsUpdateBlockRequest AndAlso Not Me.InRequestedUpdateBlock Then
+                Me.DefineRenderedValue(String.Empty)
+
+                Exit Sub
+            End If
+
             ' Check for Parent UpdateBlock
             Dim WorkingControl As ControllerBase = Me.Parent
-            Dim ParentUpdateBlockID As String = String.Empty
 
             Do Until WorkingControl Is Nothing
                 If TypeOf WorkingControl Is UpdateBlock Then _
