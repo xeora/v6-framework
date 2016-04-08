@@ -279,18 +279,13 @@ Namespace Xeora.Web.Handler
                                         Manager.Assembly.DecodeFunction(
                                             [Shared].Helpers.Context.Request.Form.Item("PostBackInformation"))
                                     )
-                                Dim ParameterValues As Object() = Nothing
-
-                                ' Parse Required Values Of BindInfo ProcedureParams
-                                If Not BindInfo Is Nothing Then _
-                                    ParameterValues = Controller.PropertyController.ParseProperties(Nothing, Nothing, BindInfo.ProcedureParams, New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
-                                                                                                                                                                                                                             Instance = Site.DomainControl.Domain(Me._RequestID)
-                                                                                                                                                                                                                         End Sub))
 
                                 Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
                                     Manager.Assembly.InvokeBind(
                                         BindInfo,
-                                        ParameterValues,
+                                        Controller.PropertyController.ParseProperties(Nothing, Nothing, BindInfo.ProcedureParams, New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
+                                                                                                                                                                                                               Instance = Site.DomainControl.Domain(Me._RequestID)
+                                                                                                                                                                                                           End Sub)),
                                         Manager.Assembly.ExecuterTypes.Undefined
                                     )
 

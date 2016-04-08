@@ -9,6 +9,7 @@ Namespace Xeora.Web.Controller
         Implements IInstanceRequires
 
         Private _ObjectResult As Object
+        Private _ByPassUpdateBlockCheck As Boolean = False
 
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
@@ -18,13 +19,6 @@ Namespace Xeora.Web.Controller
             Me._ObjectResult = Nothing
         End Sub
 
-        Private Sub New(ByVal Parent As ControllerBase, ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection)
-            MyBase.New(DraftStartIndex, DraftValue, ControllerTypes.Property, ContentArguments)
-
-            Me._ObjectResult = Nothing
-
-        End Sub
-
         Public ReadOnly Property ObjectResult() As Object
             Get
                 Return Me._ObjectResult
@@ -32,10 +26,13 @@ Namespace Xeora.Web.Controller
         End Property
 
         Public Overrides Sub Render(ByRef SenderController As ControllerBase)
-            If Me.IsUpdateBlockRequest AndAlso Not Me.InRequestedUpdateBlock Then
-                Me.DefineRenderedValue(String.Empty)
+            ' PropertyController should always be rendered if it is requested from Internal Property parser
+            If Not Me._ByPassUpdateBlockCheck Then
+                If Me.IsUpdateBlockRequest AndAlso Not Me.InRequestedUpdateBlock Then
+                    Me.DefineRenderedValue(String.Empty)
 
-                Exit Sub
+                    Exit Sub
+                End If
             End If
 
             Dim Instance As IDomain = Nothing
@@ -338,6 +335,7 @@ Namespace Xeora.Web.Controller
 
                 For Each Prop As String In Properties
                     PropertyController = New PropertyController(0, Prop, ContentArguments)
+                    PropertyController._ByPassUpdateBlockCheck = True
                     AddHandler PropertyController.InstanceRequested, Handler
 
                     If Not Parent Is Nothing Then
