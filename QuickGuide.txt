@@ -57,7 +57,7 @@ ControlTags:
 				it will not be runnable inside of the LoopControl2 because FirstLoopSQLField1 and FirstLoopSQLField2 do not exists
 				in LoopControl 2 but you want to use this control in both loop controls
 
-				$C<1>:ControlID:{ <!-- Something --> }:ControlID$
+				$C#1:ControlID:{ <!-- Something --> }:ControlID$
 
 				this will convert the following
 
@@ -72,7 +72,7 @@ ControlTags:
 
 		When you want to use leveling with parenting
 
-			$C<1>[ParentControlID]:ControlID:{ <!-- Something --> }:ControlID$
+			$C#1[ParentControlID]:ControlID:{ <!-- Something --> }:ControlID$
 		
 	$T:TemplateID$ << Include Template with specified TemplateID
 	$L:TranslationID$ << Insert Translation result using current specified language xml
@@ -108,7 +108,7 @@ ControlTags:
 
 	What is Block Control Types?
 		With this control type, you can create statement run at server side and creates output according to the block content
-		CallFunction will be called while it is rendering
+		Bind will be called while it is rendering
 
 	What is HTML Control Types?
 		With this control type, you can create html output statement with the postback functionality.
@@ -149,7 +149,7 @@ ControlTags:
 		<Attributes>
 			<Attribute key="[HTMLAttributeKey]">[AttributeValue]</Attributes>
 		</Attributes>
-	</Map>
+	</Control>
 
 	$P:TemplateID$ << create text with Currentpage's hashcode. Ex: $P:TemplateID$  Output: /1252482/TemplateID
 
@@ -190,6 +190,11 @@ ControlTags:
 	Do Request in this surrounded block with HTTPRequest
 
 	$H:RequestBlockID:{ <!-- Something --> }:RequestBlockID$
+
+	or
+
+	Do not render on page create but render on client request
+	$H:RequestBlockID:{!RENDERONREQUEST <!-- Something --> }:RequestBlockID$
 
 	Create encoded javascript url for Executable Execution. This can be used in everywhere that is supporting javascript call.
 
