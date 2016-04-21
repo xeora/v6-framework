@@ -3,7 +3,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <StartAction>Program</StartAction>
     <StartProgram>C:\Program Files %28x86%29\Microsoft Visual Studio 14.0\Common7\IDE\devenv.exe</StartProgram>
-    <StartArguments>/rootsuffix Exp "C:\Users\Tuna Çelik\Documents\Visual Studio 2015\Projects\Solution1\Solution1.sln"</StartArguments>
+    <StartArguments>/rootsuffix Exp "P:\BeyinPilim\Beyinpilim.sln"</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <StartAction>Program</StartAction>

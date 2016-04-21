@@ -1,7 +1,6 @@
 ﻿Imports System.Collections.Generic
 Imports Microsoft.VisualStudio.Language
 Imports Microsoft.VisualStudio.Text
-Imports Microsoft.VisualStudio.Text.Operations
 
 Namespace Xeora.VSAddIn.IDE.Editor.Completion
     Public Class TemplateSource

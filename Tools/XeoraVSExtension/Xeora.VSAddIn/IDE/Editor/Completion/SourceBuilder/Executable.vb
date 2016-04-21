@@ -9,8 +9,10 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
             Dim ExecutablesPath As String =
                 IO.Path.GetFullPath(IO.Path.Combine(PackageControl.IDEControl.DTE.ActiveDocument.Path, "..", "Executables"))
 
+            ' Fill Current Domain Executables
             Me.Fill(CompList, ExecutablesPath)
 
+            ' If it is a child then search for parents
             If PackageControl.IDEControl.GetActiveItemDomainType() = Globals.ActiveDomainTypes.Child Then
                 Dim DomainID As String = String.Empty
                 Dim SearchDI As New IO.DirectoryInfo(ExecutablesPath)
@@ -35,6 +37,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                 Loop Until SearchDI Is Nothing
             End If
 
+            ' fill all children executables
+            Me.FillChildren(CompList, ExecutablesPath)
+
             CompList.Sort(New CompletionComparer())
 
             Return CompList.ToArray()
@@ -45,6 +50,21 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                     New Intellisense.Completion("Create New Executable", String.Empty, String.Empty, Nothing, Nothing)
                 }
         End Function
+
+        Private Sub FillChildren(ByRef Container As Generic.List(Of Intellisense.Completion), ByVal ExecutablesPath As String)
+            Dim AddonsPath As String =
+                IO.Path.GetFullPath(IO.Path.Combine(ExecutablesPath, "..", "Addons"))
+
+            If IO.Directory.Exists(AddonsPath) Then
+                For Each AddonPath As String In IO.Directory.GetDirectories(AddonsPath)
+                    Dim AddonExecutable As String =
+                        IO.Path.Combine(AddonPath, "Executables")
+
+                    Me.Fill(Container, AddonExecutable)
+                    Me.FillChildren(Container, AddonExecutable)
+                Next
+            End If
+        End Sub
 
         Private Sub Fill(ByRef Container As Generic.List(Of Intellisense.Completion), ByVal ExecutablesPath As String)
             Try

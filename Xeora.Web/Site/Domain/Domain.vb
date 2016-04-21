@@ -340,8 +340,8 @@ Namespace Xeora.Web.Site
                 End If
             End Sub
 
-            Private Sub OnDeploymentAccessRequest(ByRef DomainDeployment As Deployment.DomainDeployment)
-                DomainDeployment = CType(Me._Instance, Domain)._Deployment
+            Private Sub OnDeploymentAccessRequest(ByRef WorkingInstance As [Shared].IDomain, ByRef DomainDeployment As Deployment.DomainDeployment)
+                DomainDeployment = CType(WorkingInstance, Domain)._Deployment
             End Sub
 
             Private Sub OnControlMapNavigatorRequest(ByRef WorkingInstance As [Shared].IDomain, ByRef ControlMapXPathNavigator As Xml.XPath.XPathNavigator)

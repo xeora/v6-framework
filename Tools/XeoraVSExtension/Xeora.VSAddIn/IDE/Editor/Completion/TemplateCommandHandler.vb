@@ -38,6 +38,8 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
 
             TemplateCommandHandler.CurrentDirective = Directives.Special
             TemplateCommandHandler.CurrentDirectiveID = String.Empty
+
+            Me.ResetTrackingChars()
         End Sub
 
         Public Property NextCommandHandler As IOleCommandTarget
@@ -45,6 +47,11 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
         Public Shared Property CurrentDirective As Directives
         Public Shared Property CurrentDirectiveID As String
         Private _HandleFollowingAction As Action
+        Private _CurrentTrackingChars As Char()
+
+        Private Sub ResetTrackingChars()
+            Me._CurrentTrackingChars = New Char() {"$"c, ":"c, "?"c, "."c, "#"c, "["c}
+        End Sub
 
         Private Function StartSession(ByVal Directive As Directives) As Boolean
             If Not Me._CurrentSession Is Nothing OrElse (Not Me._CurrentSession Is Nothing AndAlso Me._CurrentSession.IsStarted) Then Return False
@@ -69,10 +76,18 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
             Return True
         End Function
 
-        Private Function Complete() As Boolean
+        Private Function Complete(ByRef HandleChar As Boolean) As Boolean
+            HandleChar = False
+
             If Me._CurrentSession Is Nothing OrElse (Not Me._CurrentSession Is Nothing AndAlso Me._CurrentSession.IsDismissed) Then Return False
 
-            Me._CurrentSession.Commit()
+            If Me._CurrentSession.SelectedCompletionSet.SelectionStatus.IsSelected Then
+                Me._CurrentSession.Commit()
+            Else
+                HandleChar = True
+
+                Return Me.Cancel()
+            End If
 
             Return True
         End Function
@@ -120,7 +135,6 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
             Dim Handled As Boolean = False
             Dim rExecResult As Integer = VSConstants.S_OK
 
-            Dim TrackingChars As Char() = New Char() {"$"c, ":"c, "?"c, "."c, "#"c, "["c}
             Dim OperatorChars As Char() = New Char() {"^"c, "~"c, "-"c, "+"c, "="c, "#"c, "*"c}
             Dim ch As Char = Me.GetTypedChar(pvaIn)
 
@@ -128,9 +142,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
                 Case VSConstants.VSStd2KCmdID.AUTOCOMPLETE, VSConstants.VSStd2KCmdID.COMPLETEWORD
                     Handled = Me.StartSession(Directives.Special)
                 Case VSConstants.VSStd2KCmdID.RETURN, VSConstants.VSStd2KCmdID.TAB
-                    Me._HandleFollowingAction = New Action(Sub() Me.HandleFollowingCompletion(Char.MinValue, Char.MinValue))
+                    Me._HandleFollowingAction = New Action(Sub() Me.HandleFollowingCompletion(Char.MinValue, Char.MinValue, False))
 
-                    Handled = Me.Complete()
+                    Handled = Me.Complete(False)
 
                     If Not Handled Then Me._HandleFollowingAction = Nothing
                 Case CType(103, VSConstants.VSStd2KCmdID) 'VSConstants.VSStd2KCmdID.CANCEL
@@ -138,82 +152,69 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
                 Case Else
                     If ch <> Char.MinValue Then
                         If Not Me._CurrentSession Is Nothing AndAlso Not Me._CurrentSession.IsDismissed Then
-                            If Array.IndexOf(TrackingChars, ch) > -1 Then
-                                Me._HandleFollowingAction = New Action(Sub() Me.HandleFollowingCompletion(ch, Char.MinValue))
+                            If Array.IndexOf(Me._CurrentTrackingChars, ch) > -1 Then
+                                Me._HandleFollowingAction = New Action(Sub() Me.HandleFollowingCompletion(ch, Char.MinValue, False))
 
-                                Handled = Me.Complete()
+                                Dim HandleChar As Boolean
+                                Handled = Me.Complete(HandleChar)
+                                If HandleChar Then Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
 
                                 If Not Handled Then Me._HandleFollowingAction = Nothing
                             ElseIf Char.IsWhiteSpace(ch) Then
-                                Me._HandleFollowingAction = New Action(Sub() Me.HandleFollowingCompletion(Char.MinValue, Char.MinValue))
+                                Me._HandleFollowingAction = New Action(Sub() Me.HandleFollowingCompletion(Char.MinValue, Char.MinValue, False))
 
-                                Handled = Me.Complete()
+                                Dim HandleChar As Boolean
+                                Handled = Me.Complete(HandleChar)
+                                If HandleChar Then Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
 
                                 If Not Handled Then Me._HandleFollowingAction = Nothing
                             Else
-                                If Array.IndexOf(OperatorChars, ch) > -1 Then
-                                    Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+                                Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
 
-                                    Handled = Me.Cancel()
-                                End If
+                                If Array.IndexOf(OperatorChars, ch) > -1 Then Handled = Me.Cancel() Else Handled = True
                             End If
                         Else
-                            If Array.IndexOf(TrackingChars, ch) = -1 Then
-                                If ch <> Char.MinValue Then
-                                    Dim CursorIndex As Integer
-                                    Dim StatementText As String = Me.ExtractXeoraStatement(Char.MinValue, CursorIndex)
+                            If Array.IndexOf(Me._CurrentTrackingChars, ch) = -1 Then
+                                Dim CursorIndex As Integer
+                                Dim StatementText As String = Me.ExtractXeoraStatement(Char.MinValue, CursorIndex)
 
-                                    If Not String.IsNullOrEmpty(StatementText) Then
-                                        Dim PageContent As String = Me._TextView.TextSnapshot.GetText()
-                                        Dim RegEx As New System.Text.RegularExpressions.Regex("\$C\#\d*(\+)?")
-                                        Dim LevelingMatch As System.Text.RegularExpressions.Match =
-                                            RegEx.Match(PageContent, (Me._TextView.Caret.Position.BufferPosition - CursorIndex))
+                                If Not String.IsNullOrEmpty(StatementText) Then
+                                    Dim PageContent As String = Me._TextView.TextSnapshot.GetText()
+                                    Dim RegEx As New System.Text.RegularExpressions.Regex("\$C\#\d*(\+)?")
+                                    Dim LevelingMatch As System.Text.RegularExpressions.Match =
+                                        RegEx.Match(PageContent, (Me._TextView.Caret.Position.BufferPosition - CursorIndex))
 
-                                        If LevelingMatch.Success AndAlso
-                                            LevelingMatch.Index = (Me._TextView.Caret.Position.BufferPosition.Position - CursorIndex) AndAlso
-                                            LevelingMatch.Length >= CursorIndex Then
+                                    If LevelingMatch.Success AndAlso
+                                        LevelingMatch.Index = (Me._TextView.Caret.Position.BufferPosition.Position - CursorIndex) AndAlso
+                                        LevelingMatch.Length >= CursorIndex Then
 
-                                            If Char.IsDigit(ch) OrElse ch = "+"c OrElse ch = ":"c OrElse ch = "["c Then
-                                                If Not Char.IsDigit(ch) AndAlso LevelingMatch.Length > 3 AndAlso Me._TextView.Selection.IsEmpty Then
-                                                    If ch = "+" AndAlso CursorIndex = LevelingMatch.Length Then
-                                                        If LevelingMatch.Value.IndexOf("+"c) = -1 Then _
-                                                            Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-                                                    End If
-
-                                                    If ch = ":"c OrElse ch = "["c Then
-                                                        If LevelingMatch.Value.Chars(LevelingMatch.Length - 1) = "+"c Then
-                                                            If LevelingMatch.Length > 4 Then Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-                                                        Else
-                                                            If CursorIndex = LevelingMatch.Length Then _
-                                                                Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-                                                        End If
-                                                    End If
-                                                Else
-                                                    If Char.IsDigit(ch) Then _
+                                        If Char.IsDigit(ch) OrElse ch = "+"c OrElse ch = ":"c OrElse ch = "["c Then
+                                            If Not Char.IsDigit(ch) AndAlso LevelingMatch.Length > 3 AndAlso Me._TextView.Selection.IsEmpty Then
+                                                If ch = "+" AndAlso CursorIndex = LevelingMatch.Length Then
+                                                    If LevelingMatch.Value.IndexOf("+"c) = -1 Then _
                                                         Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
                                                 End If
+
+                                                If ch = ":"c OrElse ch = "["c Then
+                                                    If LevelingMatch.Value.Chars(LevelingMatch.Length - 1) = "+"c Then
+                                                        If LevelingMatch.Length > 4 Then Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+                                                    Else
+                                                        If CursorIndex = LevelingMatch.Length Then _
+                                                            Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+                                                    End If
+                                                End If
+                                            Else
+                                                If Char.IsDigit(ch) Then _
+                                                    Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
                                             End If
-
-                                            Handled = True
-                                        Else
-                                            Handled = True
-
-                                            rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
                                         End If
-                                    Else
+
                                         Handled = True
-
-                                        rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
                                     End If
-                                Else
-                                    Handled = True
-
-                                    rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
                                 End If
                             Else
-                                If Not Me._TextView.Selection.IsEmpty Then
+                                If Not Me._TextView.Selection.IsEmpty Then _
                                     Handled = IsNumeric(Me._TextView.Selection.SelectedSpans.Item(0).GetText())
-                                End If
                             End If
                         End If
                     End If
@@ -223,14 +224,24 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
                 Select Case CType(nCmdID, VSConstants.VSStd2KCmdID)
                     Case VSConstants.VSStd2KCmdID.TYPECHAR
                         If ch <> Char.MinValue Then
-                            rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-
                             Select Case ch
                                 Case "$"c
-                                    Me.StartSession(Directives.Special)
+                                    Dim StatementText As String =
+                                        Me.ExtractXeoraStatement(Char.MinValue, 0)
+
+                                    If String.IsNullOrEmpty(StatementText) Then
+                                        rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+
+                                        Me.StartSession(Directives.Special)
+                                    Else
+                                        rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+                                    End If
+
                                 Case "#"c, "["c, ":"c, "?"c, "."c
-                                    Me.HandleFollowingCompletion(ch, ch)
+                                    Me.HandleFollowingCompletion(ch, ch, True)
                                 Case Else
+                                    rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+
                                     Me.Filter()
                             End Select
                         End If
@@ -396,13 +407,15 @@ QuickJumpForDelete:
                     End Select
                 End If
 
-                If rDirective = Directives.Special AndAlso StatementText.Length > 2 Then
+                If StatementText.Length > 1 Then
                     ' Check for Leveled and/or Parented Control
-                    If StatementText.IndexOf("$C[") = 0 Then
+                    If StatementText.Length = 2 AndAlso String.Compare(StatementText, "$C") = 0 Then
+                        rDirective = Directives.Control
+                    ElseIf StatementText.IndexOf("$C[") = 0 Then
                         ' This is Parented Control
                         rDirective = Directives.ControlWithParent
                     Else
-                        If StatementText.Length > 4 Then
+                        If StatementText.Length > 3 Then
                             ' Control Leveled and Parented Control
                             Dim ItemMatch As System.Text.RegularExpressions.Match =
                                 System.Text.RegularExpressions.Regex.Match(StatementText, "\$C\#\d+(\+)?(\[)?")
@@ -449,7 +462,7 @@ QuickJumpForDelete:
             Return StatementText
         End Function
 
-        Private Sub HandleFollowingCompletion(ByVal KeyChar As Char, ByVal SearchChar As Char)
+        Private Sub HandleFollowingCompletion(ByVal KeyChar As Char, ByVal SearchChar As Char, ByVal HandleChar As Boolean)
             Me._HandleFollowingAction = Nothing
 
             Dim Directive As Directives =
@@ -459,6 +472,8 @@ QuickJumpForDelete:
                 Case Directives.MessageBlock
                     Dim edit As ITextEdit =
                         Me._TextView.TextBuffer.CreateEdit()
+
+                    If HandleChar Then edit.Insert(Me._TextView.Caret.Position.BufferPosition, ":")
 
                     edit.Insert(Me._TextView.Caret.Position.BufferPosition, "{}:MB$")
                     edit.Apply()
@@ -471,6 +486,8 @@ QuickJumpForDelete:
                     If Not String.IsNullOrEmpty(ControlID) Then
                         Dim edit As ITextEdit =
                             Me._TextView.TextBuffer.CreateEdit()
+
+                        If HandleChar Then edit.Insert(Me._TextView.Caret.Position.BufferPosition, ":")
 
                         edit.Insert(Me._TextView.Caret.Position.BufferPosition, String.Format("{{}}:{0}$", ControlID))
                         edit.Apply()
@@ -485,15 +502,28 @@ QuickJumpForDelete:
                         Dim edit As ITextEdit =
                             Me._TextView.TextBuffer.CreateEdit()
 
-                        edit.Replace(Me._TextView.Caret.Position.BufferPosition - 1, 1, "[")
+                        If HandleChar Then
+                            edit.Insert(Me._TextView.Caret.Position.BufferPosition, "[")
+                        Else
+                            ' Replace : with [
+                            edit.Replace(Me._TextView.Caret.Position.BufferPosition - 1, 1, "[")
+                        End If
+
                         edit.Apply()
 
+                        Me._CurrentTrackingChars = New Char() {"]"c}
                         Me.StartSession(Directives.ControlWithParent)
                     ElseIf KeyChar = "#" Then
                         Dim edit As ITextEdit =
                             Me._TextView.TextBuffer.CreateEdit()
 
-                        edit.Replace(Me._TextView.Caret.Position.BufferPosition - 1, 1, "#0")
+                        If HandleChar Then
+                            edit.Insert(Me._TextView.Caret.Position.BufferPosition, "#0")
+                        Else
+                            ' Replace : with #0
+                            edit.Replace(Me._TextView.Caret.Position.BufferPosition - 1, 1, "#0")
+                        End If
+
                         edit.Apply()
 
                         Dim SelectionSpan As SnapshotSpan =
@@ -501,55 +531,97 @@ QuickJumpForDelete:
                         Me._TextView.Selection.Select(SelectionSpan, False)
                     Else
                         ' SearchChar is ":"
+                        ' Control with Content
+                        Dim edit As ITextEdit =
+                            Me._TextView.TextBuffer.CreateEdit()
+
+                        If HandleChar Then edit.Insert(Me._TextView.Caret.Position.BufferPosition, ":")
 
                         Dim ControlIDTest As String = Me.GetControlID()
 
                         If Not String.IsNullOrEmpty(ControlIDTest) Then
-                            ' Control with Content
-                            Dim edit As ITextEdit =
-                                Me._TextView.TextBuffer.CreateEdit()
-
                             edit.Insert(Me._TextView.Caret.Position.BufferPosition, String.Format("{{}}:{0}$", ControlIDTest))
                             edit.Apply()
 
                             Me._TextView.Caret.MoveTo(Me._TextView.Caret.Position.BufferPosition - (ControlIDTest.Length + 3))
                         Else
+                            edit.Apply()
+
+                            Me._CurrentTrackingChars = New Char() {"$"c, ":"c, "["c, "#"c}
                             Me.StartSession(Directives.Control)
                         End If
                     End If
                 Case Directives.ServerExecutable
+                    If HandleChar Then
+                        Dim edit As ITextEdit =
+                            Me._TextView.TextBuffer.CreateEdit()
+
+                        edit.Insert(Me._TextView.Caret.Position.BufferPosition, KeyChar)
+                        edit.Apply()
+                    End If
+
                     Dim StatementText As String =
                         Me.ExtractXeoraStatement(Char.MinValue, Nothing)
 
-                    If Not String.IsNullOrEmpty(StatementText) Then _
+                    If Not String.IsNullOrEmpty(StatementText) Then
                         StatementText = StatementText.Substring(3)
+
+                        Me._CurrentTrackingChars = New Char() {"$"c, "?"c, "."c}
+                    Else
+                        Me._CurrentTrackingChars = New Char() {"?"c}
+                    End If
 
                     TemplateCommandHandler.CurrentDirectiveID = StatementText
                     Me.StartSession(Directive)
                 Case Directives.ClientExecutable
+                    Dim edit As ITextEdit =
+                        Me._TextView.TextBuffer.CreateEdit()
+
+                    If HandleChar Then edit.Insert(Me._TextView.Caret.Position.BufferPosition, KeyChar)
+
                     Dim StatementText As String =
                         Me.ExtractXeoraStatement(Char.MinValue, Nothing)
 
                     If StatementText.Length = 4 Then
-                        Dim edit As ITextEdit =
-                            Me._TextView.TextBuffer.CreateEdit()
+                        Me._CurrentTrackingChars = New Char() {"?"c}
 
                         edit.Insert(Me._TextView.Caret.Position.BufferPosition, "{}:XF$")
                         edit.Apply()
 
                         Me._TextView.Caret.MoveTo(Me._TextView.Caret.Position.BufferPosition - 5)
                     Else
+                        edit.Apply()
+
+                        Me._CurrentTrackingChars = New Char() {"$"c, "?"c, "."c}
+
                         TemplateCommandHandler.CurrentDirectiveID = StatementText.Substring(5)
                     End If
 
                     Me.StartSession(Directives.ClientExecutable)
                 Case Directives.Template, Directives.TemplateWithVariablePool
+                    If HandleChar Then
+                        Dim edit As ITextEdit =
+                            Me._TextView.TextBuffer.CreateEdit()
+
+                        edit.Insert(Me._TextView.Caret.Position.BufferPosition, KeyChar)
+                        edit.Apply()
+                    End If
+
                     Dim TextDocument As ITextDocument = Nothing
                     If Me._TextView.TextBuffer.Properties.TryGetProperty(Of ITextDocument)(GetType(ITextDocument), TextDocument) Then
                         TemplateCommandHandler.CurrentDirectiveID = IO.Path.GetFileNameWithoutExtension(TextDocument.FilePath)
                     End If
+                    Me._CurrentTrackingChars = New Char() {"$"c}
                     Me.StartSession(Directive)
                 Case Else
+                    If HandleChar Then
+                        Dim edit As ITextEdit =
+                            Me._TextView.TextBuffer.CreateEdit()
+
+                        edit.Insert(Me._TextView.Caret.Position.BufferPosition, KeyChar)
+                        edit.Apply()
+                    End If
+
                     If Directive <> Directives.Special Then
                         Me.StartSession(Directive)
                     End If
@@ -561,10 +633,12 @@ QuickJumpForDelete:
 
             Me._CurrentSession = Nothing
 
-            If Not Me._HandleFollowingAction Is Nothing Then Me._HandleFollowingAction.Invoke()
-
             TemplateCommandHandler.CurrentDirective = Directives.Special
             TemplateCommandHandler.CurrentDirectiveID = String.Empty
+
+            Me.ResetTrackingChars()
+
+            If Not Me._HandleFollowingAction Is Nothing Then Me._HandleFollowingAction.Invoke()
         End Sub
     End Class
 End Namespace

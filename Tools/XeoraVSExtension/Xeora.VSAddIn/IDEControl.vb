@@ -1015,16 +1015,14 @@ RESEARCHPOINT:
             Dim sT As Globals.ActiveDomainTypes =
                 Globals.ActiveDomainTypes.Domain
 
-            Dim CheckDI As New IO.DirectoryInfo(LookingPath)
+            Dim CheckDI As IO.DirectoryInfo =
+                New IO.DirectoryInfo(
+                    IO.Path.GetFullPath(
+                        IO.Path.Combine(LookingPath, "..", "..")
+                    )
+                )
 
-            Dim DeepCounter As Integer = 0
-            Do
-                CheckDI = CheckDI.Parent
-
-                DeepCounter += 1
-            Loop Until DeepCounter > 2 OrElse CheckDI Is Nothing
-
-            If Not CheckDI Is Nothing AndAlso
+            If CheckDI.Exists AndAlso
                 String.Compare(CheckDI.Name, "Addons", True) = 0 Then _
                 sT = Globals.ActiveDomainTypes.Child
 

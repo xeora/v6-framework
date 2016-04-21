@@ -14,8 +14,8 @@ Namespace Xeora.Web.Controller.Directive
         Private _ControlID As String
 
         Public Event ParseRequested(ByVal DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
-        Public Event DeploymentAccessRequested(ByRef DomainDeployment As DomainDeployment) Implements IDeploymentAccessRequires.DeploymentAccessRequested
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
+        Public Event DeploymentAccessRequested(ByRef WorkingInstance As IDomain, ByRef DomainDeployment As DomainDeployment) Implements IDeploymentAccessRequires.DeploymentAccessRequested
 
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.Template, ContentArguments)
@@ -84,7 +84,7 @@ Namespace Xeora.Web.Controller.Directive
                     Next
 
                     If Not LocalAuthenticationNotAccepted Then
-                        Me.RenderInternal(SenderController)
+                        Me.RenderInternal(WorkingInstance, SenderController)
                     Else
                         Dim SystemMessage As String = Instance.Language.Get("TEMPLATE_AUTH")
 
@@ -93,7 +93,7 @@ Namespace Xeora.Web.Controller.Directive
                         Me.DefineRenderedValue("<div style='width:100%; font-weight:bolder; color:#CC0000; text-align:center'>" & SystemMessage & "!</div>")
                     End If
                 Else
-                    Me.RenderInternal(SenderController)
+                    Me.RenderInternal(WorkingInstance, SenderController)
                 End If
             End If
         End Sub
@@ -124,11 +124,11 @@ Namespace Xeora.Web.Controller.Directive
             Return rDomainInstance
         End Function
 
-        Private Sub RenderInternal(ByRef SenderController As ControllerBase)
+        Private Sub RenderInternal(ByRef WorkingInstance As IDomain, ByRef SenderController As ControllerBase)
             Dim TemplateContent As String = String.Empty
 
             Dim DomainDeployment As DomainDeployment = Nothing
-            RaiseEvent DeploymentAccessRequested(DomainDeployment)
+            RaiseEvent DeploymentAccessRequested(WorkingInstance, DomainDeployment)
             If Not DomainDeployment Is Nothing Then
                 Try
                     TemplateContent = DomainDeployment.ProvideTemplateContent(Me.ControlID)

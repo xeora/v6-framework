@@ -60,3 +60,4 @@ P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn\obj\Debug\Xeora.VSAddIn.latest
 P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn\obj\Debug\extension.vsixmanifest
 P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn\obj\Debug\Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder.Template.resources
 P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn\obj\Debug\IconResource.resources
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn\bin\Debug\Resources\XeoraPackage.png
