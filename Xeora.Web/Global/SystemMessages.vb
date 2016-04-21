@@ -9,7 +9,7 @@ Namespace Xeora.Web.Global
         Public Const PASSWORD_WRONG As String = "Password is Wrong"
 
         Public Const ESSENTIAL_CONFIGURATIONNOTFOUND As String = "ConfigurationXML file is not found"
-        Public Const ESSENTIAL_CONTROLSMAPNOTFOUND As String = "ControlsMapXML file is not found"
+        Public Const ESSENTIAL_CONTROLSXMLNOTFOUND As String = "ControlsXML file is not found"
 
         Public Const CONFIGURATIONCONTENT As String = "Configuration Content value can not be null"
         Public Const TRANSLATIONCONTENT As String = "Translation Content value can not be null"

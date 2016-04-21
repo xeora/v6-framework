@@ -87,7 +87,7 @@ Namespace Xeora.Web.Deployment
                         ' -- Control Those System Essential Files are Exists! --
                         Dim SystemMessage As String = Nothing
 
-                        Dim ControlsMapXML As String = IO.Path.Combine(Me.TemplatesRegistration, "ControlsMap.xml")
+                        Dim ControlsXML As String = IO.Path.Combine(Me.TemplatesRegistration, "Controls.xml")
                         Dim ConfigurationXML As String = IO.Path.Combine(Me.TemplatesRegistration, "Configuration.xml")
 
                         If Not IO.File.Exists(ConfigurationXML) Then
@@ -98,10 +98,10 @@ Namespace Xeora.Web.Deployment
                             Throw New Exception.DeploymentException(SystemMessage & "!")
                         End If
 
-                        If Not IO.File.Exists(ControlsMapXML) Then
-                            SystemMessage = Me._Language.Get("CONTROLSMAPNOTFOUND")
+                        If Not IO.File.Exists(ControlsXML) Then
+                            SystemMessage = Me._Language.Get("CONTROLSXMLNOTFOUND")
 
-                            If String.IsNullOrEmpty(SystemMessage) Then SystemMessage = [Global].SystemMessages.ESSENTIAL_CONTROLSMAPNOTFOUND
+                            If String.IsNullOrEmpty(SystemMessage) Then SystemMessage = [Global].SystemMessages.ESSENTIAL_CONTROLSXMLNOTFOUND
 
                             Throw New Exception.DeploymentException(SystemMessage & "!")
                         End If
@@ -111,8 +111,8 @@ Namespace Xeora.Web.Deployment
                         ' -- Control Those System Essential Files are Exists! --
                         Dim SystemMessage As String = Nothing
 
-                        Dim ControlsMapFileInfo As XeoraDomainDecompiler.XeoraFileInfo =
-                            Me.Decompiler.GetFileInfo(Me.TemplatesRegistration, "ControlsMap.xml")
+                        Dim ControlsXMLFileInfo As XeoraDomainDecompiler.XeoraFileInfo =
+                            Me.Decompiler.GetFileInfo(Me.TemplatesRegistration, "Controls.xml")
                         Dim ConfigurationFileInfo As XeoraDomainDecompiler.XeoraFileInfo =
                             Me.Decompiler.GetFileInfo(Me.TemplatesRegistration, "Configuration.xml")
 
@@ -124,10 +124,10 @@ Namespace Xeora.Web.Deployment
                             Throw New Exception.DeploymentException(SystemMessage & "!")
                         End If
 
-                        If ControlsMapFileInfo.Index = -1 Then
-                            SystemMessage = Me._Language.Get("CONTROLSMAPNOTFOUND")
+                        If ControlsXMLFileInfo.Index = -1 Then
+                            SystemMessage = Me._Language.Get("CONTROLSXMLNOTFOUND")
 
-                            If String.IsNullOrEmpty(SystemMessage) Then SystemMessage = [Global].SystemMessages.ESSENTIAL_CONTROLSMAPNOTFOUND
+                            If String.IsNullOrEmpty(SystemMessage) Then SystemMessage = [Global].SystemMessages.ESSENTIAL_CONTROLSXMLNOTFOUND
 
                             Throw New Exception.DeploymentException(SystemMessage & "!")
                         End If

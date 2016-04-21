@@ -159,7 +159,7 @@ Namespace Xeora.Web.Site
                 Dim MainPattern As New RegularExpressions.MainCapturePattern()
 
                 Dim MainPatternMatches As Text.RegularExpressions.MatchCollection =
-                MainPattern.Matches(DraftValue)
+                    MainPattern.Matches(DraftValue)
 
                 If MainPatternMatches.Count = 0 Then
                     ContainerController.Children.Add(

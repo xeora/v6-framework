@@ -206,13 +206,13 @@ Namespace Xeora.Web.Deployment
                 Case [Shared].DomainInfo.DeploymentTypes.Development
                     rBoolean = IO.File.Exists(
                                     IO.Path.Combine(
-                                        Me.TemplatesRegistration, String.Format("{0}.htm", TemplateID)
+                                        Me.TemplatesRegistration, String.Format("{0}.xchtml", TemplateID)
                                     )
                                 )
                 Case [Shared].DomainInfo.DeploymentTypes.Release
                     Dim XeoraFileInfo As XeoraDomainDecompiler.XeoraFileInfo =
                         Me._Decompiler.GetFileInfo(
-                            Me.TemplatesRegistration, String.Format("{0}.htm", TemplateID)
+                            Me.TemplatesRegistration, String.Format("{0}.xchtml", TemplateID)
                         )
 
                     rBoolean = XeoraFileInfo.Index > -1
@@ -228,7 +228,7 @@ Namespace Xeora.Web.Deployment
                 Case [Shared].DomainInfo.DeploymentTypes.Development
                     Dim TemplateFile As String =
                         IO.Path.Combine(
-                            Me.TemplatesRegistration, String.Format("{0}.htm", TemplateID))
+                            Me.TemplatesRegistration, String.Format("{0}.xchtml", TemplateID))
 
                     Dim fS As IO.FileStream = Nothing, buffer As Byte() = CType(Array.CreateInstance(GetType(Byte), 102400), Byte()), rB As Integer
                     Dim encoding As Text.Encoding, TemplateContent As New Text.StringBuilder()
@@ -253,7 +253,7 @@ Namespace Xeora.Web.Deployment
                 Case [Shared].DomainInfo.DeploymentTypes.Release
                     Dim XeoraFileInfo As XeoraDomainDecompiler.XeoraFileInfo =
                         Me._Decompiler.GetFileInfo(
-                            Me.TemplatesRegistration, String.Format("{0}.htm", TemplateID)
+                            Me.TemplatesRegistration, String.Format("{0}.xchtml", TemplateID)
                         )
 
                     If XeoraFileInfo.Index > -1 Then
@@ -415,15 +415,15 @@ Namespace Xeora.Web.Deployment
 
             Select Case Me._DeploymentType
                 Case [Shared].DomainInfo.DeploymentTypes.Development
-                    Dim ControlsMapFile As String =
+                    Dim ControlsXMLFile As String =
                         IO.Path.Combine(
-                            Me.TemplatesRegistration, "ControlsMap.xml")
+                            Me.TemplatesRegistration, "Controls.xml")
 
                     Dim fS As IO.FileStream = Nothing, buffer As Byte() = CType(Array.CreateInstance(GetType(Byte), 102400), Byte()), rB As Integer
                     Dim encoding As Text.Encoding, ControlMapContent As New Text.StringBuilder()
 
                     Try
-                        fS = New IO.FileStream(ControlsMapFile, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                        fS = New IO.FileStream(ControlsXMLFile, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
 
                         encoding = Me.DetectEncoding(CType(fS, IO.Stream))
 
@@ -435,7 +435,7 @@ Namespace Xeora.Web.Deployment
 
                         rControlMapContent = ControlMapContent.ToString()
                     Catch ex As IO.FileNotFoundException
-                        Throw New Exception.DeploymentException([Global].SystemMessages.ESSENTIAL_CONTROLSMAPNOTFOUND, ex)
+                        Throw New Exception.DeploymentException([Global].SystemMessages.ESSENTIAL_CONTROLSXMLNOTFOUND, ex)
                     Catch ex As system.Exception
                         rControlMapContent = String.Empty
                     Finally
@@ -444,7 +444,7 @@ Namespace Xeora.Web.Deployment
                 Case [Shared].DomainInfo.DeploymentTypes.Release
                     Dim XeoraFileInfo As XeoraDomainDecompiler.XeoraFileInfo =
                         Me._Decompiler.GetFileInfo(
-                            Me.TemplatesRegistration, "ControlsMap.xml"
+                            Me.TemplatesRegistration, "Controls.xml"
                         )
 
                     If XeoraFileInfo.Index > -1 Then
@@ -460,7 +460,7 @@ Namespace Xeora.Web.Deployment
 
                                 sR.Close() : GC.SuppressFinalize(sR)
                             Case XeoraDomainDecompiler.RequestResults.ContentNotExists
-                                Throw New Exception.DeploymentException([Global].SystemMessages.ESSENTIAL_CONTROLSMAPNOTFOUND, New IO.FileNotFoundException())
+                                Throw New Exception.DeploymentException([Global].SystemMessages.ESSENTIAL_CONTROLSXMLNOTFOUND, New IO.FileNotFoundException())
                             Case XeoraDomainDecompiler.RequestResults.PasswordError
                                 Throw New System.Exception([Global].SystemMessages.PASSWORD_WRONG)
                         End Select

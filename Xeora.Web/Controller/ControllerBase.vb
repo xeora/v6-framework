@@ -345,7 +345,7 @@ Namespace Xeora.Web.Controller
 
             If Not String.IsNullOrEmpty(DraftValue) Then
                 Dim CPIDMatch As Text.RegularExpressions.Match =
-                    Text.RegularExpressions.Regex.Match(DraftValue, "\$((\w(\<\d+(\+)?\>)?(\[[\.\w\-]+\])?)|(\w+))\:")
+                    Text.RegularExpressions.Regex.Match(DraftValue, "\$((\w(\#\d+(\+)?)?(\[[\.\w\-]+\])?)|(\w+))\:")
 
                 If CPIDMatch.Success Then
                     rControllerType = ControllerTypes.Directive

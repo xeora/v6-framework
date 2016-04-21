@@ -1,0 +1,7 @@
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\bin\Debug\Xeora.AddInLoader.dll
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\bin\Debug\Xeora.AddInLoader.pdb
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Debug\Xeora.AddInLoader.vbprojResolveAssemblyReference.cache
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Debug\Resources.resources
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Debug\Xeora.AddInLoader.vbproj.GenerateResource.Cache
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Debug\Xeora.AddInLoader.dll
+P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Debug\Xeora.AddInLoader.pdb

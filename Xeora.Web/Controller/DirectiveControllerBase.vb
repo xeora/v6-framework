@@ -35,12 +35,12 @@ Namespace Xeora.Web.Controller
             ' TODO: IsLocalLeveling is the point for control who will apply the leveling only parameters not controls itself. It works only on Custom Controls
             Dim IsLocalLeveling As Boolean = True
             Dim CLevelingMatch As Text.RegularExpressions.Match =
-                Text.RegularExpressions.Regex.Match(controlValueSplitted(0), "\<\d+(\+)?\>")
+                Text.RegularExpressions.Regex.Match(controlValueSplitted(0), "\#\d+(\+)?")
 
             If CLevelingMatch.Success Then
-                ' Trim < and > character from match result
+                ' Trim # character from match result
                 Dim CleanValue As String =
-                    CLevelingMatch.Value.Substring(1, CLevelingMatch.Value.Length - 2)
+                    CLevelingMatch.Value.Substring(1, CLevelingMatch.Value.Length - 1)
 
                 If CleanValue.IndexOf("+"c) > -1 Then
                     IsLocalLeveling = False
@@ -93,7 +93,7 @@ Namespace Xeora.Web.Controller
 
             If Not String.IsNullOrEmpty(DraftValue) Then
                 Dim CPIDMatch As Text.RegularExpressions.Match =
-                    Text.RegularExpressions.Regex.Match(DraftValue, "\$(((?<DirectiveType>\w)(\<\d+(\+)?\>)?(\[[\.\w\-]+\])?)|(?<DirectiveType>\w+))\:")
+                    Text.RegularExpressions.Regex.Match(DraftValue, "\$(((?<DirectiveType>\w)(\#\d+(\+)?)?(\[[\.\w\-]+\])?)|(?<DirectiveType>\w+))\:")
 
                 If CPIDMatch.Success Then
                     Select Case CPIDMatch.Result("${DirectiveType}")

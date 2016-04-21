@@ -1,0 +1,9 @@
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.0\\Xeora.VSAddIn.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.0\\Xeora.VSAddIn.pdb
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.0\\ICSharpCode.NRefactory.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.0\\Xeora.VSAddIn.Executable.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.0\\Xeora.Web.RegularExpressions.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.0\\Xeora.VSAddIn.pkgdef
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.0\\extension.vsixmanifest
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.0\\Xeora.VSAddIn.Executable.pdb
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.0\Resources\\XeoraPackage.png
