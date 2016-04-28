@@ -6,6 +6,7 @@ Imports Microsoft.VisualStudio.Utilities
 Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
     <Export(GetType(IClassifierProvider))>
     <ContentType("xeora")>
+    <Order(After:=Priority.Default)>
     Public NotInheritable Class SyntaxProvider
         Implements IClassifierProvider
 

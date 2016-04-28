@@ -14,6 +14,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
             Inherits ClassificationFormatDefinition
 
             Public Sub New()
+                Me.DisplayName = SyntaxClassificationDefinition.TagAndDirective
                 Me.ForegroundColor = Colors.CornflowerBlue
             End Sub
         End Class
@@ -27,6 +28,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
             Inherits ClassificationFormatDefinition
 
             Public Sub New()
+                Me.DisplayName = SyntaxClassificationDefinition.DirectiveID
                 Me.ForegroundColor = Colors.Sienna
             End Sub
         End Class
@@ -40,6 +42,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
             Inherits ClassificationFormatDefinition
 
             Public Sub New()
+                Me.DisplayName = SyntaxClassificationDefinition.InternalDirective
                 Me.ForegroundColor = Colors.Red
             End Sub
         End Class
@@ -53,6 +56,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
             Inherits ClassificationFormatDefinition
 
             Public Sub New()
+                Me.DisplayName = SyntaxClassificationDefinition.Leveling
                 Me.ForegroundColor = Colors.Green
             End Sub
         End Class
@@ -66,6 +70,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
             Inherits ClassificationFormatDefinition
 
             Public Sub New()
+                Me.DisplayName = SyntaxClassificationDefinition.BlackBracket
                 Me.ForegroundColor = Colors.Black
             End Sub
         End Class

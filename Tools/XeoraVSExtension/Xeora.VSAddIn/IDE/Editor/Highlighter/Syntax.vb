@@ -6,6 +6,14 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
     Public NotInheritable Class Syntax
         Implements IClassifier
 
+        Private Enum ClassificationTypes
+            TagAndDirective
+            DirectiveID
+            InternalDirective
+            Leveling
+            BlackBracket
+        End Enum
+
         Private ReadOnly _ClassificationTypeForTagAndDirective As IClassificationType
         Private ReadOnly _ClassificationTypeForDirectiveID As IClassificationType
         Private ReadOnly _ClassificationTypeForInternalDirective As IClassificationType
@@ -66,7 +74,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
 
                         If LevelingSearchMatch.Success Then
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index), 2)), Me._ClassificationTypeForTagAndDirective))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index), 2, ClassificationTypes.TagAndDirective))
 
                             ' Leveling
                             If LevelingSearchMatch.Value.IndexOf("#"c) > -1 Then
@@ -74,9 +82,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
                                 If CloseTagIndex = -1 Then CloseTagIndex = LevelingSearchMatch.Length
 
                                 result.Add(
-                                    New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + 2), 1)), Me._ClassificationTypeForBlackBracket))
+                                    Me.CreateSpan(span, (span.Start + MatchItem.Index + 2), 1, ClassificationTypes.BlackBracket))
                                 result.Add(
-                                    New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + 3), (CloseTagIndex - 3))), Me._ClassificationTypeForLeveling))
+                                    Me.CreateSpan(span, (span.Start + MatchItem.Index + 3), (CloseTagIndex - 3), ClassificationTypes.Leveling))
                             End If
 
                             If LevelingSearchMatch.Value.Chars(LevelingSearchMatch.Length - 1) = "["c Then
@@ -85,22 +93,22 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
 
                                 If CloseParentTagIndex > -1 Then
                                     result.Add(
-                                        New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + LevelingSearchMatch.Length - 1), 1)), Me._ClassificationTypeForBlackBracket))
+                                        Me.CreateSpan(span, (span.Start + LevelingSearchMatch.Length - 1), 1, ClassificationTypes.BlackBracket))
                                     result.Add(
-                                        New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + LevelingSearchMatch.Length), (CloseParentTagIndex - LevelingSearchMatch.Length))), Me._ClassificationTypeForDirectiveID))
+                                        Me.CreateSpan(span, (span.Start + MatchItem.Index + LevelingSearchMatch.Length), (CloseParentTagIndex - LevelingSearchMatch.Length), ClassificationTypes.DirectiveID))
                                     result.Add(
-                                        New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + CloseParentTagIndex), 1)), Me._ClassificationTypeForBlackBracket))
+                                        Me.CreateSpan(span, (span.Start + MatchItem.Index + CloseParentTagIndex), 1, ClassificationTypes.BlackBracket))
                                 End If
                             End If
                         Else
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index), ColonIndex)), Me._ClassificationTypeForTagAndDirective))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index), ColonIndex, ClassificationTypes.TagAndDirective))
                         End If
 
                         Dim EndColonIndex = MatchItem.Value.IndexOf(":{", ColonIndex + 1)
                         If EndColonIndex > -1 Then
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + ColonIndex + 1), (EndColonIndex - ColonIndex - 1))), Me._ClassificationTypeForDirectiveID))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index + ColonIndex + 1), (EndColonIndex - ColonIndex - 1), ClassificationTypes.DirectiveID))
                         End If
 
                         Dim CheckInternalDirective As String =
@@ -114,9 +122,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
 
                             If InternalDirectiveMatch.Success Then
                                 result.Add(
-                                    New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + MatchItem.Length), 1)), Me._ClassificationTypeForTagAndDirective))
+                                    Me.CreateSpan(span, (span.Start + MatchItem.Index + MatchItem.Length), 1, ClassificationTypes.TagAndDirective))
                                 result.Add(
-                                    New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + MatchItem.Length + 1), (InternalDirectiveMatch.Length - 1))), Me._ClassificationTypeForInternalDirective))
+                                    Me.CreateSpan(span, (span.Start + MatchItem.Index + MatchItem.Length + 1), (InternalDirectiveMatch.Length - 1), ClassificationTypes.InternalDirective))
                             End If
                         End If
 
@@ -135,12 +143,12 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
                             String.Compare(ClosingID, "XF") = 0 Then
 
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + ColonIndex + 1), (MatchItem.Length - ColonIndex - 1))), Me._ClassificationTypeForTagAndDirective))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index + ColonIndex + 1), (MatchItem.Length - ColonIndex - 1), ClassificationTypes.TagAndDirective))
                         Else
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + ColonIndex + 1), (MatchItem.Length - ColonIndex - 2))), Me._ClassificationTypeForDirectiveID))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index + ColonIndex + 1), (MatchItem.Length - ColonIndex - 2), ClassificationTypes.DirectiveID))
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + MatchItem.Length - 1), 1)), Me._ClassificationTypeForTagAndDirective))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index + MatchItem.Length - 1), 1, ClassificationTypes.TagAndDirective))
                         End If
 
                         IsHandled = True
@@ -151,7 +159,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
 
                     If SeparatorPatternMatch.Success Then
                         result.Add(
-                            New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + 2), MatchItem.Length - 4)), Me._ClassificationTypeForDirectiveID))
+                            Me.CreateSpan(span, (span.Start + MatchItem.Index + 2), (MatchItem.Length - 4), ClassificationTypes.DirectiveID))
 
                         Dim CheckInternalDirective As String =
                             DraftValue.Substring(MatchItem.Index + MatchItem.Length)
@@ -164,9 +172,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
 
                             If InternalDirectiveMatch.Success Then
                                 result.Add(
-                                    New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + MatchItem.Length), 1)), Me._ClassificationTypeForTagAndDirective))
+                                    Me.CreateSpan(span, (span.Start + MatchItem.Index + MatchItem.Length), 1, ClassificationTypes.TagAndDirective))
                                 result.Add(
-                                    New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + MatchItem.Length + 1), (InternalDirectiveMatch.Length - 1))), Me._ClassificationTypeForInternalDirective))
+                                    Me.CreateSpan(span, (span.Start + MatchItem.Index + MatchItem.Length + 1), (InternalDirectiveMatch.Length - 1), ClassificationTypes.InternalDirective))
                             End If
                         End If
 
@@ -184,7 +192,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
 
                             If LevelingSearchMatch.Success Then
                                 result.Add(
-                                    New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index), 2)), Me._ClassificationTypeForTagAndDirective))
+                                    Me.CreateSpan(span, (span.Start + MatchItem.Index), 2, ClassificationTypes.TagAndDirective))
 
                                 ' Leveling
                                 If LevelingSearchMatch.Value.IndexOf("#"c) > -1 Then
@@ -192,9 +200,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
                                     If CloseTagIndex = -1 Then CloseTagIndex = LevelingSearchMatch.Length
 
                                     result.Add(
-                                        New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + 2), 1)), Me._ClassificationTypeForBlackBracket))
+                                        Me.CreateSpan(span, (span.Start + MatchItem.Index + 2), 1, ClassificationTypes.BlackBracket))
                                     result.Add(
-                                        New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + 3), (CloseTagIndex - 3))), Me._ClassificationTypeForLeveling))
+                                        Me.CreateSpan(span, (span.Start + MatchItem.Index + 3), (CloseTagIndex - 3), ClassificationTypes.Leveling))
                                 End If
 
                                 If LevelingSearchMatch.Value.Chars(LevelingSearchMatch.Length - 1) = "["c Then
@@ -203,25 +211,25 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
 
                                     If CloseParentTagIndex > -1 Then
                                         result.Add(
-                                            New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + LevelingSearchMatch.Length - 1), 1)), Me._ClassificationTypeForBlackBracket))
+                                            Me.CreateSpan(span, (span.Start + MatchItem.Index + LevelingSearchMatch.Length - 1), 1, ClassificationTypes.BlackBracket))
                                         result.Add(
-                                            New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + LevelingSearchMatch.Length), (CloseParentTagIndex - LevelingSearchMatch.Length))), Me._ClassificationTypeForDirectiveID))
+                                            Me.CreateSpan(span, (span.Start + MatchItem.Index + LevelingSearchMatch.Length), (CloseParentTagIndex - LevelingSearchMatch.Length), ClassificationTypes.DirectiveID))
                                         result.Add(
-                                            New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + CloseParentTagIndex), 1)), Me._ClassificationTypeForBlackBracket))
+                                            Me.CreateSpan(span, (span.Start + MatchItem.Index + CloseParentTagIndex), 1, ClassificationTypes.BlackBracket))
                                     End If
                                 End If
                             Else
                                 result.Add(
-                                    New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index), ColonIndex)), Me._ClassificationTypeForTagAndDirective))
+                                    Me.CreateSpan(span, (span.Start + MatchItem.Index), ColonIndex, ClassificationTypes.TagAndDirective))
                             End If
 
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + ColonIndex + 1), (MatchItem.Length - ColonIndex - 1))), Me._ClassificationTypeForDirectiveID))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index + ColonIndex + 1), (MatchItem.Length - ColonIndex - 1), ClassificationTypes.DirectiveID))
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + MatchItem.Length - 1), 1)), Me._ClassificationTypeForTagAndDirective))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index + MatchItem.Length - 1), 1, ClassificationTypes.TagAndDirective))
                         Else
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index), 1)), Me._ClassificationTypeForTagAndDirective))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index), 1, ClassificationTypes.TagAndDirective))
 
                             Dim OperatorChars As Char() = New Char() {"^"c, "~"c, "-"c, "+"c, "="c, "#"c, "*"c}
 
@@ -234,19 +242,41 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
 
                             If cC > 1 Then
                                 result.Add(
-                                    New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + 1), (cC - 1))), Me._ClassificationTypeForInternalDirective))
+                                    Me.CreateSpan(span, (span.Start + MatchItem.Index + 1), (cC - 1), ClassificationTypes.InternalDirective))
                             End If
 
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + cC), (MatchItem.Length - (cC + 1)))), Me._ClassificationTypeForDirectiveID))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index + cC), (MatchItem.Length - (cC + 1)), ClassificationTypes.DirectiveID))
                             result.Add(
-                                New ClassificationSpan(New SnapshotSpan(span.Snapshot, New Span((span.Start + MatchItem.Index + MatchItem.Length - 1), 1)), Me._ClassificationTypeForTagAndDirective))
+                                Me.CreateSpan(span, (span.Start + MatchItem.Index + MatchItem.Length - 1), 1, ClassificationTypes.TagAndDirective))
                         End If
                     End If
                 Loop
             End If
 
             Return result
+        End Function
+
+        Private Function CreateSpan(ByVal span As SnapshotSpan, ByVal Start As Integer, ByVal Length As Integer, ByVal CT As ClassificationTypes) As ClassificationSpan
+            Dim ClassificationType As IClassificationType = Nothing
+
+            Select Case CT
+                Case ClassificationTypes.TagAndDirective
+                    ClassificationType = Me._ClassificationTypeForTagAndDirective
+                Case ClassificationTypes.Leveling
+                    ClassificationType = Me._ClassificationTypeForLeveling
+                Case ClassificationTypes.DirectiveID
+                    ClassificationType = Me._ClassificationTypeForDirectiveID
+                Case ClassificationTypes.InternalDirective
+                    ClassificationType = Me._ClassificationTypeForInternalDirective
+                Case ClassificationTypes.BlackBracket
+                    ClassificationType = Me._ClassificationTypeForBlackBracket
+            End Select
+
+            Dim SnapShotSpan As SnapshotSpan =
+                New SnapshotSpan(span.Snapshot, Start, Length)
+
+            Return New ClassificationSpan(SnapShotSpan, ClassificationType)
         End Function
     End Class
 End Namespace

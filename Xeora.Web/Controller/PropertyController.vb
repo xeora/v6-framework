@@ -119,7 +119,7 @@ Namespace Xeora.Web.Controller
                                             End Select
 
                                             Me.DefineRenderedValue(FormValue)
-                                            Me._ObjectResult = CObj(FormValue)
+                                            Me._ObjectResult = FormValue
                                         End If
                                     Else
                                         Me.DefineRenderedValue(String.Empty)
@@ -128,17 +128,22 @@ Namespace Xeora.Web.Controller
                                 Else
                                     Me.DefineRenderedValue(String.Empty)
                                     If RequestFileObjects.Count = 1 Then
-                                        Me._ObjectResult = CObj(RequestFileObjects.Item(0))
+                                        Me._ObjectResult = RequestFileObjects.Item(0)
                                     Else
-                                        Me._ObjectResult = CObj(RequestFileObjects.ToArray())
+                                        Me._ObjectResult = RequestFileObjects.ToArray()
                                     End If
                                 End If
 
                             Case "-"c ' Session Value
-                                Me.DefineRenderedValue(
-                                    CType([Shared].Helpers.Context.Session.Contents.Item(Me.InsideValue.Substring(1)), String)
-                                )
-                                Me._ObjectResult = [Shared].Helpers.Context.Session.Contents.Item(Me.InsideValue.Substring(1))
+                                Dim SessionResult As Object =
+                                    [Shared].Helpers.Context.Session.Contents.Item(Me.InsideValue.Substring(1))
+
+                                If SessionResult Is Nothing Then
+                                    Me.DefineRenderedValue(String.Empty)
+                                Else
+                                    Me.DefineRenderedValue(SessionResult.ToString())
+                                End If
+                                Me._ObjectResult = SessionResult
 
                             Case "+"c ' Cookies Value
                                 Try
@@ -146,7 +151,7 @@ Namespace Xeora.Web.Controller
                                         [Shared].Helpers.Context.Request.Cookies.Item(Me.InsideValue.Substring(1)).Value
 
                                     Me.DefineRenderedValue(CookieValue)
-                                    Me._ObjectResult = CObj(CookieValue)
+                                    Me._ObjectResult = CookieValue
                                 Catch ex As System.Exception
                                     Me.DefineRenderedValue(String.Empty)
                                     Me._ObjectResult = Nothing
@@ -154,7 +159,7 @@ Namespace Xeora.Web.Controller
 
                             Case "="c ' Value which following after '='
                                 Me.DefineRenderedValue(Me.InsideValue.Substring(1))
-                                Me._ObjectResult = CObj(Me.InsideValue.Substring(1))
+                                Me._ObjectResult = Me.InsideValue.Substring(1)
 
                             Case "#"c ' DataTable Field
                                 Dim searchContentInfo As ControllerBase = Me
@@ -180,7 +185,7 @@ Namespace Xeora.Web.Controller
                                     If Not argItem.Value Is Nothing AndAlso
                                         Not argItem.Value.GetType() Is GetType(DBNull) Then
 
-                                        Me.DefineRenderedValue(CType(argItem.Value, String))
+                                        Me.DefineRenderedValue(argItem.Value.ToString())
                                         Me._ObjectResult = argItem.Value
                                     Else
                                         Me.DefineRenderedValue(String.Empty)
@@ -195,30 +200,30 @@ Namespace Xeora.Web.Controller
 
                             Case "*"c ' Search in All orderby : [InData, DataField, Session, Form Post, QueryString, Cookie] (DOES NOT SUPPORT FILE POSTS)
                                 Dim searchArgName As String = Me.InsideValue.Substring(1)
-                                Dim searchArgValue As String
+                                Dim searchArgValue As Object
 
                                 ' Search InDatas
-                                searchArgValue = CType([Shared].Helpers.VariablePool.Get(searchArgName), String)
+                                searchArgValue = [Shared].Helpers.VariablePool.Get(searchArgName)
 
                                 ' Search In DataFields (GlobalArguments, ContentArguments)
-                                If String.IsNullOrEmpty(searchArgValue) Then
+                                If searchArgValue Is Nothing Then
                                     Dim argItem As ArgumentInfo =
                                         Me.ContentArguments.Item(searchArgName)
 
                                     If Not argItem.Value Is Nothing AndAlso
                                         Not argItem.Value.GetType() Is GetType(DBNull) Then
 
-                                        searchArgValue = CType(argItem.Value, String)
+                                        searchArgValue = argItem.Value
                                     Else
                                         searchArgValue = Nothing
                                     End If
                                 End If
 
                                 ' Search In Session
-                                If String.IsNullOrEmpty(searchArgValue) Then searchArgValue = CType(Helpers.Context.Session.Contents.Item(searchArgName), String)
+                                If searchArgValue Is Nothing Then searchArgValue = Helpers.Context.Session.Contents.Item(searchArgName)
 
                                 ' Search In Form Post (NO FILE POST SUPPORT)
-                                If String.IsNullOrEmpty(searchArgValue) AndAlso
+                                If searchArgValue Is Nothing AndAlso
                                     String.Compare([Shared].Helpers.Context.Request.HttpMethod, "POST", True) = 0 Then
 
                                     Dim ControlSIM As Hashtable =
@@ -227,7 +232,7 @@ Namespace Xeora.Web.Controller
                                     If Not ControlSIM Is Nothing AndAlso
                                         ControlSIM.ContainsKey(searchArgName) Then
 
-                                        searchArgValue = CType(ControlSIM.Item(searchArgName), String)
+                                        searchArgValue = ControlSIM.Item(searchArgName)
                                     Else
                                         searchArgValue = [Shared].Helpers.Context.Request.Form.Item(searchArgName)
                                     End If
@@ -236,17 +241,21 @@ Namespace Xeora.Web.Controller
                                 End If
 
                                 ' Search QueryString
-                                If String.IsNullOrEmpty(searchArgValue) Then searchArgValue = [Shared].Helpers.Context.Request.QueryString.Item(searchArgName)
+                                If searchArgValue Is Nothing Then searchArgValue = [Shared].Helpers.Context.Request.QueryString.Item(searchArgName)
 
                                 ' Cookie
-                                If String.IsNullOrEmpty(searchArgValue) AndAlso
+                                If searchArgValue Is Nothing AndAlso
                                     Not [Shared].Helpers.Context.Request.Cookies.Item(searchArgName) Is Nothing Then
 
                                     searchArgValue = [Shared].Helpers.Context.Request.Cookies.Item(searchArgName).Value
                                 End If
 
-                                Me.DefineRenderedValue(searchArgValue)
-                                Me._ObjectResult = CObj(searchArgValue)
+                                If Not searchArgValue Is Nothing Then
+                                    Me.DefineRenderedValue(searchArgValue.ToString())
+                                Else
+                                    Me.DefineRenderedValue(String.Empty)
+                                End If
+                                Me._ObjectResult = searchArgValue
 
                             Case Else ' Search in Values Set for Current Request Session
                                 If Me.InsideValue.IndexOf("@"c) > 0 Then
@@ -306,7 +315,11 @@ Namespace Xeora.Web.Controller
                                             ArgumentValue = Nothing
                                         End Try
 
-                                        Me.DefineRenderedValue(CType(ArgumentValue, String))
+                                        If Not ArgumentValue Is Nothing Then
+                                            Me.DefineRenderedValue(ArgumentValue.ToString())
+                                        Else
+                                            Me.DefineRenderedValue(String.Empty)
+                                        End If
                                         Me._ObjectResult = ArgumentValue
                                     Else
                                         Me.DefineRenderedValue(String.Empty)
@@ -316,7 +329,11 @@ Namespace Xeora.Web.Controller
                                     Dim PoolValue As Object =
                                         [Shared].Helpers.VariablePool.Get(Me.InsideValue)
 
-                                    Me.DefineRenderedValue(CType(PoolValue, String))
+                                    If Not PoolValue Is Nothing Then
+                                        Me.DefineRenderedValue(PoolValue.ToString())
+                                    Else
+                                        Me.DefineRenderedValue(String.Empty)
+                                    End If
                                     Me._ObjectResult = PoolValue
                                 End If
 
