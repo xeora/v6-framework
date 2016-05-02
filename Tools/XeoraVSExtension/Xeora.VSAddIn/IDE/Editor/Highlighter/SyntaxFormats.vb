@@ -4,7 +4,7 @@ Imports Microsoft.VisualStudio.Text.Classification
 Imports Microsoft.VisualStudio.Utilities
 
 Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
-    Public Class SyntaxFormats
+    Public NotInheritable Class SyntaxFormats
         <Export(GetType(EditorFormatDefinition))>
         <ClassificationType(ClassificationTypeNames:=SyntaxClassificationDefinition.TagAndDirective)>
         <Name(SyntaxClassificationDefinition.TagAndDirective)>

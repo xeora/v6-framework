@@ -188,21 +188,16 @@ Namespace Xeora.Web.Manager
         End Function
 
         ' This function is for external call out side of the project DO NOT DISABLE IT
-        Public Overloads Shared Function InvokeBind(ByVal BindInfo As [Shared].Execution.BindInfo, ByVal ParameterValues As Object()) As [Shared].Execution.BindInvokeResult
-            Return [Assembly].InvokeBind(BindInfo, ParameterValues, ExecuterTypes.Undefined)
+        Public Overloads Shared Function InvokeBind(ByVal BindInfo As [Shared].Execution.BindInfo) As [Shared].Execution.BindInvokeResult
+            Return [Assembly].InvokeBind(BindInfo, ExecuterTypes.Undefined)
         End Function
 
         Private Shared _ExecutableLibrary As New Hashtable
         Private Shared _PrivateBinPath As String = Nothing
-        Public Overloads Shared Function InvokeBind(ByVal BindInfo As [Shared].Execution.BindInfo, ByVal ParameterValues As Object(), ByVal ExecuterType As ExecuterTypes) As [Shared].Execution.BindInvokeResult
-            If BindInfo Is Nothing Then Throw New NoNullAllowedException("Control requires bind!")
-
-            ' Check if passed ParameterValues and ProceduresParams match each other
-            If Not BindInfo.ProcedureParams Is ParameterValues AndAlso
-                BindInfo.ProcedureParams.Length <> ParameterValues.Length Then
-
-                Throw New System.Exception("Bind Parameters and Values do not match each other!")
-            End If
+        Public Overloads Shared Function InvokeBind(ByVal BindInfo As [Shared].Execution.BindInfo, ByVal ExecuterType As ExecuterTypes) As [Shared].Execution.BindInvokeResult
+            If BindInfo Is Nothing Then Throw New NoNullAllowedException("Requires bind!")
+            ' Check if BindInfo Parameters has been parsed!
+            If Not BindInfo.IsReady Then Throw New System.Exception("Bind Parameters shoud be parsed first!")
 
             Dim rBindInvokeResult As [Shared].Execution.BindInvokeResult =
                 New [Shared].Execution.BindInvokeResult(BindInfo)
@@ -252,7 +247,7 @@ Namespace Xeora.Web.Manager
             Try
                 ' Invoke must use the same appdomain because of the context sync price
                 Dim InvokedObject As Object =
-                    ExecutableLoader.Invoke(BindInfo.ClassName, BindInfo.ProcedureName, ParameterValues, ExecuterType.ToString())
+                    ExecutableLoader.Invoke(BindInfo.ClassNames, BindInfo.ProcedureName, BindInfo.ProcedureParamValues, ExecuterType.ToString())
 
                 If TypeOf InvokedObject Is System.Exception Then
                     rBindInvokeResult.InvokeResult = CType(InvokedObject, System.Exception)

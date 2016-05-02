@@ -351,9 +351,9 @@ Namespace Xeora.Web.Controller.Directive
                 Dim DummyControllerContainer As ControllerBase
                 For pC As Integer = 0 To Me.BindInfo.ProcedureParams.Length - 1
                     DummyControllerContainer = ControllerBase.ProvideDummyController(Me, Me.ContentArguments)
-                    Me.RequestParse(Me.BindInfo.ProcedureParams(pC), DummyControllerContainer)
+                    Me.RequestParse(Me.BindInfo.ProcedureParams(pC).Query, DummyControllerContainer)
                     DummyControllerContainer.Render(Me)
-                    Me.BindInfo.ProcedureParams(pC) = DummyControllerContainer.RenderedValue
+                    Me.BindInfo.ProcedureParams(pC).Value = DummyControllerContainer.RenderedValue
                 Next
             End If
         End Sub

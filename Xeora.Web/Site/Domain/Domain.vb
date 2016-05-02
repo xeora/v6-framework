@@ -85,9 +85,9 @@ Namespace Xeora.Web.Site
             End Get
         End Property
 
-        Public ReadOnly Property WebService() As [Shared].IDomain.IWebService Implements [Shared].IDomain.WebService
+        Public ReadOnly Property xService() As [Shared].IDomain.IxService Implements [Shared].IDomain.xService
             Get
-                Return Me._Deployment.WebService
+                Return Me._Deployment.xService
             End Get
         End Property
 

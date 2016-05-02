@@ -1,7 +1,7 @@
 ﻿Option Strict On
 
 Namespace Xeora.Web.Shared
-    Public Class WebService
+    Public Class xService
         Public Enum DataFlowTypes
             Output
             Input
@@ -9,9 +9,9 @@ Namespace Xeora.Web.Shared
 
         Public Shared Event TransferProgress(ByVal DataFlow As DataFlowTypes, ByVal Current As Long, Total As Long)
 
-        Public Shared Function AuthenticateToWebService(ByVal WebServiceURL As String, ByVal AuthenticationFunction As String, ByVal Parameters As Parameters, ByRef IsAuthenticationDone As Boolean) As Object
+        Public Shared Function AuthenticateToxService(ByVal xServiceURL As String, ByVal AuthenticationFunction As String, ByVal Parameters As Parameters, ByRef IsAuthenticationDone As Boolean) As Object
             Dim rMethodResult As Object =
-                WebService.CallWebService(WebServiceURL, AuthenticationFunction, Parameters)
+                xService.CallxService(xServiceURL, AuthenticationFunction, Parameters)
 
             Execution.ExamMethodExecuted(rMethodResult, IsAuthenticationDone)
 
@@ -24,11 +24,11 @@ Namespace Xeora.Web.Shared
             Return rMethodResult
         End Function
 
-        Public Overloads Shared Function CallWebService(ByVal WebServiceURL As String, ByVal [Function] As String, ByVal Parameters As Parameters) As Object
-            Return WebService.CallWebService(WebServiceURL, [Function], Parameters, 60000)
+        Public Overloads Shared Function CallxService(ByVal xServiceURL As String, ByVal [Function] As String, ByVal Parameters As Parameters) As Object
+            Return xService.CallxService(xServiceURL, [Function], Parameters, 60000)
         End Function
 
-        Public Overloads Shared Function CallWebService(ByVal WebServiceURL As String, ByVal FunctionName As String, ByVal Parameters As Parameters, ByVal ResponseTimeout As Integer) As Object
+        Public Overloads Shared Function CallxService(ByVal xServiceURL As String, ByVal FunctionName As String, ByVal Parameters As Parameters, ByVal ResponseTimeout As Integer) As Object
             Dim rMethodResult As Object = Nothing
 
             Dim HttpWebRequest As Net.HttpWebRequest
@@ -45,7 +45,7 @@ Namespace Xeora.Web.Shared
                 RequestMS.Seek(0, IO.SeekOrigin.Begin)
 
                 Dim ResponseString As String
-                Dim pageURL As String = String.Format("{0}?call={1}", WebServiceURL, FunctionName)
+                Dim pageURL As String = String.Format("{0}?call={1}", xServiceURL, FunctionName)
 
                 ' Prepare Service Request Connection
                 HttpWebRequest = CType(Net.HttpWebRequest.Create(pageURL), Net.HttpWebRequest)
@@ -103,10 +103,10 @@ Namespace Xeora.Web.Shared
                 HttpWebResponse.Close()
                 GC.SuppressFinalize(HttpWebResponse)
 
-                rMethodResult = WebService.ParseWebServiceResult(ResponseString)
+                rMethodResult = xService.ParsexServiceResult(ResponseString)
                 ' !--
             Catch ex As Exception
-                rMethodResult = New Exception("WebService Connection Error!", ex)
+                rMethodResult = New Exception("xService Connection Error!", ex)
             Finally
                 If Not RequestMS Is Nothing Then _
                     RequestMS.Close() : GC.SuppressFinalize(RequestMS)
@@ -115,11 +115,11 @@ Namespace Xeora.Web.Shared
             Return rMethodResult
         End Function
 
-        Private Shared Function ParseWebServiceResult(ByVal ResultXML As String) As Object
+        Private Shared Function ParsexServiceResult(ByVal ResultXML As String) As Object
             Dim rMethodResult As Object = Nothing
 
             If String.IsNullOrEmpty(ResultXML) Then
-                rMethodResult = New Exception("WebService Response Error!")
+                rMethodResult = New Exception("xService Response Error!")
             Else
                 Try
                     Dim xPathTextReader As IO.StringReader
@@ -177,7 +177,7 @@ Namespace Xeora.Web.Shared
                                                         xPathIter_V.Current.GetAttribute("key", xPathIter_V.Current.NamespaceURI),
                                                         Convert.ChangeType(
                                                             xPathIter_V.Current.Value.ToString(CultureInfo),
-                                                            WebService.LoadTypeFromDomain(
+                                                            xService.LoadTypeFromDomain(
                                                                 AppDomain.CurrentDomain,
                                                                 xPathIter_V.Current.GetAttribute("type", xPathIter_V.Current.NamespaceURI)
                                                             )
@@ -216,7 +216,7 @@ Namespace Xeora.Web.Shared
                                                 Do
                                                     PartialDataTable.Columns.Add(
                                                         xPathIter_C.Current.GetAttribute("name", xPathIter_C.Current.NamespaceURI),
-                                                        WebService.LoadTypeFromDomain(
+                                                        xService.LoadTypeFromDomain(
                                                             AppDomain.CurrentDomain,
                                                             xPathIter_C.Current.GetAttribute("type", xPathIter_C.Current.NamespaceURI))
                                                     )
@@ -267,12 +267,12 @@ Namespace Xeora.Web.Shared
                                         rMethodResult = PartialDataTable
                                     Case Else
                                         Dim xTypeObject As Type =
-                                            WebService.LoadTypeFromDomain(AppDomain.CurrentDomain, xType)
+                                            xService.LoadTypeFromDomain(AppDomain.CurrentDomain, xType)
 
                                         If xTypeObject Is Nothing Then
                                             rMethodResult = xPathIter.Current.Value
                                         Else
-                                            If WebService.SearchIsBaseType(xTypeObject, GetType(Exception)) Then
+                                            If xService.SearchIsBaseType(xTypeObject, GetType(Exception)) Then
                                                 rMethodResult = Activator.CreateInstance(xTypeObject, xPathIter.Current.Value, New Exception())
                                             Else
                                                 If xTypeObject.IsPrimitive OrElse
@@ -305,7 +305,7 @@ Namespace Xeora.Web.Shared
                             End If
                         End If
                     Else
-                        rMethodResult = New Exception("WebService Response Error!")
+                        rMethodResult = New Exception("xService Response Error!")
                     End If
 
                     ' Close Reader
@@ -314,7 +314,7 @@ Namespace Xeora.Web.Shared
                     ' Garbage Collection Cleanup
                     GC.SuppressFinalize(xPathTextReader)
                 Catch ex As Exception
-                    rMethodResult = New Exception("WebService Response Error!", ex)
+                    rMethodResult = New Exception("xService Response Error!", ex)
                 End Try
             End If
 

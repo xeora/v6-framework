@@ -343,35 +343,35 @@ Namespace Xeora.Web.Controller
             End If
         End Sub
 
-        Public Shared Function ParseProperties(ByRef Parent As ControllerBase, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection, ByVal Properties As String(), ByVal Handler As IInstanceRequires.InstanceRequestedEventHandler) As Object()
-            Dim rParameterValues As Object() = Nothing
+        Public Shared Function ParseProperty(
+                            ByVal [Property] As String,
+                            ByRef Parent As ControllerBase,
+                            ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection,
+                            ByVal Handler As IInstanceRequires.InstanceRequestedEventHandler) As Object
 
-            If Not Properties Is Nothing Then
-                Dim ParameterValuesList As New Generic.List(Of Object)
-                Dim PropertyController As PropertyController
+            Dim rObject As Object = Nothing
 
-                For Each Prop As String In Properties
-                    PropertyController = New PropertyController(0, Prop, ContentArguments)
-                    PropertyController._ByPassUpdateBlockCheck = True
-                    AddHandler PropertyController.InstanceRequested, Handler
+            If Not [Property] Is Nothing Then
+                Dim PropertyController As PropertyController =
+                    New PropertyController(0, [Property], ContentArguments)
 
-                    If Not Parent Is Nothing Then
-                        ' Fake Add To Parent and Remove it after render. This is for parent relation hack
-                        Parent.Children.Add(PropertyController)
-                    End If
+                PropertyController._ByPassUpdateBlockCheck = True
+                AddHandler PropertyController.InstanceRequested, Handler
 
-                    PropertyController.Render(Nothing)
+                If Not Parent Is Nothing Then
+                    ' Fake Add To Parent and Remove it after render. This is for parent relation hack
+                    Parent.Children.Add(PropertyController)
+                End If
 
-                    ' Fake Add is removing. This is for parent relation hack
-                    If Not Parent Is Nothing Then Parent.Children.RemoveAt(Parent.Children.Count - 1)
+                PropertyController.Render(Nothing)
 
-                    ParameterValuesList.Add(PropertyController.ObjectResult)
-                Next
+                ' Fake Add is removing. This is for parent relation hack
+                If Not Parent Is Nothing Then Parent.Children.RemoveAt(Parent.Children.Count - 1)
 
-                rParameterValues = ParameterValuesList.ToArray()
+                rObject = PropertyController.ObjectResult
             End If
 
-            Return rParameterValues
+            Return rObject
         End Function
 
         Private Function CleanHTMLTags(ByVal Content As String, ByVal CleaningTags As String()) As String

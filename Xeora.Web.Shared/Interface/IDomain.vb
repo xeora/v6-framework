@@ -9,7 +9,7 @@ Namespace Xeora.Web.Shared
         ReadOnly Property DeploymentType() As DomainInfo.DeploymentTypes
         ReadOnly Property Settings() As IDomain.ISettings
         ReadOnly Property Language() As IDomain.ILanguage
-        ReadOnly Property WebService() As IDomain.IWebService
+        ReadOnly Property xService() As IDomain.IxService
         ReadOnly Property Children() As DomainInfo.DomainInfoCollection
         Function Render(ByVal TemplateID As String, ByVal MessageResult As ControlResult.Message, Optional UpdateBlockControlID As String = Nothing) As String
 
@@ -33,7 +33,8 @@ Namespace Xeora.Web.Shared
                 Public Interface IServiceItem
                     Enum ServiceTypes
                         Template
-                        WebService
+                        xService
+                        xSocket
                     End Enum
 
                     Property ID() As String
@@ -69,11 +70,11 @@ Namespace Xeora.Web.Shared
             Event ResolveTranslationRequested(ByVal TranslationID As String, ByRef Value As String)
         End Interface
 
-        Public Interface IWebService
+        Public Interface IxService
             ReadOnly Property ReadSessionVariable(ByVal PublicKey As String, ByVal name As String) As Object
-            Function CreateWebServiceAuthentication(ByVal ParamArray dItems() As DictionaryEntry) As String
-            Function RenderWebService(ByVal ExecuteIn As String, ByVal TemplateID As String) As String
-            Function GenerateWebServiceXML(ByRef MethodResult As Object) As String
+            Function CreatexServiceAuthentication(ByVal ParamArray dItems() As DictionaryEntry) As String
+            Function RenderxService(ByVal ExecuteIn As String, ByVal TemplateID As String) As String
+            Function GeneratexServiceXML(ByRef MethodResult As Object) As String
         End Interface
     End Interface
 End Namespace

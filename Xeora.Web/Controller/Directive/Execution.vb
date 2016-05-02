@@ -102,14 +102,22 @@ Namespace Xeora.Web.Controller.Directive
                 [Shared].Execution.BindInfo.Make(
                     String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1))
 
+            BindInfo.PrepareProcedureParameters(
+                        New [Shared].Execution.BindInfo.ProcedureParser(
+                            Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                                ProcedureParameter.Value = PropertyController.ParseProperty(
+                                                               ProcedureParameter.Query,
+                                                               Me,
+                                                               ControllerLevel.ContentArguments,
+                                                               New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
+                                                                                                                       RaiseEvent InstanceRequested(Instance)
+                                                                                                                   End Sub)
+                                                           )
+                            End Sub)
+                    )
+
             Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
-                Manager.Assembly.InvokeBind(
-                    BindInfo,
-                    PropertyController.ParseProperties(Me, ControllerLevel.ContentArguments, BindInfo.ProcedureParams, New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
-                                                                                                                                                                               RaiseEvent InstanceRequested(Instance)
-                                                                                                                                                                           End Sub)),
-                    Manager.Assembly.ExecuterTypes.Other
-                )
+                Manager.Assembly.InvokeBind(BindInfo, Manager.Assembly.ExecuterTypes.Other)
 
             If BindInvokeResult.ReloadRequired Then
                 Throw New Exception.ReloadRequiredException(BindInvokeResult.ApplicationPath)

@@ -73,15 +73,28 @@ Namespace Xeora.Web.Shared
         <Serializable()>
         Public Class BindInfo
             Private _ExecutableName As String
-            Private _ClassName As String
+            Private _ClassNames As String()
             Private _ProcedureName As String
-            Private _ProcedureParams As String()
+            Private _ProcedureParams As ProcedureParameter()
+            Private _ProcedureParamValues As Object() = Nothing
 
-            Private Sub New(ByVal ExecutableName As String, ByVal ClassName As String, ByVal ProcedureName As String, ByVal ProcedureParams As String())
+            Private _IsReady As Boolean
+
+            Private Sub New(ByVal ExecutableName As String, ByVal ClassNames As String(), ByVal ProcedureName As String, ByVal ProcedureParams As String())
                 Me._ExecutableName = ExecutableName
-                Me._ClassName = ClassName
+                Me._ClassNames = ClassNames
                 Me._ProcedureName = ProcedureName
-                Me._ProcedureParams = ProcedureParams
+
+                Me._ProcedureParams = Nothing
+                If Not ProcedureParams Is Nothing Then
+                    Me._ProcedureParams = CType(Array.CreateInstance(GetType(ProcedureParameter), ProcedureParams.Length), ProcedureParameter())
+
+                    For pC As Integer = 0 To ProcedureParams.Length - 1
+                        Me._ProcedureParams(pC) = New ProcedureParameter(ProcedureParams(pC))
+                    Next
+                End If
+
+                Me._IsReady = False
             End Sub
 
             Public ReadOnly Property ExecutableName() As String
@@ -90,9 +103,9 @@ Namespace Xeora.Web.Shared
                 End Get
             End Property
 
-            Public ReadOnly Property ClassName() As String
+            Public ReadOnly Property ClassNames() As String()
                 Get
-                    Return Me._ClassName
+                    Return Me._ClassNames
                 End Get
             End Property
 
@@ -102,11 +115,54 @@ Namespace Xeora.Web.Shared
                 End Get
             End Property
 
-            Public ReadOnly Property ProcedureParams() As String()
+            Public ReadOnly Property ProcedureParams() As ProcedureParameter()
                 Get
                     Return Me._ProcedureParams
                 End Get
             End Property
+
+            Public ReadOnly Property ProcedureParamValues() As Object()
+                Get
+                    Return Me._ProcedureParamValues
+                End Get
+            End Property
+
+            Public ReadOnly Property IsReady() As Boolean
+                Get
+                    Return Me._IsReady
+                End Get
+            End Property
+
+            Public Sub OverrideProcedureParameters(ByVal ProcedureParams As String())
+                Me._ProcedureParams = Nothing
+                If Not ProcedureParams Is Nothing Then
+                    Me._ProcedureParams = CType(Array.CreateInstance(GetType(ProcedureParameter), ProcedureParams.Length), ProcedureParameter())
+
+                    For pC As Integer = 0 To ProcedureParams.Length - 1
+                        Me._ProcedureParams(pC) = New ProcedureParameter(ProcedureParams(pC))
+                    Next
+                End If
+
+                Me._ProcedureParamValues = Nothing
+                Me._IsReady = False
+            End Sub
+
+            Public Delegate Sub ProcedureParser(ByRef ProcedureParameter As ProcedureParameter)
+            Public Sub PrepareProcedureParameters(ByVal ProcedureParser As ProcedureParser)
+                If Not ProcedureParser Is Nothing Then
+                    If Not Me._ProcedureParams Is Nothing Then
+                        Me._ProcedureParamValues = CType(Array.CreateInstance(GetType(Object), Me._ProcedureParams.Length), Object())
+
+                        For pC As Integer = 0 To Me._ProcedureParams.Length - 1
+                            ProcedureParser.Invoke(Me._ProcedureParams(pC))
+
+                            Me._ProcedureParamValues(pC) = Me._ProcedureParams(pC).Value
+                        Next
+                    End If
+
+                    Me._IsReady = True
+                End If
+            End Sub
 
             Public Shared Function Make(ByVal Bind As String) As BindInfo
                 Dim rBindInfo As BindInfo = Nothing
@@ -122,16 +178,27 @@ Namespace Xeora.Web.Shared
                             Dim SplittedBindInfo2 As String() =
                                 SplittedBindInfo1(1).Split(","c)
 
-                            Dim ClassName As String =
-                                SplittedBindInfo2(0).Split("."c)(0)
-                            Dim ProcedureName As String =
-                                SplittedBindInfo2(0).Split("."c)(1)
+                            Dim ClassNames As String()
+                            Dim ProcedureName As String
+
+                            Dim ClassProcSearch As String() =
+                                SplittedBindInfo2(0).Split("."c)
+
+                            If ClassProcSearch.Length = 1 Then
+                                ClassNames = Nothing
+                                ProcedureName = ClassProcSearch(0)
+                            Else
+                                ClassNames = CType(Array.CreateInstance(GetType(String), ClassProcSearch.Length - 1), String())
+                                Array.Copy(ClassProcSearch, 0, ClassNames, 0, ClassNames.Length)
+
+                                ProcedureName = ClassProcSearch(ClassProcSearch.Length - 1)
+                            End If
 
                             Dim ProcedureParams As String() = Nothing
                             If SplittedBindInfo2.Length > 1 Then _
                                 ProcedureParams = String.Join(",", SplittedBindInfo2, 1, SplittedBindInfo2.Length - 1).Split("|"c)
 
-                            rBindInfo = New BindInfo(ExecutableName, ClassName, ProcedureName, ProcedureParams)
+                            rBindInfo = New BindInfo(ExecutableName, ClassNames, ProcedureName, ProcedureParams)
                         End If
                     Catch ex As Exception
                         ' Just Handle Exceptions
@@ -141,14 +208,80 @@ Namespace Xeora.Web.Shared
                 Return rBindInfo
             End Function
 
+            Private Function ProvideProcedureParameters() As String
+                Dim rString As New Text.StringBuilder()
+
+                For pC As Integer = 0 To Me._ProcedureParams.Length - 1
+                    rString.Append(Me._ProcedureParams(pC).Query)
+
+                    If pC < (Me._ProcedureParams.Length - 1) Then rString.Append("|")
+                Next
+
+                Return rString.ToString()
+            End Function
+
             Public Shadows Function ToString() As String
                 Dim rString As String =
-                    String.Format("{0}?{1}.{2}", Me._ExecutableName, Me._ClassName, Me._ProcedureName)
+                    String.Format("{0}?{1}{2}{3}", Me._ExecutableName, String.Join(".", Me._ClassNames), IIf(Me._ClassNames Is Nothing, String.Empty, "."), Me._ProcedureName)
                 If Not Me.ProcedureParams Is Nothing Then _
-                    rString = String.Format("{0},{1}", rString, String.Join(Of String)("|", Me._ProcedureParams))
+                    rString = String.Format("{0},{1}", rString, Me.ProvideProcedureParameters())
 
                 Return rString
             End Function
+
+            <Serializable()>
+            Public Class ProcedureParameter
+                Private _Key As String
+                Private _Value As Object
+                Private _Query As String
+
+                Public Sub New(ByVal ProcedureParameter As String)
+                    Me._Key = String.Empty
+                    Me._Value = Nothing
+                    Me._Query = String.Empty
+
+                    If Not String.IsNullOrEmpty(ProcedureParameter) Then
+                        Me._Query = ProcedureParameter
+
+                        Dim OperatorChars As Char() = New Char() {"^"c, "~"c, "-"c, "+"c, "="c, "#"c, "*"c}
+
+                        If Array.IndexOf(OperatorChars, ProcedureParameter.Chars(0)) > -1 Then
+                            If ProcedureParameter.Chars(0) <> "#"c Then
+                                Me._Key = ProcedureParameter.Substring(1)
+                            Else
+                                For cC As Integer = 0 To ProcedureParameter.Length - 1
+                                    If ProcedureParameter.Chars(cC) <> "#"c Then
+                                        Me._Key = ProcedureParameter.Substring(cC)
+
+                                        Exit For
+                                    End If
+                                Next
+                            End If
+                        End If
+                    End If
+                End Sub
+
+                Public ReadOnly Property Key() As String
+                    Get
+                        Return Me._Key
+                    End Get
+                End Property
+
+                Public Property Value() As Object
+                    Get
+                        Return Me._Value
+                    End Get
+                    Set(ByVal value As Object)
+                        Me._Value = value
+                    End Set
+                End Property
+
+                Public ReadOnly Property Query() As String
+                    Get
+                        Return Me._Query
+                    End Get
+                End Property
+            End Class
         End Class
 
         <CLSCompliant(True), Serializable()>

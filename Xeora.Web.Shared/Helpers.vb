@@ -543,7 +543,7 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
-        Public Shared ReadOnly Property VariablePoolForWebService() As Service.VariablePoolOperation
+        Public Shared ReadOnly Property VariablePoolForxService() As Service.VariablePoolOperation
             Get
                 Return New Service.VariablePoolOperation("000000000000000000000000_00000001")
             End Get

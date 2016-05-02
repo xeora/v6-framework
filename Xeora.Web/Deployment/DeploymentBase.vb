@@ -13,7 +13,7 @@ Namespace Xeora.Web.Deployment
         Public MustOverride Sub Dispose()
         Public MustOverride ReadOnly Property Settings() As [Shared].IDomain.ISettings
         Public MustOverride ReadOnly Property Language() As [Shared].IDomain.ILanguage
-        Public MustOverride ReadOnly Property WebService() As [Shared].IDomain.IWebService
+        Public MustOverride ReadOnly Property xService() As [Shared].IDomain.IxService
         Public MustOverride ReadOnly Property Children() As [Shared].DomainInfo.DomainInfoCollection
         Public MustOverride Sub ProvideFileStream(ByRef FileStream As IO.Stream, ByVal RequestedFilePath As String)
 

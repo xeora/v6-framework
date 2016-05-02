@@ -162,6 +162,7 @@
     <Compile Include="Controller\Directive\Control\Unknown.vb" />
     <Compile Include="Controller\Directive\Control\VariableBlock.vb" />
     <Compile Include="Exception\DeploymentException.vb" />
+    <Compile Include="Exception\ServiceSocketException.vb" />
     <Compile Include="Exception\RequestBlockException.vb" />
     <Compile Include="Exception\InternalParentException.vb" />
     <Compile Include="Exception\UnknownDirectiveException.vb" />
@@ -175,7 +176,7 @@
     <Compile Include="Exception\GrammerException.vb" />
     <Compile Include="Global\DataListOutputInfo.vb" />
     <Compile Include="Global\SystemMessages.vb" />
-    <Compile Include="Global\WebServiceSessionInfo.vb" />
+    <Compile Include="Global\xServiceSessionInfo.vb" />
     <Compile Include="Helper\DateTime.vb" />
     <Compile Include="Helper\EventLogging.vb" />
     <Compile Include="Helper\OverrideBinder.vb" />
@@ -214,7 +215,7 @@
     <Compile Include="Site\Domain\Setting\Services.vb" />
     <Compile Include="Site\Domain\Setting\Settings.vb" />
     <Compile Include="Site\Domain\Setting\URLMapping.vb" />
-    <Compile Include="Site\Domain\Setting\WebService.vb" />
+    <Compile Include="Site\Domain\Setting\xService.vb" />
     <Compile Include="Site\Service\ScheduledTasks.vb" />
     <Compile Include="Site\Domain\Domain.vb">
       <SubType>Code</SubType>

@@ -8,15 +8,15 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
     <Export(GetType(ICompletionSourceProvider))>
     <Name("XeoraControls")>
     <Order(Before:="all")>
-    <ContentType("xccontrols")>
-    Public Class ControlsSourceProvider
+    <ContentType(EditorExtension.ControlContentType)>
+    Public NotInheritable Class ControlsSourceProvider
         Implements ICompletionSourceProvider
+
+        <Import()>
+        Public Property NavigatorService() As ITextStructureNavigatorSelectorService
 
         Public Function TryCreateCompletionSource(ByVal textBuffer As ITextBuffer) As ICompletionSource Implements ICompletionSourceProvider.TryCreateCompletionSource
             Return New ControlsSource(Me, textBuffer)
         End Function
-
-        <Import()>
-        Public Property NavigatorService() As ITextStructureNavigatorSelectorService
     End Class
 End Namespace

@@ -162,7 +162,7 @@ Namespace Xeora.Web.Handler
                     If Not AcceptEncodings Is Nothing Then _
                         Me._SupportCompression = (AcceptEncodings.IndexOf("gzip") > -1)
 
-                    ' This is a WebService or Template request
+                    ' This is a xService or Template request
                     Dim UseDefaultTemplate As Boolean
                     Dim CapturedTemplateID As String =
                         [Shared].Helpers.ResolveTemplateFromURL([Shared].Helpers.Context.Request.RawUrl, UseDefaultTemplate)
@@ -171,7 +171,7 @@ Namespace Xeora.Web.Handler
                         Me._DomainControl.ServiceID = CapturedTemplateID
 
                     If String.IsNullOrEmpty(Me._DomainControl.ServiceID) Then
-                        ' Requested File is not a WebService Or Template
+                        ' Requested File is not a xService Or Template
 
                         Dim DomainContentsPath As String =
                             [Shared].Helpers.GetDomainContentsPath(DomainIDAccessTree, LanguageID)
@@ -280,14 +280,22 @@ Namespace Xeora.Web.Handler
                                             [Shared].Helpers.Context.Request.Form.Item("PostBackInformation"))
                                     )
 
+                                BindInfo.PrepareProcedureParameters(
+                                    New [Shared].Execution.BindInfo.ProcedureParser(
+                                        Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                                            ProcedureParameter.Value = Controller.PropertyController.ParseProperty(
+                                                                           ProcedureParameter.Query,
+                                                                           Nothing,
+                                                                           Nothing,
+                                                                           New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
+                                                                                                                                                        Instance = Site.DomainControl.Domain(Me._RequestID)
+                                                                                                                                                    End Sub)
+                                                                        )
+                                        End Sub)
+                                )
+
                                 Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
-                                    Manager.Assembly.InvokeBind(
-                                        BindInfo,
-                                        Controller.PropertyController.ParseProperties(Nothing, Nothing, BindInfo.ProcedureParams, New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
-                                                                                                                                                                                                               Instance = Site.DomainControl.Domain(Me._RequestID)
-                                                                                                                                                                                                           End Sub)),
-                                        Manager.Assembly.ExecuterTypes.Undefined
-                                    )
+                                    Manager.Assembly.InvokeBind(BindInfo, Manager.Assembly.ExecuterTypes.Undefined)
 
                                 If BindInvokeResult.ReloadRequired Then
                                     ' This is application dependency problem, force to apply auto recovery!
@@ -323,7 +331,7 @@ Namespace Xeora.Web.Handler
                                             Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
                                                 Me.WritePage(MethodResultContent)
 
-                                            Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.WebService
+                                            Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
                                                 Me.WritePage()
 
                                         End Select
@@ -334,8 +342,88 @@ Namespace Xeora.Web.Handler
                                     Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
                                         Me.WritePage(MethodResultContent)
 
-                                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.WebService
+                                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
                                         Me.WritePage()
+
+                                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket
+                                        Context.Response.ClearHeaders()
+                                        Context.Response.ClearContent()
+                                        Context.Response.Clear()
+
+                                        Context.Response.Buffer = False
+                                        Context.Response.BufferOutput = False
+                                        Context.Response.ContentType = Me._DomainControl.ServiceMimeType
+
+                                        ' Decode Encoded Call Function to Readable
+                                        Dim BindInfo As [Shared].Execution.BindInfo =
+                                            Me._DomainControl.SocketEndPoint
+
+                                        Dim vI As Version = Reflection.Assembly.GetExecutingAssembly().GetName().Version
+                                        Context.Response.Headers.Add("X-FrameworkVersion", String.Format("{0}.{1}.{2}", vI.Major, vI.Minor, vI.Build))
+
+                                        BindInfo.PrepareProcedureParameters(
+                                            New [Shared].Execution.BindInfo.ProcedureParser(
+                                                Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                                                    ProcedureParameter.Value = Controller.PropertyController.ParseProperty(
+                                                                                    ProcedureParameter.Query,
+                                                                                    Nothing,
+                                                                                    Nothing,
+                                                                                    New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
+                                                                                                                                                                 Instance = Site.DomainControl.Domain(Me._RequestID)
+                                                                                                                                                             End Sub)
+                                                                                )
+                                                End Sub)
+                                        )
+
+                                        Dim KeyValueList As New List(Of KeyValuePair(Of String, Object))
+                                        For Each Item As [Shared].Execution.BindInfo.ProcedureParameter In BindInfo.ProcedureParams
+                                            KeyValueList.Add(New KeyValuePair(Of String, Object)(Item.Key, Item.Value))
+                                        Next
+
+                                        Dim xSocketObject As [Shared].xSocketObject =
+                                            New [Shared].xSocketObject(
+                                                Context.Request.Headers,
+                                                Context.Request.InputStream,
+                                                Context.Response.Headers,
+                                                Context.Response.OutputStream,
+                                                KeyValueList.ToArray(),
+                                                New [Shared].xSocketObject.FlushHandler(Sub()
+                                                                                            Context.Response.Flush()
+                                                                                        End Sub)
+                                            )
+
+                                        BindInfo.OverrideProcedureParameters(New String() {"xso"})
+                                        BindInfo.PrepareProcedureParameters(
+                                            New [Shared].Execution.BindInfo.ProcedureParser(
+                                                Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                                                    ProcedureParameter.Value = xSocketObject
+                                                End Sub)
+                                        )
+
+                                        Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
+                                            Manager.Assembly.InvokeBind(BindInfo, Manager.Assembly.ExecuterTypes.Undefined)
+
+                                        If BindInvokeResult.ReloadRequired Then
+                                            ' This is application dependency problem, force to apply auto recovery!
+                                            Me._DomainControl.ClearDomainCache()
+                                            RequestModule.ReloadApplication([Shared].Helpers.CurrentRequestID)
+
+                                            Exit Sub
+                                        Else
+                                            If Not BindInvokeResult.InvokeResult Is Nothing Then
+                                                If TypeOf BindInvokeResult.InvokeResult Is System.Exception Then
+                                                    Throw New Exception.ServiceSocketException(CType(BindInvokeResult.InvokeResult, System.Exception).ToString())
+                                                ElseIf TypeOf BindInvokeResult.InvokeResult Is [Shared].ControlResult.Message Then
+                                                    Dim MessageResult As [Shared].ControlResult.Message =
+                                                        CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.Message)
+
+                                                    If MessageResult.Type = [Shared].ControlResult.Message.Types.Error Then _
+                                                        Throw New Exception.ServiceSocketException(CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.Message).Message)
+                                                Else
+                                                    ' Just Ignore any result other than Exception and Error Message Result Object
+                                                End If
+                                            End If
+                                        End If
 
                                 End Select
                             End If
@@ -582,7 +670,7 @@ QUICKFINISH:
                             )
                         )
 
-                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.WebService
+                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
                         Me.WritePage()
 
                 End Select

@@ -10,9 +10,13 @@ Namespace Xeora.Web.Site.Setting
             Me._XPathNavigator = ConfigurationNavigator.Clone()
         End Sub
 
+        Private _ServiceItems As [Shared].IDomain.ISettings.IServices.IServiceItem.IServiceItemCollection = Nothing
         Public ReadOnly Property ServiceItems() As [Shared].IDomain.ISettings.IServices.IServiceItem.IServiceItemCollection Implements [Shared].IDomain.ISettings.IServices.ServiceItems
             Get
-                Return Me.ReadServiceOptions()
+                If Me._ServiceItems Is Nothing Then _
+                    Me._ServiceItems = Me.ReadServiceOptions()
+
+                Return Me._ServiceItems
             End Get
         End Property
 
@@ -54,12 +58,20 @@ Namespace Xeora.Web.Site.Setting
                     Boolean.TryParse(StandAlone, tServiceItem.StandAlone)
                     tServiceItem.ExecuteIn = ExecuteIn
 
-                    If tServiceItem.ServiceType = [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.WebService Then
-                        tServiceItem.MimeType = "text/xml"
-                    Else
-                        If Not String.IsNullOrEmpty(mimeType) Then _
+                    Select Case tServiceItem.ServiceType
+                        Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket
                             tServiceItem.MimeType = mimeType
-                    End If
+                            If String.IsNullOrEmpty(mimeType) Then _
+                                tServiceItem.MimeType = "application/octet-stream"
+
+                        Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
+                            tServiceItem.MimeType = "text/xml"
+
+                        Case Else
+                            If Not String.IsNullOrEmpty(mimeType) Then _
+                                tServiceItem.MimeType = mimeType
+
+                    End Select
 
                     rCollection.Add(tServiceItem)
                 Loop

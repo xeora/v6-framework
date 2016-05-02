@@ -151,7 +151,8 @@
     <Compile Include="Service\VariablePoolOperation.vb" />
     <Compile Include="URLMapping.vb" />
     <Compile Include="URLQueryDictionary.vb" />
-    <Compile Include="WebService.vb" />
+    <Compile Include="xService.vb" />
+    <Compile Include="xSocketObject.vb" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

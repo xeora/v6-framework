@@ -5,13 +5,13 @@ Imports Microsoft.VisualStudio.Utilities
 
 Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
     <Export(GetType(IClassifierProvider))>
-    <ContentType("xeora")>
+    <ContentType(EditorExtension.TemplateContentType)>
     <Order(After:=Priority.Default)>
     Public NotInheritable Class SyntaxProvider
         Implements IClassifierProvider
 
         <Import()>
-        Private _ClassificationRegistry As IClassificationTypeRegistryService
+        Private Property _ClassificationRegistry As IClassificationTypeRegistryService
 
         Public Function GetClassifier(ByVal buffer As ITextBuffer) As IClassifier Implements IClassifierProvider.GetClassifier
             Return buffer.Properties.GetOrCreateSingletonProperty(Of Syntax)(

@@ -93,6 +93,18 @@ Namespace Xeora.Web.Site
             End Get
         End Property
 
+        Public ReadOnly Property SocketEndPoint() As [Shared].Execution.BindInfo
+            Get
+                Dim rBindInfo As [Shared].Execution.BindInfo = Nothing
+
+                If Me._ServiceType = [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket AndAlso
+                    Not String.IsNullOrEmpty(Me._ExecuteIn) Then _
+                    rBindInfo = [Shared].Execution.BindInfo.Make(Me._ExecuteIn)
+
+                Return rBindInfo
+            End Get
+        End Property
+
         Public ReadOnly Property IsAuthenticationRequired() As Boolean
             Get
                 Return Me._IsAuthenticationRequired
@@ -174,10 +186,10 @@ Namespace Xeora.Web.Site
             Select Case Me._ServiceType
                 Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
                     Me._ServiceResult = DomainControl.Domain(Me._RequestID).Render(Me._ServiceID, MessageResult, UpdateBlockControlID)
-                Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.WebService
+                Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
                     If Me._IsAuthenticationRequired Then
-                        Dim PostedExecuteParameters As [Shared].WebService.Parameters =
-                            New [Shared].WebService.Parameters([Shared].Helpers.Context.Request.Form.Item("execParams"))
+                        Dim PostedExecuteParameters As [Shared].xService.Parameters =
+                            New [Shared].xService.Parameters([Shared].Helpers.Context.Request.Form.Item("execParams"))
 
                         If Not PostedExecuteParameters.PublicKey Is Nothing Then
                             Me._IsAuthenticationRequired = False
@@ -188,7 +200,7 @@ Namespace Xeora.Web.Site
                             Do
                                 ServiceItem =
                                     WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.WebService,
+                                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService,
                                         Me._ServiceID
                                     )
 
@@ -204,27 +216,27 @@ Namespace Xeora.Web.Site
                                 End If
 
                                 For Each AuthKey As String In ServiceItem.AuthenticationKeys
-                                    If DomainControl.Domain(Me._RequestID).WebService.ReadSessionVariable(PostedExecuteParameters.PublicKey, AuthKey) Is Nothing Then
+                                    If DomainControl.Domain(Me._RequestID).xService.ReadSessionVariable(PostedExecuteParameters.PublicKey, AuthKey) Is Nothing Then
                                         Me._IsAuthenticationRequired = True
 
                                         Exit For
                                     End If
                                 Next
                             Else
-                                Throw New NullReferenceException("Xeora Configuration does not contain any service definition for this request!")
+                                Throw New NullReferenceException("Xeora Configuration does not contain any xService definition for this request!")
                             End If
                         End If
                     End If
 
                     If Not Me._IsAuthenticationRequired Then
-                        Me._ServiceResult = DomainControl.Domain(Me._RequestID).WebService.RenderWebService(Me._ExecuteIn, Me._ServiceID)
+                        Me._ServiceResult = DomainControl.Domain(Me._RequestID).xService.RenderxService(Me._ExecuteIn, Me._ServiceID)
                     Else
                         Dim MethodResult As Object =
                             New Security.SecurityException(
-                                [Global].SystemMessages.WEBSERVICE_AUTH
+                                [Global].SystemMessages.XSERVICE_AUTH
                             )
 
-                        Me._ServiceResult = DomainControl.Domain(Me._RequestID).WebService.GenerateWebServiceXML(MethodResult)
+                        Me._ServiceResult = DomainControl.Domain(Me._RequestID).xService.GeneratexServiceXML(MethodResult)
                     End If
             End Select
         End Sub
@@ -372,15 +384,15 @@ Namespace Xeora.Web.Site
                     End If
                 End If
             Else
-                ' This is a webservice request or ChildDomain Template or WebService Request
-                ' Check first if it is a webservice or not
+                ' This is a xSocket or xService request or ChildDomain Template, xSocket or xService Request
+                ' Check first if it is a xService or not
                 Dim ServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
                     DomainControl.Domain(Me._RequestID).Settings.Services.ServiceItems.GetServiceItem(
-                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.WebService,
+                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService,
                         Me._ServiceID)
 
                 If Not ServiceItem Is Nothing Then
-                    ' This is a webservice Request
+                    ' This is a xService Request
                     If ServiceItem.Overridable Then
                         WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServiceID)
 
@@ -388,11 +400,11 @@ Namespace Xeora.Web.Site
                         If Not WorkingInstance Is Nothing Then
                             Dim OverridableServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
                                 WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                    [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.WebService,
+                                    [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService,
                                     Me._ServiceID
                                 )
 
-                            ' Overrides WebService Definition
+                            ' Overrides xService Definition
                             If Not OverridableServiceItem Is Nothing Then ServiceItem = OverridableServiceItem
                         End If
                     End If
@@ -403,72 +415,113 @@ Namespace Xeora.Web.Site
                     Me._ExecuteIn = ServiceItem.ExecuteIn
                     Me._MimeType = ServiceItem.MimeType
                 Else
-                    ' This is not webservice but it can be a template or webservice in Children
-                    ' First Check if related Service Request exists in Children.
-                    ' TODO: First most deep match returns. However, there should be some priority in the same depth
-                    WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServiceID)
+                    ServiceItem =
+                        DomainControl.Domain(Me._RequestID).Settings.Services.ServiceItems.GetServiceItem(
+                            [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket,
+                            Me._ServiceID)
 
-                    If Not WorkingInstance Is Nothing Then
-                        ' Set the Working domain as child domain for this call because call requires the child domain access!
-                        Threading.Monitor.Enter(DomainControl._DomainTable)
-                        Try
-                            If DomainControl._DomainTable.ContainsKey(Me._RequestID) Then _
-                                DomainControl._DomainTable.Item(Me._RequestID) = WorkingInstance
-                        Finally
-                            Threading.Monitor.Exit(DomainControl._DomainTable)
-                        End Try
+                    If Not ServiceItem Is Nothing Then
+                        ' This is a xService Request
+                        If ServiceItem.Overridable Then
+                            WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServiceID)
 
-                        ' Okay Something Exists. But is it a Template or WebService
-                        ' First Check if it is a Template
-                        Dim ChildServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                            WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                                Me._ServiceID
-                            )
-
-                        If Not ChildServiceItem Is Nothing Then
-                            ' Okay this is a child Template
-                            ServiceItem = ChildServiceItem
-                        Else
-                            ' Hmm Let me check for WebService So
-                            ChildServiceItem =
+                            ' If not null, it means WorkingInstance contains a service definition
+                            If Not WorkingInstance Is Nothing Then
+                                Dim OverridableServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
                                 WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                    [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.WebService,
+                                    [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket,
                                     Me._ServiceID
                                 )
 
-                            If Not ChildServiceItem Is Nothing Then
-                                ' Okay this is a child WebService
-                                ServiceItem = ChildServiceItem
-                            Else
-                                '' Nothing found Anywhere!
-                                '[Shared].Helpers.Context.Response.StatusCode = 404
-
-                                Me._ServiceID = String.Empty
-
-                                Exit Sub
+                                ' Overrides xService Definition
+                                If Not OverridableServiceItem Is Nothing Then ServiceItem = OverridableServiceItem
                             End If
                         End If
-                    End If
-
-                    If Not ServiceItem Is Nothing Then
-                        ' Let work on Found Service Item in Children
 
                         Me._ServiceType = ServiceItem.ServiceType
-                        If ServiceItem.Authentication Then
-                            For Each AuthKey As String In ServiceItem.AuthenticationKeys
-                                If [Shared].Helpers.Context.Session.Contents.Item(AuthKey) Is Nothing Then
-                                    Me._IsAuthenticationRequired = True
-
-                                    Exit For
-                                End If
-                            Next
-                        End If
+                        Me._IsAuthenticationRequired = ServiceItem.Authentication
                         Me._IsWorkingAsStandAlone = ServiceItem.StandAlone
                         Me._ExecuteIn = ServiceItem.ExecuteIn
                         Me._MimeType = ServiceItem.MimeType
                     Else
-                        Me._ServiceID = String.Empty
+                        ' This is not xService or socket but it can be a template, xSocket or xService in Children
+                        ' First Check if related Service Request exists in Children.
+                        ' TODO: First most deep match returns. However, there should be some priority in the same depth
+                        WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServiceID)
+
+                        If Not WorkingInstance Is Nothing Then
+                            ' Set the Working domain as child domain for this call because call requires the child domain access!
+                            Threading.Monitor.Enter(DomainControl._DomainTable)
+                            Try
+                                If DomainControl._DomainTable.ContainsKey(Me._RequestID) Then _
+                                    DomainControl._DomainTable.Item(Me._RequestID) = WorkingInstance
+                            Finally
+                                Threading.Monitor.Exit(DomainControl._DomainTable)
+                            End Try
+
+                            ' Okay Something Exists. But is it a Template or xService
+                            ' First Check if it is a Template
+                            Dim ChildServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
+                                WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
+                                    [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
+                                    Me._ServiceID
+                                )
+
+                            If Not ChildServiceItem Is Nothing Then
+                                ' Okay this is a child Template
+                                ServiceItem = ChildServiceItem
+                            Else
+                                ' Hmm Let me check for xService and xSocket So
+                                ChildServiceItem =
+                                    WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
+                                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService,
+                                        Me._ServiceID
+                                    )
+
+                                If Not ChildServiceItem Is Nothing Then
+                                    ' Okay this is a child xService
+                                    ServiceItem = ChildServiceItem
+                                Else
+                                    ChildServiceItem =
+                                        WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
+                                            [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket,
+                                            Me._ServiceID
+                                        )
+
+                                    If Not ChildServiceItem Is Nothing Then
+                                        ' Okay this is a child Socket
+                                        ServiceItem = ChildServiceItem
+                                    Else
+                                        '' Nothing found Anywhere!
+                                        '[Shared].Helpers.Context.Response.StatusCode = 404
+
+                                        Me._ServiceID = String.Empty
+
+                                        Exit Sub
+                                    End If
+                                End If
+                            End If
+                        End If
+
+                        If Not ServiceItem Is Nothing Then
+                            ' Let work on Found Service Item in Children
+
+                            Me._ServiceType = ServiceItem.ServiceType
+                            If ServiceItem.Authentication Then
+                                For Each AuthKey As String In ServiceItem.AuthenticationKeys
+                                    If [Shared].Helpers.Context.Session.Contents.Item(AuthKey) Is Nothing Then
+                                        Me._IsAuthenticationRequired = True
+
+                                        Exit For
+                                    End If
+                                Next
+                            End If
+                            Me._IsWorkingAsStandAlone = ServiceItem.StandAlone
+                            Me._ExecuteIn = ServiceItem.ExecuteIn
+                            Me._MimeType = ServiceItem.MimeType
+                        Else
+                            Me._ServiceID = String.Empty
+                        End If
                     End If
                 End If
             End If

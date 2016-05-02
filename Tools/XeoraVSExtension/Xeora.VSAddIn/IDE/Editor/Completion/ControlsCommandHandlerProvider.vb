@@ -9,10 +9,19 @@ Imports Microsoft.VisualStudio.Utilities
 
 Namespace Xeora.VSAddIn.IDE.Editor.Completion
     <Export(GetType(IVsTextViewCreationListener))>
-    <ContentType("xccontrols")>
-    <TextViewRole(PredefinedTextViewRoles.Document)>
-    Public Class ControlsCommandHandlerProvider
+    <ContentType(EditorExtension.ControlContentType)>
+    <TextViewRole(PredefinedTextViewRoles.Editable)>
+    Public NotInheritable Class ControlsCommandHandlerProvider
         Implements IVsTextViewCreationListener
+
+        <Import()>
+        Public Property AdapterService() As IVsEditorAdaptersFactoryService
+
+        <Import()>
+        Public Property CompletionBroker() As ICompletionBroker
+
+        <Import()>
+        Public Property ServiceProvider() As SVsServiceProvider
 
         Public Sub VsTextViewCreated(ByVal textViewAdapter As IVsTextView) Implements IVsTextViewCreationListener.VsTextViewCreated
             Dim textView As ITextView = AdapterService.GetWpfTextView(textViewAdapter)
@@ -29,14 +38,5 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
                 Function() filter
             textView.Properties.GetOrCreateSingletonProperty(createCommandHandler)
         End Sub
-
-        <Import()>
-        Public Property AdapterService() As IVsEditorAdaptersFactoryService
-
-        <Import()>
-        Public Property CompletionBroker() As ICompletionBroker
-
-        <Import()>
-        Public Property ServiceProvider() As SVsServiceProvider
     End Class
 End Namespace

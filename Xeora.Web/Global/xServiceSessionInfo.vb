@@ -2,7 +2,7 @@
 
 Namespace Xeora.Web.Global
     <Serializable()>
-    Public Class WebServiceSessionInfo
+    Public Class xServiceSessionInfo
         Implements IEnumerable
 
         Private _SessionItems As Generic.List(Of DictionaryEntry)

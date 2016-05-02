@@ -117,14 +117,22 @@ Namespace Xeora.Web.Controller.Directive.Control
                         End If
                     Loop Until ControllerLevel Is Nothing OrElse Leveling = 0
 
+                    Me.BindInfo.PrepareProcedureParameters(
+                        New [Shared].Execution.BindInfo.ProcedureParser(
+                            Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                                ProcedureParameter.Value = PropertyController.ParseProperty(
+                                                               ProcedureParameter.Query,
+                                                               Me,
+                                                               ControllerLevel.ContentArguments,
+                                                               New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
+                                                                                                                       RaiseEvent InstanceRequested(Instance)
+                                                                                                                   End Sub)
+                                                           )
+                            End Sub)
+                    )
+
                     Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
-                        Manager.Assembly.InvokeBind(
-                            Me.BindInfo,
-                            PropertyController.ParseProperties(Me, ControllerLevel.ContentArguments, Me.BindInfo.ProcedureParams, New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
-                                                                                                                                                                                          RaiseEvent InstanceRequested(Instance)
-                                                                                                                                                                                      End Sub)),
-                            Manager.Assembly.ExecuterTypes.Control
-                        )
+                        Manager.Assembly.InvokeBind(Me.BindInfo, Manager.Assembly.ExecuterTypes.Control)
 
                     Dim ConditionResult As ControlResult.Conditional = Nothing
 

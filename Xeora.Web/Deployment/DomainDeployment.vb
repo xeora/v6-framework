@@ -12,7 +12,7 @@ Namespace Xeora.Web.Deployment
 
         Private _Settings As [Shared].IDomain.ISettings = Nothing
         Private _Language As [Shared].IDomain.ILanguage = Nothing
-        Private _WebService As [Shared].IDomain.IWebService = Nothing
+        Private _xService As [Shared].IDomain.IxService = Nothing
         Private _Children As [Shared].DomainInfo.DomainInfoCollection = Nothing
 
         Private Sub New(ByVal DomainIDAccessTree As String())
@@ -65,7 +65,7 @@ Namespace Xeora.Web.Deployment
                                 )
             End Try
 
-            Me._WebService = New Site.Setting.WebService()
+            Me._xService = New Site.Setting.xService()
 
             ' Compile Children Domains
             Me._Children = New [Shared].DomainInfo.DomainInfoCollection()
@@ -176,9 +176,9 @@ Namespace Xeora.Web.Deployment
             End Get
         End Property
 
-        Public Overrides ReadOnly Property WebService() As [Shared].IDomain.IWebService
+        Public Overrides ReadOnly Property xService() As [Shared].IDomain.IxService
             Get
-                Return Me._WebService
+                Return Me._xService
             End Get
         End Property
 

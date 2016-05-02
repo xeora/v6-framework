@@ -19,7 +19,7 @@ Namespace Xeora.Web.Global
 
         Public Const TEMPLATE_IDMUSTBESET As String = "TemplateID must be set"
 
-        Public Const WEBSERVICE_AUTH As String = "This Webservice Requires Authentication"
+        Public Const XSERVICE_AUTH As String = "This xService Requires Authentication"
 
         Public Const SYSTEM_ERROROCCURED As String = "System Error Occured"
         Public Const SYSTEM_APPLICATIONLOADINGERROR As String = "Application Loading Error Occured"

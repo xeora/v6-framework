@@ -1,26 +1,30 @@
 ﻿Imports System.ComponentModel.Composition
+Imports Microsoft.VisualStudio.Text.Classification
 Imports Microsoft.VisualStudio.Utilities
 
 Namespace Xeora.VSAddIn.IDE.Editor
-    Public Class EditorExtension
-        <Export>
-        <Name("xeora")>
+    Public NotInheritable Class EditorExtension
+        Public Const TemplateContentType As String = "xeora"
+        Public Const ControlContentType As String = "xccontrols"
+
+        <Export(GetType(ContentTypeDefinition))>
+        <Name(EditorExtension.TemplateContentType)>
         <BaseDefinition("htmlx")>
-        Public XeoraTemplateContentTypeDefinition As ContentTypeDefinition
+        Public Property XeoraTemplateContentTypeDefinition As ContentTypeDefinition
 
-        <Export>
+        <Export(GetType(FileExtensionToContentTypeDefinition))>
         <FileExtension(".xchtml")>
-        <ContentType("xeora")>
-        Public XeoraTemplateFileExtensionDefinition As FileExtensionToContentTypeDefinition
+        <ContentType(EditorExtension.TemplateContentType)>
+        Public Property XeoraTemplateFileExtensionDefinition As FileExtensionToContentTypeDefinition
 
-        <Export>
-        <Name("xccontrols")>
+        <Export(GetType(ContentTypeDefinition))>
+        <Name(EditorExtension.ControlContentType)>
         <BaseDefinition("xml")>
-        Public XeoraControlsContentTypeDefinition As ContentTypeDefinition
+        Public Property XeoraControlsContentTypeDefinition As ContentTypeDefinition
 
-        <Export>
+        <Export(GetType(FileExtensionToContentTypeDefinition))>
         <FileExtension(".xml")>
-        <ContentType("xccontrols")>
-        Public XeoraControlsFileExtensionDefinition As FileExtensionToContentTypeDefinition
+        <ContentType(EditorExtension.ControlContentType)>
+        Public Property XeoraControlsFileExtensionDefinition As FileExtensionToContentTypeDefinition
     End Class
 End Namespace

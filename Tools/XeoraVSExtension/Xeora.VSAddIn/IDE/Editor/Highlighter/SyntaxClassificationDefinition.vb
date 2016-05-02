@@ -3,7 +3,7 @@ Imports Microsoft.VisualStudio.Text.Classification
 Imports Microsoft.VisualStudio.Utilities
 
 Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
-    Public Module SyntaxClassificationDefinition
+    Public NotInheritable Class SyntaxClassificationDefinition
         Public Const TagAndDirective As String = "TagAndDirective"
         Public Const DirectiveID As String = "DirectiveID"
         Public Const InternalDirective As String = "InternalDirective"
@@ -29,5 +29,5 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
         <Export(GetType(ClassificationTypeDefinition))>
         <Name(BlackBracket)>
         Private BlackBracketType As ClassificationTypeDefinition
-    End Module
+    End Class
 End Namespace

@@ -1,16 +1,16 @@
 ﻿Option Strict On
 
 Namespace Xeora.Web.Site.Setting
-    Public Class WebService
-        Implements [Shared].IDomain.IWebService
+    Public Class xService
+        Implements [Shared].IDomain.IxService
 
-        Public Function CreateWebServiceAuthentication(ByVal ParamArray dItems() As DictionaryEntry) As String Implements [Shared].IDomain.IWebService.CreateWebServiceAuthentication
+        Public Function CreatexServiceAuthentication(ByVal ParamArray dItems() As DictionaryEntry) As String Implements [Shared].IDomain.IxService.CreatexServiceAuthentication
             Dim rString As String = Nothing
 
             If Not dItems Is Nothing Then
                 rString = Guid.NewGuid.ToString()
 
-                Dim SessionInfo As New [Global].WebServiceSessionInfo(rString, Date.Now)
+                Dim SessionInfo As New [Global].xServiceSessionInfo(rString, Date.Now)
                 For Each dItem As DictionaryEntry In dItems
                     SessionInfo.AddSessionItem(dItem.Key.ToString(), dItem.Value)
                 Next
@@ -21,14 +21,14 @@ Namespace Xeora.Web.Site.Setting
             Return rString
         End Function
 
-        Public ReadOnly Property ReadSessionVariable(ByVal PublicKey As String, ByVal name As String) As Object Implements [Shared].IDomain.IWebService.ReadSessionVariable
+        Public ReadOnly Property ReadSessionVariable(ByVal PublicKey As String, ByVal name As String) As Object Implements [Shared].IDomain.IxService.ReadSessionVariable
             Get
                 Dim rObject As Object = Nothing
 
-                Dim SessionInfo As [Global].WebServiceSessionInfo =
+                Dim SessionInfo As [Global].xServiceSessionInfo =
                     CType(
                         Me.VariablePool.Get(PublicKey),
-                        [Global].WebServiceSessionInfo
+                        [Global].xServiceSessionInfo
                     )
 
                 If Not SessionInfo Is Nothing Then
@@ -57,7 +57,7 @@ Namespace Xeora.Web.Site.Setting
             End Get
         End Property
 
-        Public Function RenderWebService(ByVal ExecuteIn As String, ByVal TemplateID As String) As String Implements [Shared].IDomain.IWebService.RenderWebService
+        Public Function RenderxService(ByVal ExecuteIn As String, ByVal TemplateID As String) As String Implements [Shared].IDomain.IxService.RenderxService
             ' call = Calling Function Providing in Query String
             Dim BindInfo As [Shared].Execution.BindInfo =
                 [Shared].Execution.BindInfo.Make(
@@ -68,13 +68,20 @@ Namespace Xeora.Web.Site.Setting
                         [Shared].Helpers.Context.Request.QueryString.Item("call"))
                 )
 
-            Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
-                Manager.Assembly.InvokeBind(BindInfo, New String() {[Shared].Helpers.Context.Request.QueryString.Item("execParams")}, Manager.Assembly.ExecuterTypes.Undefined)
+            BindInfo.PrepareProcedureParameters(
+                New [Shared].Execution.BindInfo.ProcedureParser(
+                    Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                        ProcedureParameter.Value = [Shared].Helpers.Context.Request.Form.Item(ProcedureParameter.Key)
+                    End Sub)
+            )
 
-            Return Me.GenerateWebServiceXML(BindInvokeResult.InvokeResult)
+            Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
+                Manager.Assembly.InvokeBind(BindInfo, Manager.Assembly.ExecuterTypes.Undefined)
+
+            Return Me.GeneratexServiceXML(BindInvokeResult.InvokeResult)
         End Function
 
-        Public Function GenerateWebServiceXML(ByRef MethodResult As Object) As String Implements [Shared].IDomain.IWebService.GenerateWebServiceXML
+        Public Function GeneratexServiceXML(ByRef MethodResult As Object) As String Implements [Shared].IDomain.IxService.GeneratexServiceXML
             Dim xmlStream As New IO.StringWriter()
             Dim xmlWriter As New Xml.XmlTextWriter(xmlStream)
 
@@ -232,7 +239,7 @@ Namespace Xeora.Web.Site.Setting
 
         Private ReadOnly Property VariablePool() As [Shared].Service.VariablePoolOperation
             Get
-                Return [Shared].Helpers.VariablePoolForWebService
+                Return [Shared].Helpers.VariablePoolForxService
             End Get
         End Property
 

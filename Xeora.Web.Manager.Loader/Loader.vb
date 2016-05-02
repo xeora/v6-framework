@@ -99,21 +99,21 @@ Namespace Xeora.Web.Manager
             Return rBoolean
         End Function
 
-        Public Function Invoke(ByVal ClassName As String, ByVal FunctionName As String, ByVal FunctionParams As Object(), ByVal ExecuterType As String) As Object
-            Return Me.InvokeInternal(ClassName, FunctionName, FunctionParams, ExecuterType)
+        Public Function Invoke(ByVal ClassNames As String(), ByVal FunctionName As String, ByVal FunctionParams As Object(), ByVal ExecuterType As String) As Object
+            Return Me.InvokeInternal(ClassNames, FunctionName, FunctionParams, ExecuterType)
         End Function
 
-        Private Function InvokeInternal(ByVal ClassName As String, ByVal FunctionName As String, ByVal FunctionParams As Object(), ByVal ExecuterType As String) As Object
+        Private Function InvokeInternal(ByVal ClassNames As String(), ByVal FunctionName As String, ByVal FunctionParams As Object(), ByVal ExecuterType As String) As Object
             If String.IsNullOrEmpty(FunctionName) Then Throw New System.ArgumentNullException("FunctionName must be defined!")
             If FunctionParams Is Nothing Then FunctionParams = New Object() {}
 
             Dim CompileErrorObject As String
 
-            If Not ClassName Is Nothing Then
+            If Not ClassNames Is Nothing Then
                 If FunctionParams.Length = 0 Then
-                    CompileErrorObject = String.Format("{0}?{1}.{2}", Me._ExecutableName, ClassName, FunctionName)
+                    CompileErrorObject = String.Format("{0}?{1}.{2}", Me._ExecutableName, String.Join(".", ClassNames), FunctionName)
                 Else
-                    CompileErrorObject = String.Format("{0}?{1}.{2},[Length:{3}]", Me._ExecutableName, ClassName, FunctionName, FunctionParams.Length)
+                    CompileErrorObject = String.Format("{0}?{1}.{2},[Length:{3}]", Me._ExecutableName, String.Join(".", ClassNames), FunctionName, FunctionParams.Length)
                 End If
             Else
                 If FunctionParams.Length = 0 Then
@@ -147,8 +147,8 @@ Namespace Xeora.Web.Manager
 
                 Dim AssemblyObject As System.Type, AssemblyMethod As System.Reflection.MethodInfo = Nothing
 
-                If Not ClassName Is Nothing Then
-                    AssemblyObject = Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}+{1}", Me._ExecutableName, ClassName), True, True)
+                If Not ClassNames Is Nothing Then
+                    AssemblyObject = Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}+{1}", Me._ExecutableName, String.Join("+", ClassNames)), True, True)
                 Else
                     AssemblyObject = Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", Me._ExecutableName), True, True)
                 End If
@@ -170,7 +170,7 @@ Namespace Xeora.Web.Manager
                     sB.AppendLine("Assembly does not have following procedure!")
                     sB.AppendLine("--------------------------------------------------")
                     sB.AppendFormat("ExecutableName: {0}", Me._ExecutableName) : sB.AppendLine()
-                    sB.AppendFormat("ClassName: {0}", ClassName) : sB.AppendLine()
+                    sB.AppendFormat("ClassName: {0}", String.Join(".", ClassNames)) : sB.AppendLine()
                     sB.AppendFormat("FunctionName: {0}", FunctionName) : sB.AppendLine()
                     sB.AppendFormat("FunctionParamsLength: {0}",
                         Microsoft.VisualBasic.IIf(FunctionParams Is Nothing, "0", FunctionParams.Length)) : sB.AppendLine()
