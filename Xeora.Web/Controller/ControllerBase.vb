@@ -296,6 +296,7 @@ Namespace Xeora.Web.Controller
 
             If Not ControllerBase._BoundPool Is Nothing AndAlso
                 ControllerBase._BoundPool.ContainsKey(NamedItem.ControlID) AndAlso
+                Not CType(ControllerBase._BoundPool.Item(NamedItem.ControlID)(0), Boolean) AndAlso
                 Not ControllerBase._BoundPool.Item(NamedItem.ControlID)(1) Is Nothing Then
 
                 CType(ControllerBase._BoundPool.Item(NamedItem.ControlID)(1), RenderCompletedDelegate).Invoke(Me)
@@ -356,6 +357,7 @@ Namespace Xeora.Web.Controller
 
             If Not ControllerBase._BoundPool Is Nothing AndAlso
                 ControllerBase._BoundPool.ContainsKey(ControlID) AndAlso
+                Not CType(ControllerBase._BoundPool.Item(ControlID)(0), Boolean) AndAlso
                 Not ControllerBase._BoundPool.Item(ControlID)(1) Is Nothing Then
 
                 ControllerBase._BoundPool.Item(ControlID)(1) =
