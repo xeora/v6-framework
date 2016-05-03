@@ -15,6 +15,7 @@ Namespace Xeora.Web.Controller
         Private _MessageResult As [Shared].ControlResult.Message
 
         Private _BoundControlRenderWaiting As Boolean
+        Private _BoundPool As Generic.Dictionary(Of String, Object()) ' { Boolean,  (<False> = [Delegate] (MultiCast) | <True> = ControllerBase) }
         Private _MultiCastDelegate As [Delegate]
 
         Protected _IsRendered As Boolean = False
@@ -223,7 +224,7 @@ Namespace Xeora.Web.Controller
             Dim BoundControlRenderWaitingControls As New Generic.Dictionary(Of Integer, ControllerBase)
             Dim WorkingInsideValue As New Text.StringBuilder()
 
-            ' this loop can no be for each because enumerator may be modified while it is rendering..
+            ' this loop can not be for each because enumerator may be modified while it is rendering..
             For cC As Integer = 0 To Me.Children.Count - 1
                 Dim Child As ControllerBase = Me.Children.Item(cC)
 
@@ -262,8 +263,11 @@ Namespace Xeora.Web.Controller
             Dim Enumerator As Generic.IEnumerator(Of Generic.KeyValuePair(Of Integer, ControllerBase)) =
                 BoundControlRenderWaitingControls.GetEnumerator()
 
+            Dim PositionShift As Integer = 0
             Do While Enumerator.MoveNext()
-                WorkingInsideValue.Insert(Enumerator.Current.Key, Enumerator.Current.Value.RenderedValue)
+                WorkingInsideValue.Insert(Enumerator.Current.Key + PositionShift, Enumerator.Current.Value.RenderedValue)
+
+                PositionShift += Enumerator.Current.Value.RenderedValue.Length
             Loop
 
             Return WorkingInsideValue.ToString()
@@ -279,14 +283,27 @@ Namespace Xeora.Web.Controller
         End Sub
 
         Private Sub FireRenderCompleted()
+            If Not TypeOf Me Is Directive.INamable Then Exit Sub
+
             Dim ControllerBase As ControllerBase = Me
 
             Do Until ControllerBase.Parent Is Nothing
                 ControllerBase = ControllerBase.Parent
             Loop
 
-            If Not ControllerBase._MultiCastDelegate Is Nothing Then _
-                CType(ControllerBase._MultiCastDelegate, RenderCompletedDelegate).Invoke(Me)
+            Dim NamedItem As Directive.INamable =
+                CType(Me, Directive.INamable)
+
+            If Not ControllerBase._BoundPool Is Nothing AndAlso
+                ControllerBase._BoundPool.ContainsKey(NamedItem.ControlID) AndAlso
+                Not ControllerBase._BoundPool.Item(NamedItem.ControlID)(1) Is Nothing Then
+
+                CType(ControllerBase._BoundPool.Item(NamedItem.ControlID)(1), RenderCompletedDelegate).Invoke(Me)
+
+                ControllerBase._BoundPool.Item(NamedItem.ControlID)(0) = True
+                ControllerBase._BoundPool.Item(NamedItem.ControlID)(1) = Me
+            End If
+
         End Sub
 
         Protected ReadOnly Property BoundControlRenderWaiting() As Boolean
@@ -295,7 +312,7 @@ Namespace Xeora.Web.Controller
             End Get
         End Property
 
-        Protected Sub RegisterToRenderCompleted()
+        Protected Sub RegisterToRenderCompletedOf(ByVal ControlID As String)
             If Me._BoundControlRenderWaiting Then Exit Sub
             Me._MultiCastDelegate = New RenderCompletedDelegate(AddressOf Me.Render)
 
@@ -305,17 +322,30 @@ Namespace Xeora.Web.Controller
                 ControllerBase = ControllerBase.Parent
             Loop
 
-            If ControllerBase._MultiCastDelegate Is Nothing Then
-                ControllerBase._MultiCastDelegate = CType(Me._MultiCastDelegate.Clone(), [Delegate])
-            Else
-                ControllerBase._MultiCastDelegate =
-                    [Delegate].Combine(ControllerBase._MultiCastDelegate, Me._MultiCastDelegate)
-            End If
+            If ControllerBase._BoundPool Is Nothing Then _
+                ControllerBase._BoundPool = New Generic.Dictionary(Of String, Object())
 
-            Me._BoundControlRenderWaiting = True
+            If Not ControllerBase._BoundPool.ContainsKey(ControlID) Then _
+                ControllerBase._BoundPool.Add(ControlID, New Object() {False, Nothing})
+
+            If Not CType(ControllerBase._BoundPool.Item(ControlID)(0), Boolean) Then
+                If ControllerBase._BoundPool.Item(ControlID)(1) Is Nothing Then
+                    ControllerBase._BoundPool.Item(ControlID)(1) = CType(Me._MultiCastDelegate.Clone(), [Delegate])
+                Else
+                    ControllerBase._BoundPool.Item(ControlID)(1) =
+                        [Delegate].Combine(CType(ControllerBase._BoundPool.Item(ControlID)(1), [Delegate]), Me._MultiCastDelegate)
+                End If
+
+                Me._BoundControlRenderWaiting = True
+            Else
+                Me._BoundControlRenderWaiting = True
+
+                CType(Me._MultiCastDelegate, RenderCompletedDelegate).Invoke(
+                    CType(ControllerBase._BoundPool.Item(ControlID)(1), ControllerBase))
+            End If
         End Sub
 
-        Protected Sub UnRegisterFromRenderCompleted()
+        Protected Sub UnRegisterFromRenderCompletedOf(ByVal ControlID As String)
             If Not Me._BoundControlRenderWaiting Then Exit Sub
 
             Dim ControllerBase As ControllerBase = Me
@@ -324,9 +354,12 @@ Namespace Xeora.Web.Controller
                 ControllerBase = ControllerBase.Parent
             Loop
 
-            If Not ControllerBase._MultiCastDelegate Is Nothing Then
-                ControllerBase._MultiCastDelegate =
-                    [Delegate].Remove(ControllerBase._MultiCastDelegate, Me._MultiCastDelegate)
+            If Not ControllerBase._BoundPool Is Nothing AndAlso
+                ControllerBase._BoundPool.ContainsKey(ControlID) AndAlso
+                Not ControllerBase._BoundPool.Item(ControlID)(1) Is Nothing Then
+
+                ControllerBase._BoundPool.Item(ControlID)(1) =
+                    [Delegate].Remove(CType(ControllerBase._BoundPool.Item(ControlID)(1), [Delegate]), Me._MultiCastDelegate)
             End If
 
             Me._BoundControlRenderWaiting = False

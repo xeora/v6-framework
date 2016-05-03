@@ -293,7 +293,19 @@ Namespace Xeora.Web.Controller
                                             End If
 
                                         Case Else
-                                            ArgumentQueryObject = [Shared].Helpers.VariablePool.Get(ArgumentQueryObjectName)
+                                            If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ArgumentQueryObjectName)
+
+                                            If TypeOf SenderController Is ControlBase AndAlso
+                                                TypeOf SenderController Is INamable Then
+
+                                                If String.Compare(
+                                                    CType(SenderController, INamable).ControlID, ArgumentQueryObjectName, True) <> 0 Then
+
+                                                    Exit Sub
+                                                Else
+                                                    ArgumentQueryObject = [Shared].Helpers.VariablePool.Get(ArgumentQueryObjectName)
+                                                End If
+                                            End If
 
                                     End Select
 
@@ -321,6 +333,8 @@ Namespace Xeora.Web.Controller
                                             Me.DefineRenderedValue(String.Empty)
                                         End If
                                         Me._ObjectResult = ArgumentValue
+
+                                        Me.UnRegisterFromRenderCompletedOf(ArgumentQueryObjectName)
                                     Else
                                         Me.DefineRenderedValue(String.Empty)
                                         Me._ObjectResult = Nothing

@@ -64,7 +64,7 @@ Namespace Xeora.Web.Controller.Directive
                         Controller = Controller.Parent
                     Loop
 
-                    Me.RegisterToRenderCompleted()
+                    Me.RegisterToRenderCompletedOf(Me.BoundControlID)
                 End If
 
                 If TypeOf SenderController Is ControlBase AndAlso
