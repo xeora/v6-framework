@@ -80,6 +80,10 @@ Namespace Xeora.Web.Controller.Directive.Control
         End Sub
 
         Private Sub RenderInternal()
+            ' Button Control does not have any ContentArguments, That's why it copies it's parent Arguments
+            If Not Me.Parent Is Nothing Then _
+                Me.ContentArguments.Replace(Me.Parent.ContentArguments)
+
             ' Remove value attribute for Button Because it has Text Property
             Me.Attributes.Remove("value")
 

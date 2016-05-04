@@ -247,15 +247,15 @@ Namespace Xeora.Web.Site
 
                                             Select Case Controller.DirectiveControllerBase.CaptureDirectiveType(String.Format("${0}:", IIf(String.IsNullOrEmpty(MatchDirectiveType01), MatchedID01, MatchDirectiveType01)))
                                                 Case Controller.DirectiveControllerBase.DirectiveTypes.Control
-                                                    WorkingDirective = Controller.Directive.ControlBase.MakeControl(lMatchItem01.Index, PointedOriginalValue, ContainerController.ContentArguments, AddressOf Me.OnControlMapNavigatorRequest)
+                                                    WorkingDirective = Controller.Directive.ControlBase.MakeControl(lMatchItem01.Index, PointedOriginalValue, Nothing, AddressOf Me.OnControlMapNavigatorRequest)
                                                 Case Controller.DirectiveControllerBase.DirectiveTypes.InLineStatement
-                                                    WorkingDirective = New Controller.Directive.InLineStatement(lMatchItem01.Index, PointedOriginalValue, ContainerController.ContentArguments)
+                                                    WorkingDirective = New Controller.Directive.InLineStatement(lMatchItem01.Index, PointedOriginalValue, Nothing)
                                                 Case Controller.DirectiveControllerBase.DirectiveTypes.UpdateBlock
-                                                    WorkingDirective = New Controller.Directive.UpdateBlock(lMatchItem01.Index, PointedOriginalValue, ContainerController.ContentArguments)
+                                                    WorkingDirective = New Controller.Directive.UpdateBlock(lMatchItem01.Index, PointedOriginalValue, Nothing)
                                                 Case Controller.DirectiveControllerBase.DirectiveTypes.EncodedExecution
-                                                    WorkingDirective = New Controller.Directive.EncodedExecution(lMatchItem01.Index, PointedOriginalValue, ContainerController.ContentArguments)
+                                                    WorkingDirective = New Controller.Directive.EncodedExecution(lMatchItem01.Index, PointedOriginalValue, Nothing)
                                                 Case Controller.DirectiveControllerBase.DirectiveTypes.MessageBlock
-                                                    WorkingDirective = New Controller.Directive.MessageBlock(lMatchItem01.Index, PointedOriginalValue, ContainerController.ContentArguments)
+                                                    WorkingDirective = New Controller.Directive.MessageBlock(lMatchItem01.Index, PointedOriginalValue, Nothing)
                                             End Select
 
                                             If Not WorkingDirective Is Nothing Then
@@ -296,21 +296,21 @@ Namespace Xeora.Web.Site
 
                                     Select Case Controller.DirectiveControllerBase.CaptureDirectiveType(lMatchItem01.Value)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Control
-                                            WorkingDirective = Controller.Directive.ControlBase.MakeControl(lMatchItem01.Index, lMatchItem01.Value, ContainerController.ContentArguments, AddressOf Me.OnControlMapNavigatorRequest)
+                                            WorkingDirective = Controller.Directive.ControlBase.MakeControl(lMatchItem01.Index, lMatchItem01.Value, Nothing, AddressOf Me.OnControlMapNavigatorRequest)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Template
-                                            WorkingDirective = New Controller.Directive.Template(lMatchItem01.Index, lMatchItem01.Value, ContainerController.ContentArguments)
+                                            WorkingDirective = New Controller.Directive.Template(lMatchItem01.Index, lMatchItem01.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Translation
-                                            WorkingDirective = New Controller.Directive.Translation(lMatchItem01.Index, lMatchItem01.Value, ContainerController.ContentArguments)
+                                            WorkingDirective = New Controller.Directive.Translation(lMatchItem01.Index, lMatchItem01.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.HashCodePointedTemplate
-                                            WorkingDirective = New Controller.Directive.HashCodePointedTemplate(lMatchItem01.Index, lMatchItem01.Value, ContainerController.ContentArguments)
+                                            WorkingDirective = New Controller.Directive.HashCodePointedTemplate(lMatchItem01.Index, lMatchItem01.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Execution
-                                            WorkingDirective = New Controller.Directive.Execution(lMatchItem01.Index, lMatchItem01.Value, ContainerController.ContentArguments)
+                                            WorkingDirective = New Controller.Directive.Execution(lMatchItem01.Index, lMatchItem01.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.InLineStatement
-                                            WorkingDirective = New Controller.Directive.InLineStatement(lMatchItem01.Index, lMatchItem01.Value, ContainerController.ContentArguments)
+                                            WorkingDirective = New Controller.Directive.InLineStatement(lMatchItem01.Index, lMatchItem01.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.UpdateBlock
-                                            WorkingDirective = New Controller.Directive.UpdateBlock(lMatchItem01.Index, lMatchItem01.Value, ContainerController.ContentArguments)
+                                            WorkingDirective = New Controller.Directive.UpdateBlock(lMatchItem01.Index, lMatchItem01.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.EncodedExecution
-                                            WorkingDirective = New Controller.Directive.EncodedExecution(lMatchItem01.Index, lMatchItem01.Value, ContainerController.ContentArguments)
+                                            WorkingDirective = New Controller.Directive.EncodedExecution(lMatchItem01.Index, lMatchItem01.Value, Nothing)
                                     End Select
 
                                     If Not WorkingDirective Is Nothing Then

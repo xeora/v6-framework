@@ -23,5 +23,9 @@ Namespace Xeora.Web.Global
 
         Public Const SYSTEM_ERROROCCURED As String = "System Error Occured"
         Public Const SYSTEM_APPLICATIONLOADINGERROR As String = "Application Loading Error Occured"
+
+        Public Const ARGUMENT_EXISTS As String = "Key is already exists in the arguments collection"
+        Public Const ARGUMENT_NOTEXISTS As String = "Key is not exists in the arguments collection"
+        Public Const ARGUMENT_KEYVALUELENGTHMATCH As String = "Keys and Values lengths do not match each other"
     End Class
 End Namespace

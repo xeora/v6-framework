@@ -94,6 +94,10 @@ Namespace Xeora.Web.Controller.Directive.Control
         End Sub
 
         Private Sub RenderInternal()
+            ' Password Control does not have any ContentArguments, That's why it copies it's parent Arguments
+            If Not Me.Parent Is Nothing Then _
+                Me.ContentArguments.Replace(Me.Parent.ContentArguments)
+
             Me.Attributes.Remove("value")
 
             ' Render Text Content

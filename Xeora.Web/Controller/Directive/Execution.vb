@@ -108,7 +108,7 @@ Namespace Xeora.Web.Controller.Directive
                                 ProcedureParameter.Value = PropertyController.ParseProperty(
                                                                ProcedureParameter.Query,
                                                                Me,
-                                                               ControllerLevel.ContentArguments,
+                                                               CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
                                                                New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
                                                                                                                        RaiseEvent InstanceRequested(Instance)
                                                                                                                    End Sub)

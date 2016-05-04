@@ -93,6 +93,10 @@ Namespace Xeora.Web.Controller.Directive.Control
                 Dim ContentCollection As String() = Me.SplitContentByControlIDWithIndex(CoreContent, ControlIDWithIndex)
 
                 If ContentCollection.Length > 0 Then
+                    ' ConditionalStatment does not have any ContentArguments, That's why it copies it's parent Arguments
+                    If Not Me.Parent Is Nothing Then _
+                        Me.ContentArguments.Replace(Me.Parent.ContentArguments)
+
                     For mC As Integer = 0 To ContentCollection.Length - 1
                         Select Case mC
                             Case 0
@@ -123,7 +127,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                                 ProcedureParameter.Value = PropertyController.ParseProperty(
                                                                ProcedureParameter.Query,
                                                                Me,
-                                                               ControllerLevel.ContentArguments,
+                                                               CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
                                                                New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
                                                                                                                        RaiseEvent InstanceRequested(Instance)
                                                                                                                    End Sub)

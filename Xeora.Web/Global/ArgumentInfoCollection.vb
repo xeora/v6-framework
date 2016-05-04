@@ -33,10 +33,17 @@ Namespace Xeora.Web.Global
 
             If Not Values Is Nothing Then
                 If Values.Length <> Length Then
-                    Throw New ArgumentOutOfRangeException()
+                    Throw New ArgumentOutOfRangeException(SystemMessages.ARGUMENT_KEYVALUELENGTHMATCH)
                 Else
                     Me._ValueList = Values
                 End If
+            End If
+        End Sub
+
+        Public Sub Replace(ByVal AIC As ArgumentInfoCollection)
+            If Not AIC Is Nothing Then
+                Me._ArgumentInfoIndexes = AIC._ArgumentInfoIndexes
+                Me._ValueList = AIC._ValueList
             End If
         End Sub
 
@@ -63,7 +70,7 @@ Namespace Xeora.Web.Global
                 Array.Resize(Of Object)(Me._ValueList, Me._ValueList.Length + 1)
                 Me._ValueList(Me._ValueList.Length - 1) = Value
             Else
-                Throw New ArgumentException()
+                Throw New ArgumentException(SystemMessages.ARGUMENT_EXISTS)
             End If
         End Sub
 
@@ -90,7 +97,7 @@ Namespace Xeora.Web.Global
 
                     Me._ValueList(Index) = value
                 Else
-                    Throw New ArgumentException()
+                    Throw New ArgumentException(SystemMessages.ARGUMENT_NOTEXISTS)
                 End If
             End Set
         End Property

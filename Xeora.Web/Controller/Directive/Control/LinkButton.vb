@@ -94,6 +94,10 @@ Namespace Xeora.Web.Controller.Directive.Control
         End Sub
 
         Private Sub RenderInternal()
+            ' LinkButton Control does not have any ContentArguments, That's why it copies it's parent Arguments
+            If Not Me.Parent Is Nothing Then _
+                Me.ContentArguments.Replace(Me.Parent.ContentArguments)
+
             ' href attribute is disabled always, use url attribute instand of...
             Me.Attributes.Remove("href")
             Me.Attributes.Remove("value")

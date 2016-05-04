@@ -79,6 +79,10 @@ Namespace Xeora.Web.Controller.Directive.Control
         End Sub
 
         Private Sub RenderInternal()
+            ' Textarea Control does not have any ContentArguments, That's why it copies it's parent Arguments
+            If Not Me.Parent Is Nothing Then _
+                Me.ContentArguments.Replace(Me.Parent.ContentArguments)
+
             ' Render Text Content
             Dim DummyControllerContainer As ControllerBase =
                 ControllerBase.ProvideDummyController(Me, Me.ContentArguments)
