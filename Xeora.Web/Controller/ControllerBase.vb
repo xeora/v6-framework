@@ -263,6 +263,17 @@ Namespace Xeora.Web.Controller
             Me._RenderedValue = value
             Me._IsRendered = True
 
+            If TypeOf Me Is Directive.INamable Then
+                Dim NamedItem As Directive.INamable =
+                    CType(Me, Directive.INamable)
+
+                If Me.TopLevelParent._BoundPool Is Nothing Then _
+                    Me.TopLevelParent._BoundPool = New Generic.Dictionary(Of String, Object())
+
+                If Not Me.TopLevelParent._BoundPool.ContainsKey(NamedItem.ControlID) Then _
+                    Me.TopLevelParent._BoundPool.Add(NamedItem.ControlID, New Object() {True, Me})
+            End If
+
             Me.FireRenderCompleted()
         End Sub
 
@@ -282,7 +293,6 @@ Namespace Xeora.Web.Controller
                 Me.TopLevelParent._BoundPool.Item(NamedItem.ControlID)(0) = True
                 Me.TopLevelParent._BoundPool.Item(NamedItem.ControlID)(1) = Me
             End If
-
         End Sub
 
         Protected ReadOnly Property BoundControlRenderWaiting() As Boolean

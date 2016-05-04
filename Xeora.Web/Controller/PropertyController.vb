@@ -305,6 +305,8 @@ Namespace Xeora.Web.Controller
                                                 Else
                                                     ArgumentQueryObject = [Shared].Helpers.VariablePool.Get(ArgumentQueryObjectName)
                                                 End If
+                                            Else
+                                                Exit Sub
                                             End If
 
                                     End Select
