@@ -8,7 +8,7 @@ Namespace Xeora.Web.Controller.Directive.Control
 
         Private _Source As String
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ControlTypes.ImageButton, ContentArguments)
 
             Me._Source = String.Empty

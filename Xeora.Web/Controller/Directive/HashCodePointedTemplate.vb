@@ -7,7 +7,7 @@ Namespace Xeora.Web.Controller.Directive
     Public Class HashCodePointedTemplate
         Inherits DirectiveControllerBase
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.HashCodePointedTemplate, ContentArguments)
         End Sub
 

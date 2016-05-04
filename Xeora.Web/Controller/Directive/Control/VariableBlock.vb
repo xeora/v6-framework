@@ -8,7 +8,7 @@ Namespace Xeora.Web.Controller.Directive.Control
 
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ControlTypes.VariableBlock, ContentArguments)
         End Sub
 
@@ -144,7 +144,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                     ' if VariableBlockResult is not nothing, Set Variable Values
                     If Not VariableBlockResult Is Nothing Then
                         For Each Key As String In VariableBlockResult.Keys
-                            ControllerLevel.ContentArguments.Add(Key, VariableBlockResult.Item(Key))
+                            ControllerLevel.ContentArguments.AppendKeyWithValue(Key, VariableBlockResult.Item(Key))
                         Next
                     End If
 

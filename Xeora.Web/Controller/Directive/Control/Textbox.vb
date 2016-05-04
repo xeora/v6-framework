@@ -10,7 +10,7 @@ Namespace Xeora.Web.Controller.Directive.Control
         Private _Text As String
         Private _DefaultButtonID As String
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ControlTypes.Textbox, ContentArguments)
 
             Me._DefaultButtonID = String.Empty

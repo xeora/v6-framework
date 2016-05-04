@@ -8,7 +8,7 @@ Namespace Xeora.Web.Controller.Directive.Control
 
         Private _LabelText As String
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ControlTypes.Checkbox, ContentArguments)
 
             Me._LabelText = String.Empty
@@ -89,7 +89,7 @@ Namespace Xeora.Web.Controller.Directive.Control
             ' !--
 
             Dim ItemIndex As String =
-                CType(Me.ContentArguments.Item("_sys_ItemIndex").Value, String)
+                CType(Me.ContentArguments.Item("_sys_ItemIndex"), String)
             Dim CheckBoxLabel As String, CheckBoxID As String = Me.ControlID
 
             If Not ItemIndex Is Nothing Then _

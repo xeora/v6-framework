@@ -8,7 +8,7 @@ Namespace Xeora.Web.Controller.Directive.Control
 
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ControlTypes.ConditionalStatement, ContentArguments)
         End Sub
 

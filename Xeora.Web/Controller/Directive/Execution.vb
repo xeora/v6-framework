@@ -15,7 +15,7 @@ Namespace Xeora.Web.Controller.Directive
 
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.Execution, ContentArguments)
 
             Me._Leveling = Me.CaptureLeveling()

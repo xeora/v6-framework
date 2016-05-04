@@ -8,7 +8,7 @@ Namespace Xeora.Web.Controller
         Private _DraftValue As String
         Private _InsideValue As String
         Private _ControllerType As ControllerTypes
-        Private _ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection
+        Private _ContentArguments As [Global].ArgumentInfoCollection
 
         Private _UpdateBlockRendered As Boolean
         Private _UpdateBlockControlID As String
@@ -31,7 +31,7 @@ Namespace Xeora.Web.Controller
 
         Public MustOverride Sub Render(ByRef SenderController As ControllerBase)
 
-        Protected Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ControllerType As ControllerTypes, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection)
+        Protected Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ControllerType As ControllerTypes, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             Me._Parent = Nothing
             Me._Children = New ControllerCollection(Me)
             Me._DraftStartIndex = DraftStartIndex
@@ -39,7 +39,7 @@ Namespace Xeora.Web.Controller
             Me._InsideValue = DraftValue
 
             Me._ControllerType = ControllerType
-            Me._ContentArguments = New [Global].ArgumentInfo.ArgumentInfoCollection()
+            Me._ContentArguments = New [Global].ArgumentInfoCollection()
 
             ' Remove block signs, this value must not be null
             If Not String.IsNullOrEmpty(Me._InsideValue) AndAlso
@@ -55,6 +55,18 @@ Namespace Xeora.Web.Controller
             If Not ContentArguments Is Nothing Then _
                 Me._ContentArguments = ContentArguments
         End Sub
+
+        Private _TopLevelParent As ControllerBase
+        Public ReadOnly Property TopLevelParent() As ControllerBase
+            Get
+                If Me._TopLevelParent Is Nothing Then Me._TopLevelParent = Me
+
+                If Not Me._TopLevelParent.Parent Is Nothing Then _
+                    Me._TopLevelParent = Me._TopLevelParent.Parent.TopLevelParent
+
+                Return Me._TopLevelParent
+            End Get
+        End Property
 
         Public ReadOnly Property Parent() As ControllerBase
             Get
@@ -104,7 +116,7 @@ Namespace Xeora.Web.Controller
             End Get
         End Property
 
-        Public ReadOnly Property ContentArguments() As [Global].ArgumentInfo.ArgumentInfoCollection
+        Public ReadOnly Property ContentArguments() As [Global].ArgumentInfoCollection
             Get
                 Return Me._ContentArguments
             End Get
@@ -113,66 +125,30 @@ Namespace Xeora.Web.Controller
         ' This value should set at the top most Parent and read from it also
         Public Property UpdateBlockRendered() As Boolean
             Get
-                Dim ControllerBase As ControllerBase = Me
-
-                Do Until ControllerBase.Parent Is Nothing
-                    ControllerBase = ControllerBase.Parent
-                Loop
-
-                Return ControllerBase._UpdateBlockRendered
+                Return Me.TopLevelParent._UpdateBlockRendered
             End Get
             Set(ByVal value As Boolean)
-                Dim ControllerBase As ControllerBase = Me
-
-                Do Until ControllerBase.Parent Is Nothing
-                    ControllerBase = ControllerBase.Parent
-                Loop
-
-                ControllerBase._UpdateBlockRendered = value
+                Me.TopLevelParent._UpdateBlockRendered = value
             End Set
         End Property
 
         ' This value should set at the top most Parent and read from it also
         Public Property UpdateBlockControlID() As String
             Get
-                Dim ControllerBase As ControllerBase = Me
-
-                Do Until ControllerBase.Parent Is Nothing
-                    ControllerBase = ControllerBase.Parent
-                Loop
-
-                Return ControllerBase._UpdateBlockControlID
+                Return Me.TopLevelParent._UpdateBlockControlID
             End Get
             Set(ByVal value As String)
-                Dim ControllerBase As ControllerBase = Me
-
-                Do Until ControllerBase.Parent Is Nothing
-                    ControllerBase = ControllerBase.Parent
-                Loop
-
-                ControllerBase._UpdateBlockControlID = value
+                Me.TopLevelParent._UpdateBlockControlID = value
             End Set
         End Property
 
         ' This value should set at the top most Parent and read from it also
         Public Property MessageResult() As [Shared].ControlResult.Message
             Get
-                Dim ControllerBase As ControllerBase = Me
-
-                Do Until ControllerBase.Parent Is Nothing
-                    ControllerBase = ControllerBase.Parent
-                Loop
-
-                Return ControllerBase._MessageResult
+                Return Me.TopLevelParent._MessageResult
             End Get
             Set(ByVal value As [Shared].ControlResult.Message)
-                Dim ControllerBase As ControllerBase = Me
-
-                Do Until ControllerBase.Parent Is Nothing
-                    ControllerBase = ControllerBase.Parent
-                Loop
-
-                ControllerBase._MessageResult = value
+                Me.TopLevelParent._MessageResult = value
             End Set
         End Property
 
@@ -182,23 +158,31 @@ Namespace Xeora.Web.Controller
             End Get
         End Property
 
+        ' -1 : not set, 0 : true, 1 : false
+        Private _InRequestedUpdateBlock As Integer = -1
         Public ReadOnly Property InRequestedUpdateBlock() As Boolean
             Get
                 Dim rBoolean As Boolean =
                     String.IsNullOrEmpty(Me.UpdateBlockControlID)
 
                 If Not rBoolean Then
-                    Dim ControllerBase As ControllerBase = Me
+                    If Me._InRequestedUpdateBlock = -1 Then
+                        Dim ControllerBase As ControllerBase = Me
 
-                    Do Until ControllerBase.Parent Is Nothing
-                        If TypeOf ControllerBase Is Directive.UpdateBlock Then
-                            rBoolean = (String.Compare(CType(ControllerBase, Directive.UpdateBlock).ControlID, Me.UpdateBlockControlID) = 0)
+                        Do Until ControllerBase.Parent Is Nothing
+                            If TypeOf ControllerBase Is Directive.UpdateBlock Then
+                                Me._InRequestedUpdateBlock = String.Compare(CType(ControllerBase, Directive.UpdateBlock).ControlID, Me.UpdateBlockControlID)
 
-                            Exit Do
-                        End If
+                                Exit Do
+                            End If
 
-                        ControllerBase = ControllerBase.Parent
-                    Loop
+                            ControllerBase = ControllerBase.Parent
+                        Loop
+
+                        If Me._InRequestedUpdateBlock = -1 Then Me._InRequestedUpdateBlock = 1
+                    End If
+
+                    rBoolean = (Me._InRequestedUpdateBlock = 0)
                 End If
 
                 Return rBoolean
@@ -285,24 +269,18 @@ Namespace Xeora.Web.Controller
         Private Sub FireRenderCompleted()
             If Not TypeOf Me Is Directive.INamable Then Exit Sub
 
-            Dim ControllerBase As ControllerBase = Me
-
-            Do Until ControllerBase.Parent Is Nothing
-                ControllerBase = ControllerBase.Parent
-            Loop
-
             Dim NamedItem As Directive.INamable =
                 CType(Me, Directive.INamable)
 
-            If Not ControllerBase._BoundPool Is Nothing AndAlso
-                ControllerBase._BoundPool.ContainsKey(NamedItem.ControlID) AndAlso
-                Not CType(ControllerBase._BoundPool.Item(NamedItem.ControlID)(0), Boolean) AndAlso
-                Not ControllerBase._BoundPool.Item(NamedItem.ControlID)(1) Is Nothing Then
+            If Not Me.TopLevelParent._BoundPool Is Nothing AndAlso
+                Me.TopLevelParent._BoundPool.ContainsKey(NamedItem.ControlID) AndAlso
+                Not CType(Me.TopLevelParent._BoundPool.Item(NamedItem.ControlID)(0), Boolean) AndAlso
+                Not Me.TopLevelParent._BoundPool.Item(NamedItem.ControlID)(1) Is Nothing Then
 
-                CType(ControllerBase._BoundPool.Item(NamedItem.ControlID)(1), RenderCompletedDelegate).Invoke(Me)
+                CType(Me.TopLevelParent._BoundPool.Item(NamedItem.ControlID)(1), RenderCompletedDelegate).Invoke(Me)
 
-                ControllerBase._BoundPool.Item(NamedItem.ControlID)(0) = True
-                ControllerBase._BoundPool.Item(NamedItem.ControlID)(1) = Me
+                Me.TopLevelParent._BoundPool.Item(NamedItem.ControlID)(0) = True
+                Me.TopLevelParent._BoundPool.Item(NamedItem.ControlID)(1) = Me
             End If
 
         End Sub
@@ -317,24 +295,18 @@ Namespace Xeora.Web.Controller
             If Me._BoundControlRenderWaiting Then Exit Sub
             Me._MultiCastDelegate = New RenderCompletedDelegate(AddressOf Me.Render)
 
-            Dim ControllerBase As ControllerBase = Me
+            If Me.TopLevelParent._BoundPool Is Nothing Then _
+                Me.TopLevelParent._BoundPool = New Generic.Dictionary(Of String, Object())
 
-            Do Until ControllerBase.Parent Is Nothing
-                ControllerBase = ControllerBase.Parent
-            Loop
+            If Not Me.TopLevelParent._BoundPool.ContainsKey(ControlID) Then _
+                Me.TopLevelParent._BoundPool.Add(ControlID, New Object() {False, Nothing})
 
-            If ControllerBase._BoundPool Is Nothing Then _
-                ControllerBase._BoundPool = New Generic.Dictionary(Of String, Object())
-
-            If Not ControllerBase._BoundPool.ContainsKey(ControlID) Then _
-                ControllerBase._BoundPool.Add(ControlID, New Object() {False, Nothing})
-
-            If Not CType(ControllerBase._BoundPool.Item(ControlID)(0), Boolean) Then
-                If ControllerBase._BoundPool.Item(ControlID)(1) Is Nothing Then
-                    ControllerBase._BoundPool.Item(ControlID)(1) = CType(Me._MultiCastDelegate.Clone(), [Delegate])
+            If Not CType(Me.TopLevelParent._BoundPool.Item(ControlID)(0), Boolean) Then
+                If Me.TopLevelParent._BoundPool.Item(ControlID)(1) Is Nothing Then
+                    Me.TopLevelParent._BoundPool.Item(ControlID)(1) = CType(Me._MultiCastDelegate.Clone(), [Delegate])
                 Else
-                    ControllerBase._BoundPool.Item(ControlID)(1) =
-                        [Delegate].Combine(CType(ControllerBase._BoundPool.Item(ControlID)(1), [Delegate]), Me._MultiCastDelegate)
+                    Me.TopLevelParent._BoundPool.Item(ControlID)(1) =
+                        [Delegate].Combine(CType(Me.TopLevelParent._BoundPool.Item(ControlID)(1), [Delegate]), Me._MultiCastDelegate)
                 End If
 
                 Me._BoundControlRenderWaiting = True
@@ -342,33 +314,27 @@ Namespace Xeora.Web.Controller
                 Me._BoundControlRenderWaiting = True
 
                 CType(Me._MultiCastDelegate, RenderCompletedDelegate).Invoke(
-                    CType(ControllerBase._BoundPool.Item(ControlID)(1), ControllerBase))
+                    CType(Me.TopLevelParent._BoundPool.Item(ControlID)(1), ControllerBase))
             End If
         End Sub
 
         Protected Sub UnRegisterFromRenderCompletedOf(ByVal ControlID As String)
             If Not Me._BoundControlRenderWaiting Then Exit Sub
 
-            Dim ControllerBase As ControllerBase = Me
+            If Not Me.TopLevelParent._BoundPool Is Nothing AndAlso
+                Me.TopLevelParent._BoundPool.ContainsKey(ControlID) AndAlso
+                Not CType(Me.TopLevelParent._BoundPool.Item(ControlID)(0), Boolean) AndAlso
+                Not Me.TopLevelParent._BoundPool.Item(ControlID)(1) Is Nothing Then
 
-            Do Until ControllerBase.Parent Is Nothing
-                ControllerBase = ControllerBase.Parent
-            Loop
-
-            If Not ControllerBase._BoundPool Is Nothing AndAlso
-                ControllerBase._BoundPool.ContainsKey(ControlID) AndAlso
-                Not CType(ControllerBase._BoundPool.Item(ControlID)(0), Boolean) AndAlso
-                Not ControllerBase._BoundPool.Item(ControlID)(1) Is Nothing Then
-
-                ControllerBase._BoundPool.Item(ControlID)(1) =
-                    [Delegate].Remove(CType(ControllerBase._BoundPool.Item(ControlID)(1), [Delegate]), Me._MultiCastDelegate)
+                Me.TopLevelParent._BoundPool.Item(ControlID)(1) =
+                    [Delegate].Remove(CType(Me.TopLevelParent._BoundPool.Item(ControlID)(1), [Delegate]), Me._MultiCastDelegate)
             End If
 
             Me._BoundControlRenderWaiting = False
             Me._MultiCastDelegate = Nothing
         End Sub
 
-        Protected Shared Function ProvideDummyController(ByRef Parent As ControllerBase, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection) As ControllerBase
+        Protected Shared Function ProvideDummyController(ByRef Parent As ControllerBase, ByVal ContentArguments As [Global].ArgumentInfoCollection) As ControllerBase
             Dim DummyControllerContainer As New RenderlessController(0, String.Empty, ContentArguments)
             DummyControllerContainer._Parent = Parent
 

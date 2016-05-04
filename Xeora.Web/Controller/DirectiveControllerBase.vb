@@ -19,7 +19,7 @@ Namespace Xeora.Web.Controller
             Undefined
         End Enum
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal DirectiveType As DirectiveTypes, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal DirectiveType As DirectiveTypes, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ControllerTypes.Directive, ContentArguments)
 
             Me._DirectiveType = DirectiveType

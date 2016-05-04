@@ -8,7 +8,7 @@ Namespace Xeora.Web.Controller.Directive.Control
 
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ControlTypes.DataList, ContentArguments)
         End Sub
 
@@ -172,7 +172,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                                     Dim RepeaterList As ControlResult.PartialDataTable =
                                         CType(BindInvokeResult.InvokeResult, ControlResult.PartialDataTable)
 
-                                    Dim DataListArgs As New [Global].ArgumentInfo.ArgumentInfoCollection
+                                    Dim DataListArgs As New [Global].ArgumentInfoCollection
 
                                     If Not RepeaterList.Message Is Nothing Then
                                         Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
@@ -180,8 +180,8 @@ Namespace Xeora.Web.Controller.Directive.Control
                                         If String.IsNullOrEmpty(MessageTemplate) Then
                                             Me.DefineRenderedValue(RepeaterList.Message.Message)
                                         Else
-                                            DataListArgs.Add("MessageType", RepeaterList.Message.Type)
-                                            DataListArgs.Add("Message", RepeaterList.Message.Message)
+                                            DataListArgs.AppendKeyWithValue("MessageType", RepeaterList.Message.Type)
+                                            DataListArgs.AppendKeyWithValue("Message", RepeaterList.Message.Message)
 
                                             Dim DummyControllerContainer As ControllerBase =
                                                 ControllerBase.ProvideDummyController(Me, DataListArgs)
@@ -197,15 +197,26 @@ Namespace Xeora.Web.Controller.Directive.Control
                                         Dim ContentIndex As Integer = 0, rC As Integer = 0
                                         Dim IsItemIndexColumnExists As Boolean = False
 
-                                        For Each dR As DataRow In RepeaterList.Rows
-                                            DataListArgs.Add("_sys_ItemIndex", rC)
-                                            For Each dC As DataColumn In RepeaterList.Columns
-                                                If CompareCulture.CompareInfo.Compare(dC.ColumnName, "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
+                                        For Each dC As DataColumn In RepeaterList.Columns
+                                            If CompareCulture.CompareInfo.Compare(dC.ColumnName, "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
 
-                                                DataListArgs.Add(dC.ColumnName, dR.Item(dC.ColumnName))
-                                            Next
-                                            ' this is for user interaction
-                                            If Not IsItemIndexColumnExists Then DataListArgs.Add("ItemIndex", rC)
+                                            DataListArgs.AppendKey(dC.ColumnName)
+                                        Next
+                                        DataListArgs.AppendKey("_sys_ItemIndex") : RepeaterList.Columns.Add("_sys_ItemIndex", GetType(Integer))
+                                        ' this is for user interaction
+                                        If Not IsItemIndexColumnExists Then DataListArgs.AppendKey("ItemIndex") : RepeaterList.Columns.Add("ItemIndex", GetType(Integer))
+
+                                        For Each dR As DataRow In RepeaterList.Rows
+                                            Dim dRValues As Object() = dR.ItemArray
+
+                                            If Not IsItemIndexColumnExists Then
+                                                dRValues(dRValues.Length - 2) = rC
+                                                dRValues(dRValues.Length - 1) = rC
+                                            Else
+                                                dRValues(dRValues.Length - 1) = rC
+                                            End If
+
+                                            DataListArgs.Reset(dRValues)
 
                                             ContentIndex = rC Mod ContentCollection.Length
 
@@ -225,7 +236,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                                     Dim DataReaderInfo As ControlResult.DirectDataAccess =
                                         CType(BindInvokeResult.InvokeResult, ControlResult.DirectDataAccess)
 
-                                    Dim DataListArgs As New [Global].ArgumentInfo.ArgumentInfoCollection
+                                    Dim DataListArgs As New [Global].ArgumentInfoCollection
 
                                     If DataReaderInfo.DatabaseCommand Is Nothing Then
                                         If Not DataReaderInfo.Message Is Nothing Then
@@ -234,8 +245,8 @@ Namespace Xeora.Web.Controller.Directive.Control
                                             If String.IsNullOrEmpty(MessageTemplate) Then
                                                 Me.DefineRenderedValue(DataReaderInfo.Message.Message)
                                             Else
-                                                DataListArgs.Add("MessageType", DataReaderInfo.Message.Type)
-                                                DataListArgs.Add("Message", DataReaderInfo.Message.Message)
+                                                DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
+                                                DataListArgs.AppendKeyWithValue("Message", DataReaderInfo.Message.Message)
 
                                                 Dim DummyControllerContainer As ControllerBase =
                                                     ControllerBase.ProvideDummyController(Me, DataListArgs)
@@ -267,14 +278,16 @@ Namespace Xeora.Web.Controller.Directive.Control
 
                                             If DBReader.Read() Then
                                                 Do
-                                                    DataListArgs.Add("_sys_ItemIndex", rC)
+                                                    DataListArgs.Reset()
+
                                                     For cC As Integer = 0 To DBReader.FieldCount - 1
                                                         If CompareCulture.CompareInfo.Compare(DBReader.GetName(cC), "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
 
-                                                        DataListArgs.Add(DBReader.GetName(cC), DBReader.GetValue(cC))
+                                                        DataListArgs.AppendKeyWithValue(DBReader.GetName(cC), DBReader.GetValue(cC))
                                                     Next
+                                                    DataListArgs.AppendKeyWithValue("_sys_ItemIndex", rC)
                                                     ' this is for user interaction
-                                                    If Not IsItemIndexColumnExists Then DataListArgs.Add("ItemIndex", rC)
+                                                    If Not IsItemIndexColumnExists Then DataListArgs.AppendKeyWithValue("ItemIndex", rC)
 
                                                     ContentIndex = rC Mod ContentCollection.Length
 
@@ -297,8 +310,8 @@ Namespace Xeora.Web.Controller.Directive.Control
                                                     If String.IsNullOrEmpty(MessageTemplate) Then
                                                         Me.DefineRenderedValue(DataReaderInfo.Message.Message)
                                                     Else
-                                                        DataListArgs.Add("MessageType", DataReaderInfo.Message.Type)
-                                                        DataListArgs.Add("Message", DataReaderInfo.Message.Message)
+                                                        DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
+                                                        DataListArgs.AppendKeyWithValue("Message", DataReaderInfo.Message.Message)
 
                                                         Dim DummyControllerContainer As ControllerBase =
                                                             ControllerBase.ProvideDummyController(Me, DataListArgs)
@@ -335,8 +348,8 @@ Namespace Xeora.Web.Controller.Directive.Control
                                                 If String.IsNullOrEmpty(MessageTemplate) Then
                                                     Me.DefineRenderedValue(DataReaderInfo.Message.Message)
                                                 Else
-                                                    DataListArgs.Add("MessageType", DataReaderInfo.Message.Type)
-                                                    DataListArgs.Add("Message", DataReaderInfo.Message.Message)
+                                                    DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
+                                                    DataListArgs.AppendKeyWithValue("Message", DataReaderInfo.Message.Message)
 
                                                     Dim DummyControllerContainer As ControllerBase =
                                                         ControllerBase.ProvideDummyController(Me, DataListArgs)

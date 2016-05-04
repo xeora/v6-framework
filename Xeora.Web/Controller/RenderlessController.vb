@@ -4,7 +4,7 @@ Namespace Xeora.Web.Controller
     Public Class RenderlessController
         Inherits ControllerBase
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ControllerTypes.Renderless, ContentArguments)
         End Sub
 

@@ -18,7 +18,7 @@ Namespace Xeora.Web.Controller.Directive
         Public Event ParseRequested(DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.InLineStatement, ContentArguments)
 
             Me._ControlID = Me.CaptureControlID()

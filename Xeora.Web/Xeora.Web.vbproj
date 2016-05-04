@@ -186,7 +186,7 @@
     </Compile>
     <Compile Include="Controller\Directive\Interface\IParsingRequires.vb" />
     <Compile Include="Controller\RenderlessController.vb" />
-    <Compile Include="Global\ArgumentInfo.vb" />
+    <Compile Include="Global\ArgumentInfoCollection.vb" />
     <Compile Include="Controller\ControllerBase.vb" />
     <Compile Include="Controller\Directive\HashCodePointedTemplate.vb" />
     <Compile Include="Controller\DirectiveControllerBase.vb" />

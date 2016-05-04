@@ -50,7 +50,7 @@ Namespace Xeora.Web.Controller.Directive
             Unknown
         End Enum
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ControlType As ControlTypes, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ControlType As ControlTypes, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.Control, ContentArguments)
 
             Me._ControlID = Me.CaptureControlID()
@@ -150,7 +150,7 @@ Namespace Xeora.Web.Controller.Directive
             Return rControlType
         End Function
 
-        Public Shared Function MakeControl(ByVal DraftIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection, ByVal ControlMapNavigatorRequested As IControl.ControlMapNavigatorRequestedEventHandler) As ControlBase
+        Public Shared Function MakeControl(ByVal DraftIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection, ByVal ControlMapNavigatorRequested As IControl.ControlMapNavigatorRequestedEventHandler) As ControlBase
             Dim rControl As ControlBase = Nothing
 
             ' Dummy Control just to check the Control Type
@@ -202,7 +202,7 @@ Namespace Xeora.Web.Controller.Directive
                 If Not XPathNavigator Is Nothing Then
                     Dim XPathControlNav As XPathNavigator
 
-                    XPathControlNav = XPathNavigator.SelectSingleNode(String.Format("//Control[@id='{0}']", Me.ControlID))
+                    XPathControlNav = XPathNavigator.SelectSingleNode(String.Format("/Controls/Control[@id='{0}']", Me.ControlID))
 
                     If Not XPathControlNav Is Nothing AndAlso
                         XPathControlNav.MoveToFirstChild() Then
@@ -237,7 +237,7 @@ Namespace Xeora.Web.Controller.Directive
                 If Not XPathNavigator Is Nothing Then
                     Dim XPathControlNav As XPathNavigator
 
-                    XPathControlNav = XPathNavigator.SelectSingleNode(String.Format("//Control[@id='{0}']", Me.ControlID))
+                    XPathControlNav = XPathNavigator.SelectSingleNode(String.Format("/Controls/Control[@id='{0}']", Me.ControlID))
 
                     If Not XPathControlNav Is Nothing AndAlso
                         XPathControlNav.MoveToFirstChild() Then
@@ -348,13 +348,21 @@ Namespace Xeora.Web.Controller.Directive
             If Not Me.BindInfo Is Nothing AndAlso
                 Not Me.BindInfo.ProcedureParams Is Nothing Then
 
+                Dim ProcedureParams As String() =
+                    CType(Array.CreateInstance(GetType(String), Me.BindInfo.ProcedureParams.Length), String())
+
+                ' Render Params One By One (this render process is mainly controls with bind which fired when a control get interaction with user)
+                ' The aim is rendering static values comes from dinamic ones like =$#SomeID$
                 Dim DummyControllerContainer As ControllerBase
                 For pC As Integer = 0 To Me.BindInfo.ProcedureParams.Length - 1
                     DummyControllerContainer = ControllerBase.ProvideDummyController(Me, Me.ContentArguments)
                     Me.RequestParse(Me.BindInfo.ProcedureParams(pC).Query, DummyControllerContainer)
                     DummyControllerContainer.Render(Me)
-                    Me.BindInfo.ProcedureParams(pC).Value = DummyControllerContainer.RenderedValue
+                    ProcedureParams(pC) = DummyControllerContainer.RenderedValue
                 Next
+                ' !---
+
+                Me.BindInfo.OverrideProcedureParameters(ProcedureParams)
             End If
         End Sub
 

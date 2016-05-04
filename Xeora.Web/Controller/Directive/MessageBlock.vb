@@ -10,7 +10,7 @@ Namespace Xeora.Web.Controller.Directive
 
         Public Event ParseRequested(ByVal DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.MessageBlock, ContentArguments)
         End Sub
 
@@ -42,8 +42,8 @@ Namespace Xeora.Web.Controller.Directive
                             If Not BlockContent Is Nothing AndAlso
                                 BlockContent.Trim().Length > 0 Then
 
-                                Me.ContentArguments.Add("MessageType", Me.MessageResult.Type)
-                                Me.ContentArguments.Add("Message", Me.MessageResult.Message)
+                                Me.ContentArguments.AppendKeyWithValue("MessageType", Me.MessageResult.Type)
+                                Me.ContentArguments.AppendKeyWithValue("Message", Me.MessageResult.Message)
 
                                 RaiseEvent ParseRequested(BlockContent, Me)
 

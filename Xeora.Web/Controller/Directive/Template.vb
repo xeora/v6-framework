@@ -17,7 +17,7 @@ Namespace Xeora.Web.Controller.Directive
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
         Public Event DeploymentAccessRequested(ByRef WorkingInstance As IDomain, ByRef DomainDeployment As DomainDeployment) Implements IDeploymentAccessRequires.DeploymentAccessRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.Template, ContentArguments)
 
             Me._ControlID = Me.CaptureControlID()

@@ -13,7 +13,7 @@ Namespace Xeora.Web.Controller
 
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ControllerTypes.Property, ContentArguments)
 
             Me._ObjectResult = Nothing
@@ -96,7 +96,7 @@ Namespace Xeora.Web.Controller
                                 If RequestFileObjects.Count = 0 Then
                                     If String.Compare([Shared].Helpers.Context.Request.HttpMethod, "POST", True) = 0 Then
                                         Dim ControlSIM As Hashtable =
-                                            CType(Me.ContentArguments.Item("_sys_ControlSIM").Value, Hashtable)
+                                            CType(Me.ContentArguments.Item("_sys_ControlSIM"), Hashtable)
 
                                         If Not ControlSIM Is Nothing AndAlso
                                             ControlSIM.ContainsKey(Me.InsideValue.Substring(1)) Then
@@ -179,14 +179,14 @@ Namespace Xeora.Web.Controller
                                 Loop Until searchContentInfo Is Nothing
 
                                 If Not searchContentInfo Is Nothing Then
-                                    Dim argItem As ArgumentInfo =
+                                    Dim argItem As Object =
                                         searchContentInfo.ContentArguments.Item(searchVariableName)
 
-                                    If Not argItem.Value Is Nothing AndAlso
-                                        Not argItem.Value.GetType() Is GetType(DBNull) Then
+                                    If Not argItem Is Nothing AndAlso
+                                        Not argItem.GetType() Is GetType(DBNull) Then
 
-                                        Me.DefineRenderedValue(argItem.Value.ToString())
-                                        Me._ObjectResult = argItem.Value
+                                        Me.DefineRenderedValue(argItem.ToString())
+                                        Me._ObjectResult = argItem
                                     Else
                                         Me.DefineRenderedValue(String.Empty)
                                         Me._ObjectResult = Nothing
@@ -207,13 +207,13 @@ Namespace Xeora.Web.Controller
 
                                 ' Search In DataFields (GlobalArguments, ContentArguments)
                                 If searchArgValue Is Nothing Then
-                                    Dim argItem As ArgumentInfo =
+                                    Dim argItem As Object =
                                         Me.ContentArguments.Item(searchArgName)
 
-                                    If Not argItem.Value Is Nothing AndAlso
-                                        Not argItem.Value.GetType() Is GetType(DBNull) Then
+                                    If Not argItem Is Nothing AndAlso
+                                        Not argItem.GetType() Is GetType(DBNull) Then
 
-                                        searchArgValue = argItem.Value
+                                        searchArgValue = argItem
                                     Else
                                         searchArgValue = Nothing
                                     End If
@@ -227,7 +227,7 @@ Namespace Xeora.Web.Controller
                                     String.Compare([Shared].Helpers.Context.Request.HttpMethod, "POST", True) = 0 Then
 
                                     Dim ControlSIM As Hashtable =
-                                        CType(Me.ContentArguments.Item("_sys_ControlSIM").Value, Hashtable)
+                                        CType(Me.ContentArguments.Item("_sys_ControlSIM"), Hashtable)
 
                                     If Not ControlSIM Is Nothing AndAlso
                                         ControlSIM.ContainsKey(searchArgName) Then
@@ -286,10 +286,10 @@ Namespace Xeora.Web.Controller
                                             Loop Until searchContentInfo Is Nothing
 
                                             If Not searchContentInfo Is Nothing Then
-                                                Dim argItem As ArgumentInfo =
+                                                Dim argItem As Object =
                                                     searchContentInfo.ContentArguments.Item(searchVariableName)
 
-                                                If Not argItem.Value Is Nothing Then ArgumentQueryObject = argItem.Value
+                                                If Not argItem Is Nothing Then ArgumentQueryObject = argItem
                                             End If
 
                                         Case Else
@@ -360,7 +360,7 @@ Namespace Xeora.Web.Controller
         Public Shared Function ParseProperty(
                             ByVal [Property] As String,
                             ByRef Parent As ControllerBase,
-                            ByVal ContentArguments As ArgumentInfo.ArgumentInfoCollection,
+                            ByVal ContentArguments As ArgumentInfoCollection,
                             ByVal Handler As IInstanceRequires.InstanceRequestedEventHandler) As Object
 
             Dim rObject As Object = Nothing
