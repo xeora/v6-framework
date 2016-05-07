@@ -187,7 +187,11 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
 
                         Me.Filter()
                     Case Else
-                        rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+                        Try
+                            rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+                        Catch ex As Exception
+                            ' Just Handle Exceptions
+                        End Try
                 End Select
             End If
 

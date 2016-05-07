@@ -1,6 +1,6 @@
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
   <Metadata>
-    <Identity Id="XeoraCube.Extension.2398de3f-5623-4455-aa52-7ac72ebbf6e4" Version="3.0.7" Language="en-US" Publisher="Tuna Celik" />
+    <Identity Id="XeoraCube.Extension.2398de3f-5623-4455-aa52-7ac72ebbf6e4" Version="3.0.8" Language="en-US" Publisher="Tuna Celik" />
     <DisplayName>XeoraCube Visual Studio Editor Extension</DisplayName>
     <Description xml:space="preserve">For more information about XeoraCube, see the XeoraCube website at
 http://www.xeora.org/
