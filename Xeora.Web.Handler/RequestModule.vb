@@ -176,8 +176,7 @@ Namespace Xeora.Web.Handler
                 RootPath = RootPath.Insert(0, [Shared].Configurations.VirtualRoot)
 
                 app.Context.Response.Clear()
-                app.Context.Response.Redirect(RootPath)
-                app.Context.Response.End()
+                app.Context.Response.Redirect(RootPath, True)
 
                 Exit Sub
             End If
@@ -371,10 +370,8 @@ Namespace Xeora.Web.Handler
 
             RequestModule._QuickAccess.Dispose()
 
-            If Not Context Is Nothing Then
-                Context.Response.Redirect(Context.Request.RawUrl)
-                Context.Response.End()
-            End If
+            If Not Context Is Nothing Then _
+                Context.Response.Redirect(Context.Request.RawUrl, True)
         End Sub
 
         Public Shared ReadOnly Property VariablePool() As Site.Service.VariablePool

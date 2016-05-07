@@ -71,6 +71,10 @@ Namespace Xeora.Web.Controller.Directive.Control
                 Throw New Exception.GrammerException()
             End If
 
+            ' ConditionalStatment does not have any ContentArguments, That's why it copies it's parent Arguments
+            If Not Me.Parent Is Nothing Then _
+                Me.ContentArguments.Replace(Me.Parent.ContentArguments)
+
             ' ControlIDWithIndex Like ControlID~INDEX
             Dim ControlIDWithIndex As String = BlockContent.Substring(0, idxCon)
 
@@ -93,10 +97,6 @@ Namespace Xeora.Web.Controller.Directive.Control
                 Dim ContentCollection As String() = Me.SplitContentByControlIDWithIndex(CoreContent, ControlIDWithIndex)
 
                 If ContentCollection.Length > 0 Then
-                    ' ConditionalStatment does not have any ContentArguments, That's why it copies it's parent Arguments
-                    If Not Me.Parent Is Nothing Then _
-                        Me.ContentArguments.Replace(Me.Parent.ContentArguments)
-
                     For mC As Integer = 0 To ContentCollection.Length - 1
                         Select Case mC
                             Case 0

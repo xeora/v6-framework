@@ -21,6 +21,10 @@ Namespace Xeora.Web.Controller.Directive
                 Exit Sub
             End If
 
+            ' EncodedExecution does not have any ContentArguments, That's why it copies it's parent Arguments
+            If Not Me.Parent Is Nothing Then _
+                Me.ContentArguments.Replace(Me.Parent.ContentArguments)
+
             Dim matchXF As Text.RegularExpressions.Match =
                 Text.RegularExpressions.Regex.Match(Me.InsideValue, "XF~\d+\:\{")
 

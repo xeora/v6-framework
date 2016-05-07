@@ -99,6 +99,10 @@ Namespace Xeora.Web.Controller.Directive
                 Throw New Exception.GrammerException()
             End If
 
+            ' InLineStatement does not have any ContentArguments, That's why it copies it's parent Arguments
+            If Not Me.Parent Is Nothing Then _
+                Me.ContentArguments.Replace(Me.Parent.ContentArguments)
+
             ' ControlIDWithIndex Like ControlID~INDEX
             Dim ControlIDWithIndex As String = BlockContent.Substring(0, idxCon)
 

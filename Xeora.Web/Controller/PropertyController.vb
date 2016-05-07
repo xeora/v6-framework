@@ -169,10 +169,14 @@ Namespace Xeora.Web.Controller
                                     searchVariableName = searchVariableName.Substring(1)
 
                                     If searchVariableName.IndexOf("#") = 0 Then
-                                        searchContentInfo = searchContentInfo.Parent
-
-                                        If TypeOf searchContentInfo Is RenderlessController Then _
+                                        Do
                                             searchContentInfo = searchContentInfo.Parent
+
+                                            ' Only Controls that have own contents such as Datalist, VariableBlock and MessageBlock!
+                                        Loop Until searchContentInfo Is Nothing OrElse
+                                            TypeOf searchContentInfo Is Control.DataList OrElse
+                                            TypeOf searchContentInfo Is Control.VariableBlock OrElse
+                                            TypeOf searchContentInfo Is MessageBlock
                                     Else
                                         Exit Do
                                     End If
@@ -276,10 +280,14 @@ Namespace Xeora.Web.Controller
                                                 searchVariableName = searchVariableName.Substring(1)
 
                                                 If searchVariableName.IndexOf("#") = 0 Then
-                                                    searchContentInfo = searchContentInfo.Parent
-
-                                                    If TypeOf searchContentInfo Is RenderlessController Then _
+                                                    Do
                                                         searchContentInfo = searchContentInfo.Parent
+
+                                                        ' Only Controls that have own contents such as Datalist, VariableBlock and MessageBlock!
+                                                    Loop Until searchContentInfo Is Nothing OrElse
+                                                        TypeOf searchContentInfo Is Control.DataList OrElse
+                                                        TypeOf searchContentInfo Is Control.VariableBlock OrElse
+                                                        TypeOf searchContentInfo Is MessageBlock
                                                 Else
                                                     Exit Do
                                                 End If

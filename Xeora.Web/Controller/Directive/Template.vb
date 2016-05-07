@@ -127,6 +127,10 @@ Namespace Xeora.Web.Controller.Directive
         Private Sub RenderInternal(ByRef WorkingInstance As IDomain, ByRef SenderController As ControllerBase)
             Dim TemplateContent As String = String.Empty
 
+            ' Template does not have any ContentArguments, That's why it copies it's parent Arguments
+            If Not Me.Parent Is Nothing Then _
+                Me.ContentArguments.Replace(Me.Parent.ContentArguments)
+
             Dim DomainDeployment As DomainDeployment = Nothing
             RaiseEvent DeploymentAccessRequested(WorkingInstance, DomainDeployment)
             If Not DomainDeployment Is Nothing Then
