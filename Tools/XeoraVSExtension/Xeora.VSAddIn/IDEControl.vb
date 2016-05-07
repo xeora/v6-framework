@@ -833,6 +833,7 @@ RESEARCHPOINT:
                     Dim DownloadProgress As New Tools.DownloadProgress()
                     DownloadProgress.StartDownloading(IO.Path.Combine(WorkingFolder, "bin"), (ReleaseVersion = 2), Me._Parent)
 
+                    ' TODO: SHOW RELEASE NOTES!
                     If DownloadProgress.DialogResult = DialogResult.OK Then
                         For Each File As String In DownloadProgress.DownloadedFiles
                             Dim ItemExists As ProjectItem =

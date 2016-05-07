@@ -63,6 +63,10 @@ Namespace Xeora.VSAddIn.IDE.Command
         End Sub
 
         Private Sub RePullRelease(sender As Object, e As EventArgs)
+            ' First Reload and Release the version already using
+            Me.ReloadExecutableLoader(sender, e)
+
+            ' Then pull the Framework Release
             PackageControl.IDEControl.UserCommands.RePullRelease()
         End Sub
     End Class
