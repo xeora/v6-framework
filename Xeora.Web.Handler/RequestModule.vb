@@ -592,7 +592,7 @@ Namespace Xeora.Web.Handler
             Dim MD5 As Security.Cryptography.MD5 =
                 Security.Cryptography.MD5.Create()
 
-            For Each RealFI As IO.FileInfo In DI.GetFiles()
+            For Each RealFI As IO.FileInfo In DI.GetFiles("*.dll")
                 Dim CacheFileLocation As String =
                     IO.Path.Combine(RequestModule._pApplicationLocation, RealFI.Name)
 
@@ -609,6 +609,8 @@ Namespace Xeora.Web.Handler
 
                         Exit For
                     Else
+                        If RealFI.LastWriteTime.CompareTo(CacheFI.LastWriteTime) = 0 Then Continue For
+
                         Dim RealStream As IO.Stream = Nothing, RealHash As Byte()
                         Dim CacheStream As IO.Stream = Nothing, CacheHash As Byte()
 
