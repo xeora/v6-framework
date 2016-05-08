@@ -192,28 +192,35 @@
             If AssemblyDll Is Nothing Then
                 Throw New IO.FileNotFoundException()
             Else
-                Dim BaseClass As Type =
-                    AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", AssemblyID))
+                Dim AssemblyClasses As Type() =
+                    AssemblyDll.GetTypes()
 
-                If ClassIDs Is Nothing OrElse ClassIDs.Length = 0 Then
-                    For Each nT As Type In BaseClass.GetNestedTypes()
-                        If nT.IsNestedPublic Then rStringList.Add(nT.Name)
-                    Next
-                Else
-                    Dim SearchingClass As Type = BaseClass
+                For Each BaseClass As Type In AssemblyClasses
+                    If String.Compare(BaseClass.Namespace, "Xeora.Domain") = 0 Then
+                        If ClassIDs Is Nothing OrElse ClassIDs.Length = 0 Then
+                            If String.Compare(BaseClass.Name, AssemblyID) <> 0 Then _
+                                rStringList.Add(BaseClass.Name)
+                        Else
+                            If String.Compare(BaseClass.Name, ClassIDs(0)) = 0 Then
+                                Dim SearchingClass As Type = BaseClass
 
-                    For Each ClassID As String In ClassIDs
-                        SearchingClass = SearchingClass.GetNestedType(ClassID)
+                                For cC As Integer = 1 To ClassIDs.Length - 1
+                                    SearchingClass = SearchingClass.GetNestedType(ClassIDs(cC))
 
-                        If SearchingClass Is Nothing Then Exit For
-                    Next
+                                    If SearchingClass Is Nothing Then Exit For
+                                Next
 
-                    If Not SearchingClass Is Nothing Then
-                        For Each nT As Type In SearchingClass.GetNestedTypes()
-                            If nT.IsNestedPublic Then rStringList.Add(nT.Name)
-                        Next
+                                If Not SearchingClass Is Nothing Then
+                                    For Each nT As Type In SearchingClass.GetNestedTypes()
+                                        If nT.IsNestedPublic Then rStringList.Add(nT.Name)
+                                    Next
+                                End If
+
+                                Exit For
+                            End If
+                        End If
                     End If
-                End If
+                Next
             End If
 
             Return rStringList.ToArray()
@@ -232,32 +239,50 @@
             If AssemblyDll Is Nothing Then
                 Throw New IO.FileNotFoundException()
             Else
-                Dim SearchingClass As Type =
-                    AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", AssemblyID))
+                Dim AssemblyClasses As Type() =
+                    AssemblyDll.GetTypes()
 
-                For Each ClassID As String In ClassIDs
-                    SearchingClass = SearchingClass.GetNestedType(ClassID)
+                For Each BaseClass As Type In AssemblyClasses
+                    If String.Compare(BaseClass.Namespace, "Xeora.Domain") = 0 Then
+                        Dim SearchingClass As Type = Nothing
 
-                    If SearchingClass Is Nothing Then Exit For
-                Next
+                        If ClassIDs Is Nothing OrElse ClassIDs.Length = 0 Then
+                            If String.Compare(BaseClass.Name, AssemblyID) = 0 Then _
+                                SearchingClass = BaseClass
+                        Else
+                            If String.Compare(BaseClass.Name, ClassIDs(0)) = 0 Then
+                                SearchingClass = BaseClass
 
-                If Not SearchingClass Is Nothing Then
-                    For Each mI As Reflection.MethodInfo In SearchingClass.GetMethods()
-                        If mI.IsPublic AndAlso mI.IsStatic Then
-                            tStringList = New List(Of String)
+                                For cC As Integer = 1 To ClassIDs.Length - 1
+                                    SearchingClass = SearchingClass.GetNestedType(ClassIDs(cC))
 
-                            Try
-                                For Each pI As System.Reflection.ParameterInfo In mI.GetParameters()
-                                    tStringList.Add(pI.Name)
+                                    If SearchingClass Is Nothing Then Exit For
                                 Next
-                            Catch ex As Exception
-                                tStringList.Add("~PARAMETERSARENOTCOMPILED~")
-                            End Try
-
-                            rObjectList.Add(New Object() {mI.Name, tStringList.ToArray()})
+                            End If
                         End If
-                    Next
-                End If
+
+
+                        If Not SearchingClass Is Nothing Then
+                            For Each mI As Reflection.MethodInfo In SearchingClass.GetMethods()
+                                If mI.IsPublic AndAlso mI.IsStatic Then
+                                    tStringList = New List(Of String)
+
+                                    Try
+                                        For Each pI As System.Reflection.ParameterInfo In mI.GetParameters()
+                                            tStringList.Add(pI.Name)
+                                        Next
+                                    Catch ex As Exception
+                                        tStringList.Add("~PARAMETERSARENOTCOMPILED~")
+                                    End Try
+
+                                    rObjectList.Add(New Object() {mI.Name, tStringList.ToArray()})
+                                End If
+                            Next
+
+                            Exit For
+                        End If
+                    End If
+                Next
             End If
 
             Return rObjectList.ToArray()

@@ -2,6 +2,7 @@ Namespace Xeora.Web.Manager
     <System.Serializable()>
     Public Class Loader
         Inherits System.MarshalByRefObject
+        Implements System.IDisposable
 
         Private _ExecutablesPath As String
         Private _ExecutableName As String
@@ -12,9 +13,13 @@ Namespace Xeora.Web.Manager
 
         Private _MissingFileException As Boolean = False
 
+        Private ExecutableInstance As Object = Nothing
+
         Public Sub New(ByVal ExecutablesPath As String, ByVal ExecutableName As String)
             If String.IsNullOrEmpty(ExecutablesPath) Then Throw New System.ArgumentNullException("ExecutablesPath must not be null!")
             If String.IsNullOrEmpty(ExecutableName) Then Throw New System.ArgumentNullException("ExecutableName must not be null!")
+
+            AddHandler System.AppDomain.CurrentDomain.AssemblyResolve, AddressOf Me.AssemblyResolve
 
             Me._ExecutablesPath = ExecutablesPath
             Me._ExecutableName = ExecutableName
@@ -25,7 +30,7 @@ Namespace Xeora.Web.Manager
                                     )
 
             Try
-                Me._AssemblyDll = System.Reflection.Assembly.LoadFrom(Me._PostBackPath)
+                Me._AssemblyDll = System.Reflection.Assembly.LoadFile(Me._PostBackPath)
             Catch ex As System.IO.FileNotFoundException
                 Me._MissingFileException = True
             Catch ex As System.Exception
@@ -58,6 +63,41 @@ Namespace Xeora.Web.Manager
                 End Try
             End If
         End Sub
+
+        Private Function AssemblyResolve(ByVal sender As Object, ByVal args As System.ResolveEventArgs) As System.Reflection.Assembly
+            Dim rAssembly As System.Reflection.Assembly = Nothing
+
+            Try
+                Dim AssemblyShortName As String =
+                    args.Name.Substring(0, args.Name.IndexOf(","c))
+                Dim AssemblyLocation As String =
+                    System.IO.Path.Combine(
+                        Me._ExecutablesPath,
+                        String.Format("{0}.dll", AssemblyShortName)
+                    )
+
+                If System.IO.File.Exists(AssemblyLocation) Then
+                    rAssembly = System.Reflection.Assembly.LoadFile(AssemblyLocation)
+                Else
+                    Dim DomainAssemblies As System.Reflection.Assembly() =
+                        System.AppDomain.CurrentDomain.GetAssemblies()
+
+                    For Each DomainAssembly As System.Reflection.Assembly In DomainAssemblies
+                        If String.Compare(args.Name, DomainAssembly.FullName) = 0 Then
+                            rAssembly = DomainAssembly
+
+                            Exit For
+                        End If
+                    Next
+                End If
+            Catch ex As System.IO.FileNotFoundException
+                Me._MissingFileException = True
+            Catch ex As System.Exception
+                Throw
+            End Try
+
+            Return rAssembly
+        End Function
 
         Public ReadOnly Property MissingFileException() As Boolean
             Get
@@ -137,18 +177,26 @@ Namespace Xeora.Web.Manager
 
                     If InterfaceType Is Nothing OrElse
                         Not InterfaceType.IsInterface OrElse
-                        (
-                            String.Compare(InterfaceType.FullName, "Xeora.Web.Shared.IDomainExecutable") <> 0
-                        ) Then
+                        String.Compare(InterfaceType.FullName, "Xeora.Web.Shared.IDomainExecutable") <> 0 Then
 
                         Throw New System.Exception("Calling Assembly is not a XeoraCube Executable!")
+                    Else
+                        If ExecutableInstance Is Nothing Then
+                            Try
+                                ExecutableInstance = System.Activator.CreateInstance(ExamInterface)
+                            Catch ex As System.Exception
+                                Throw New System.Exception("Unable to create an instance of XeoraCube Executable!", ex)
+                            End Try
+
+                            ExecutableInstance.GetType().GetMethod("FirstTouch").Invoke(ExecutableInstance, Nothing)
+                        End If
                     End If
                 End If
 
                 Dim AssemblyObject As System.Type, AssemblyMethod As System.Reflection.MethodInfo = Nothing
 
                 If Not ClassNames Is Nothing Then
-                    AssemblyObject = Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}+{1}", Me._ExecutableName, String.Join("+", ClassNames)), True, True)
+                    AssemblyObject = Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", String.Join("+", ClassNames)), True, True)
                 Else
                     AssemblyObject = Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", Me._ExecutableName), True, True)
                 End If
@@ -156,6 +204,10 @@ Namespace Xeora.Web.Manager
                 AssemblyMethod = Me.GetAssemblyMethod(AssemblyObject, FunctionName, FunctionParams, ExecuterType)
 
                 If Not AssemblyMethod Is Nothing Then
+                    Dim ExecutionID As String = System.Guid.NewGuid().ToString()
+
+                    ExecutableInstance.GetType().GetMethod("BeforeExecute").Invoke(ExecutableInstance, New Object() {ExecutionID, AssemblyMethod})
+
                     rObject = AssemblyMethod.Invoke(
                                         AssemblyObject,
                                         System.Reflection.BindingFlags.DeclaredOnly Or
@@ -164,6 +216,8 @@ Namespace Xeora.Web.Manager
                                         FunctionParams,
                                         System.Threading.Thread.CurrentThread.CurrentCulture
                                     )
+
+                    ExecutableInstance.GetType().GetMethod("AfterExecute").Invoke(ExecutableInstance, New Object() {ExecutionID, rObject})
                 Else
                     Dim sB As New System.Text.StringBuilder
 
@@ -444,5 +498,38 @@ Namespace Xeora.Web.Manager
                 Return rResult
             End Function
         End Class
+
+#Region "IDisposable Support"
+        Private disposedValue As Boolean ' To detect redundant calls
+
+        ' IDisposable
+        Protected Overridable Sub Dispose(disposing As Boolean)
+            If Not Me.disposedValue Then
+                If disposing Then
+                    If Not ExecutableInstance Is Nothing Then _
+                        ExecutableInstance.GetType().GetMethod("LastTouch").Invoke(ExecutableInstance, Nothing)
+                End If
+
+                ' TODO: free unmanaged resources (unmanaged objects) and override Finalize() below.
+                ' TODO: set large fields to null.
+            End If
+            Me.disposedValue = True
+        End Sub
+
+        ' TODO: override Finalize() only if Dispose(disposing As Boolean) above has code to free unmanaged resources.
+        'Protected Overrides Sub Finalize()
+        '    ' Do not change this code.  Put cleanup code in Dispose(disposing As Boolean) above.
+        '    Dispose(False)
+        '    MyBase.Finalize()
+        'End Sub
+
+        ' This code added by Visual Basic to correctly implement the disposable pattern.
+        Public Sub Dispose() Implements System.IDisposable.Dispose
+            ' Do not change this code.  Put cleanup code in Dispose(disposing As Boolean) above.
+            Dispose(True)
+            ' TODO: uncomment the following line if Finalize() is overridden above.
+            ' GC.SuppressFinalize(Me)
+        End Sub
+#End Region
     End Class
 End Namespace

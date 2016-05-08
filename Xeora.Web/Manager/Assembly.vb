@@ -192,7 +192,7 @@ Namespace Xeora.Web.Manager
             Return [Assembly].InvokeBind(BindInfo, ExecuterTypes.Undefined)
         End Function
 
-        Private Shared _ExecutableLibrary As New Hashtable
+        Private Shared _ExecutableLibrary As New Generic.Dictionary(Of String, Loader)
         Private Shared _PrivateBinPath As String = Nothing
         Public Overloads Shared Function InvokeBind(ByVal BindInfo As [Shared].Execution.BindInfo, ByVal ExecuterType As ExecuterTypes) As [Shared].Execution.BindInvokeResult
             If BindInfo Is Nothing Then Throw New NoNullAllowedException("Requires bind!")
@@ -212,24 +212,13 @@ Namespace Xeora.Web.Manager
                         )
                     )
 
-            ' Leave this Absolute as like this, check the InvokedObject explanation
-            If Assembly._PrivateBinPath Is Nothing Then _
-                Assembly._PrivateBinPath = System.AppDomain.CurrentDomain.SetupInformation.PrivateBinPath
-
-            If Assembly._PrivateBinPath.IndexOf(ApplicationPath) = -1 Then
-                AppDomain.CurrentDomain.AppendPrivatePath(ApplicationPath)
-
-                Assembly._PrivateBinPath = AppDomain.CurrentDomain.SetupInformation.PrivateBinPath
-            End If
-
             Dim AssemblyKey As String =
                 String.Format("KEY-{0}_{1}", ApplicationPath, BindInfo.ExecutableName)
 
-            Dim ExecutableAppDomain As AppDomain = Nothing
             Dim ExecutableLoader As Loader = Nothing
 
             If Assembly._ExecutableLibrary.ContainsKey(AssemblyKey) Then
-                ExecutableLoader = CType(Assembly._ExecutableLibrary.Item(AssemblyKey), Loader)
+                ExecutableLoader = Assembly._ExecutableLibrary.Item(AssemblyKey)
             Else
                 ExecutableLoader = New Loader(ApplicationPath, BindInfo.ExecutableName)
 
@@ -449,7 +438,13 @@ QUICKEXIT:
         '' !---
 
         Public Shared Sub ClearCache()
-            If Not Assembly._ExecutableLibrary Is Nothing Then Assembly._ExecutableLibrary.Clear()
+            If Not Assembly._ExecutableLibrary Is Nothing Then
+                For Each Key As String In Assembly._ExecutableLibrary.Keys
+                    Assembly._ExecutableLibrary.Item(Key).Dispose()
+                Next
+
+                Assembly._ExecutableLibrary.Clear()
+            End If
             If Not Assembly._InLineStatementExecutables Is Nothing Then Assembly._InLineStatementExecutables.Clear()
         End Sub
 

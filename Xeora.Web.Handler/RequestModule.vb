@@ -200,6 +200,8 @@ Namespace Xeora.Web.Handler
                     )
             End If
 
+            If Me.IsReloadRequired() Then Me.LoadApplication(True)
+
             ' Define a RequestID and ApplicationID for XeoraCube
             app.Context.Items.Add("RequestID", Guid.NewGuid().ToString())
             app.Context.Items.Add("ApplicationID", RequestModule._pApplicationID)
@@ -458,6 +460,12 @@ Namespace Xeora.Web.Handler
                 RequestModule._VPService = New Site.Service.VariablePool()
 
             If ForceReload Then
+                ' Clear CacheFiles' MD5 Hash Cache
+                Me._CacheFileHashCache = Nothing
+
+                ' Clear Assembly Cache On Memory
+                Manager.Assembly.ClearCache()
+
                 RequestModule.VariablePool.UnRegisterVariableFromPool(RequestModule.SESSIONKEYID, "ApplicationID")
                 'RequestModule.VariablePool.ConfirmRegistrations(RequestModule.SESSIONKEYID)
             End If
@@ -570,8 +578,12 @@ Namespace Xeora.Web.Handler
             Return rBoolean
         End Function
 
+        Private _CacheFileHashCache As Dictionary(Of String, Byte()) = Nothing
         Private Function ExamReloadRequirement(ByVal DomainRootPath As String) As Boolean
             Dim rBoolean As Boolean = False
+
+            If Me._CacheFileHashCache Is Nothing Then _
+                Me._CacheFileHashCache = New Dictionary(Of String, Byte())
 
             Dim DomainExecutablesLocation As String =
                 IO.Path.Combine(DomainRootPath, "Executables")
@@ -580,43 +592,49 @@ Namespace Xeora.Web.Handler
             Dim MD5 As Security.Cryptography.MD5 =
                 Security.Cryptography.MD5.Create()
 
-            For Each fI As IO.FileInfo In DI.GetFiles()
-                If Not IO.File.Exists(
-                    IO.Path.Combine(RequestModule._pApplicationLocation, fI.Name)) Then
+            For Each RealFI As IO.FileInfo In DI.GetFiles()
+                Dim CacheFileLocation As String =
+                    IO.Path.Combine(RequestModule._pApplicationLocation, RealFI.Name)
 
+                If Not IO.File.Exists(CacheFileLocation) Then
                     rBoolean = True
 
                     Exit For
                 Else
-                    Dim RealStream As IO.Stream = Nothing
-                    Dim CacheStream As IO.Stream = Nothing
+                    Dim CacheFI As IO.FileInfo =
+                        New IO.FileInfo(CacheFileLocation)
 
-                    Try
-                        RealStream = fI.Open(IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
-                        CacheStream = New IO.FileStream(IO.Path.Combine(RequestModule._pApplicationLocation, fI.Name), IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
-
-                        Dim RealHash As Byte() = MD5.ComputeHash(RealStream)
-                        Dim CacheHash As Byte() = MD5.ComputeHash(CacheStream)
-
-                        If RealHash.Length <> CacheHash.Length Then
-                            rBoolean = True
-                        Else
-                            For bC As Integer = 0 To RealHash.Length - 1
-                                If RealHash(bC) <> CacheHash(bC) Then
-                                    rBoolean = True
-
-                                    Exit For
-                                End If
-                            Next
-                        End If
-                    Catch ex As System.Exception
+                    If RealFI.Length <> CacheFI.Length Then
                         rBoolean = True
-                    Finally
-                        If Not RealStream Is Nothing Then RealStream.Close()
-                        If Not CacheStream Is Nothing Then CacheStream.Close()
-                    End Try
 
-                    If rBoolean Then Exit For
+                        Exit For
+                    Else
+                        Dim RealStream As IO.Stream = Nothing, RealHash As Byte()
+                        Dim CacheStream As IO.Stream = Nothing, CacheHash As Byte()
+
+                        Try
+                            RealStream = RealFI.Open(IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                            RealHash = MD5.ComputeHash(RealStream)
+
+                            If Me._CacheFileHashCache.ContainsKey(CacheFileLocation) Then
+                                CacheHash = Me._CacheFileHashCache.Item(CacheFileLocation)
+                            Else
+                                CacheStream = CacheFI.Open(IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                                CacheHash = MD5.ComputeHash(CacheStream)
+
+                                Me._CacheFileHashCache.Add(CacheFileLocation, CacheHash)
+                            End If
+
+                            rBoolean = Not RealHash.SequenceEqual(CacheHash)
+                        Catch ex As System.Exception
+                            rBoolean = True
+                        Finally
+                            If Not RealStream Is Nothing Then RealStream.Close()
+                            If Not CacheStream Is Nothing Then CacheStream.Close()
+                        End Try
+
+                        If rBoolean Then Exit For
+                    End If
                 End If
             Next
 
@@ -625,7 +643,9 @@ Namespace Xeora.Web.Handler
 
             If DomainChildrenDI.Exists Then
                 For Each ChildDomainDI As IO.DirectoryInfo In DomainChildrenDI.GetDirectories()
-                    Me.LoadDomainExecutables(ChildDomainDI.FullName)
+                    rBoolean = Me.ExamReloadRequirement(ChildDomainDI.FullName)
+
+                    If rBoolean Then Exit For
                 Next
             End If
 
