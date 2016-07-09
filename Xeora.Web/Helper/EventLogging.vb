@@ -143,9 +143,8 @@ Namespace Xeora.Web.Helper
         Private _LoggingCache As Generic.SortedDictionary(Of Long, LoggingObject) = Nothing
 
         Private Sub WriteToCache(ByVal logObj As LoggingObject)
+            Threading.Monitor.Enter(Me._LoggingThreadObject)
             Try
-                Threading.Monitor.Enter(Me._LoggingThreadObject)
-
                 Dim TotalSpan As TimeSpan =
                     Date.Now.Subtract(New Date(2000, 1, 1, 0, 0, 0))
 
@@ -175,9 +174,8 @@ Namespace Xeora.Web.Helper
 
             Dim loggingFS As IO.Stream = Nothing, buffer As Byte()
 
+            System.Threading.Monitor.Enter(Me._LoggingThreadObject)
             Try
-                System.Threading.Monitor.Enter(Me._LoggingThreadObject)
-
                 For Each key As Long In Me._LoggingCache.Keys
                     Dim objLog As LoggingObject =
                         Me._LoggingCache.Item(key)
@@ -197,7 +195,7 @@ Namespace Xeora.Web.Helper
                 Me._LoggingCache.Clear()
             Catch ex As IO.IOException
                 ' Possible reason is file in use. Do nothing and let it run again on next time
-            Catch ex As system.Exception
+            Catch ex As System.Exception
                 Throw
             Finally
                 If Not loggingFS Is Nothing Then loggingFS.Close()
@@ -217,8 +215,6 @@ Namespace Xeora.Web.Helper
                 If disposing Then
                     Me.FlushInternal(True)
                 End If
-
-                ' TODO: free shared unmanaged resources
             End If
             Me.disposedValue = True
         End Sub

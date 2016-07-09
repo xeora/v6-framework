@@ -121,12 +121,13 @@ Namespace Xeora.Web.Controller.Directive.Control
                         End If
                     Loop Until ControllerLevel Is Nothing OrElse Leveling = 0
 
+                    ' Execution preparation should be done at the same level with it's parent. Because of that, send parent as parameters
                     Me.BindInfo.PrepareProcedureParameters(
                         New [Shared].Execution.BindInfo.ProcedureParser(
                             Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
                                 ProcedureParameter.Value = PropertyController.ParseProperty(
                                                                ProcedureParameter.Query,
-                                                               Me,
+                                                               ControllerLevel.Parent,
                                                                CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
                                                                New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
                                                                                                                        RaiseEvent InstanceRequested(Instance)

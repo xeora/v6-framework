@@ -13,6 +13,7 @@ Namespace Xeora.Web.Controller.Directive
         Implements IControl
 
         Private _Leveling As Integer
+        Private _LevelingExecutionOnly As Boolean
         Private _BoundControlID As String
 
         Private _ControlID As String
@@ -54,7 +55,7 @@ Namespace Xeora.Web.Controller.Directive
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.Control, ContentArguments)
 
             Me._ControlID = Me.CaptureControlID()
-            Me._Leveling = Me.CaptureLeveling()
+            Me._Leveling = Me.CaptureLeveling(Me._LevelingExecutionOnly)
             Me._BoundControlID = Me.CaptureBoundControlID()
             Me._SecurityInfo = New SecurityInfos()
             Me._ControlType = Me.CaptureControlType()
@@ -67,6 +68,12 @@ Namespace Xeora.Web.Controller.Directive
         Public ReadOnly Property Level As Integer Implements ILevelable.Level
             Get
                 Return Me._Leveling
+            End Get
+        End Property
+
+        Public ReadOnly Property LevelExecutionOnly As Boolean Implements ILevelable.LevelExecutionOnly
+            Get
+                Return Me._LevelingExecutionOnly
             End Get
         End Property
 

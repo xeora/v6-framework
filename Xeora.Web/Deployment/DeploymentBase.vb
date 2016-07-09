@@ -472,9 +472,9 @@ Namespace Xeora.Web.Deployment
             Return rControlMapContent
         End Function
 
-        Public Sub ClearDeploymentCache()
+        Public Sub ClearCache()
             If Me._DeploymentType = [Shared].DomainInfo.DeploymentTypes.Release Then _
-                Me._Decompiler.ClearStreamBytesCache()
+                Me._Decompiler.ClearCache()
         End Sub
 
 #Region " Xeora Domain Decompiler "
@@ -786,7 +786,7 @@ QUICKEXIT:
                 OutputStream.Seek(0, IO.SeekOrigin.Begin)
             End Sub
 
-            Public Sub ClearStreamBytesCache()
+            Public Sub ClearCache()
                 If Not XeoraDomainDecompiler._StreamBytesCache Is Nothing Then _
                     XeoraDomainDecompiler._StreamBytesCache = Hashtable.Synchronized(New Hashtable)
             End Sub

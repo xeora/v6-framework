@@ -12,7 +12,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
         Private _CurrentSession As ICompletionSession
 
         Private _Broker As ICompletionBroker
-        Private _TextView As ITextView
+        Private _TextView As IWpfTextView
 
         Public Enum Directives
             Tag
@@ -28,7 +28,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
             None
         End Enum
 
-        Public Sub New(ByVal broker As ICompletionBroker, ByVal textView As ITextView)
+        Public Sub New(ByVal broker As ICompletionBroker, ByVal textView As IWpfTextView)
             Me._CurrentSession = Nothing
 
             Me._Broker = broker
@@ -187,11 +187,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
 
                         Me.Filter()
                     Case Else
-                        Try
-                            rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-                        Catch ex As Exception
-                            ' Just Handle Exceptions
-                        End Try
+                        rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
                 End Select
             End If
 

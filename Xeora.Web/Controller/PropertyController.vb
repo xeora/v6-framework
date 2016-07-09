@@ -165,21 +165,34 @@ Namespace Xeora.Web.Controller
                                 Dim searchContentInfo As ControllerBase = Me
                                 Dim searchVariableName As String = Me.InsideValue
 
+                                Dim OutsideOfBlock As Boolean =
+                                    (Me.InsideValue.LastIndexOf("#"c) > 0)
                                 Do
-                                    searchVariableName = searchVariableName.Substring(1)
-
                                     If searchVariableName.IndexOf("#") = 0 Then
                                         Do
                                             searchContentInfo = searchContentInfo.Parent
 
                                             ' Only Controls that have own contents such as Datalist, VariableBlock and MessageBlock!
+                                            ' however, Datalist can have multiple content that's why we should check it this content
+                                            ' parent is Datalist or not
                                         Loop Until searchContentInfo Is Nothing OrElse
-                                            TypeOf searchContentInfo Is Control.DataList OrElse
+                                            TypeOf searchContentInfo.Parent Is Control.DataList OrElse
                                             TypeOf searchContentInfo Is Control.VariableBlock OrElse
                                             TypeOf searchContentInfo Is MessageBlock
                                     Else
-                                        Exit Do
+                                        If TypeOf searchContentInfo Is Control.VariableBlock AndAlso
+                                            CType(searchContentInfo, Control.VariableBlock).Level > 0 AndAlso
+                                            Not CType(searchContentInfo, Control.VariableBlock).LevelExecutionOnly AndAlso
+                                            OutsideOfBlock Then
+
+                                            OutsideOfBlock = False
+                                            searchVariableName = searchVariableName.PadLeft(CType(searchContentInfo, Control.VariableBlock).Level + searchVariableName.Length, "#"c)
+                                        Else
+                                            Exit Do
+                                        End If
                                     End If
+
+                                    searchVariableName = searchVariableName.Substring(1)
                                 Loop Until searchContentInfo Is Nothing
 
                                 If Not searchContentInfo Is Nothing Then
@@ -276,21 +289,34 @@ Namespace Xeora.Web.Controller
                                             Dim searchContentInfo As ControllerBase = Me
                                             Dim searchVariableName As String = ArgumentQueryObjectName
 
+                                            Dim OutsideOfBlock As Boolean =
+                                                (Me.InsideValue.LastIndexOf("#"c) > 0)
                                             Do
-                                                searchVariableName = searchVariableName.Substring(1)
-
                                                 If searchVariableName.IndexOf("#") = 0 Then
                                                     Do
                                                         searchContentInfo = searchContentInfo.Parent
 
                                                         ' Only Controls that have own contents such as Datalist, VariableBlock and MessageBlock!
+                                                        ' however, Datalist can have multiple content that's why we should check it this content
+                                                        ' parent is Datalist or not
                                                     Loop Until searchContentInfo Is Nothing OrElse
-                                                        TypeOf searchContentInfo Is Control.DataList OrElse
+                                                        TypeOf searchContentInfo.Parent Is Control.DataList OrElse
                                                         TypeOf searchContentInfo Is Control.VariableBlock OrElse
                                                         TypeOf searchContentInfo Is MessageBlock
                                                 Else
-                                                    Exit Do
+                                                    If TypeOf searchContentInfo Is Control.VariableBlock AndAlso
+                                                        CType(searchContentInfo, Control.VariableBlock).Level > 0 AndAlso
+                                                        Not CType(searchContentInfo, Control.VariableBlock).LevelExecutionOnly AndAlso
+                                                        OutsideOfBlock Then
+
+                                                        OutsideOfBlock = False
+                                                        searchVariableName = searchVariableName.PadLeft(CType(searchContentInfo, Control.VariableBlock).Level + searchVariableName.Length, "#"c)
+                                                    Else
+                                                        Exit Do
+                                                    End If
                                                 End If
+
+                                                searchVariableName = searchVariableName.Substring(1)
                                             Loop Until searchContentInfo Is Nothing
 
                                             If Not searchContentInfo Is Nothing Then

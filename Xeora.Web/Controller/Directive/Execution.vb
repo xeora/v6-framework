@@ -11,6 +11,7 @@ Namespace Xeora.Web.Controller.Directive
         Implements IInstanceRequires
 
         Private _Leveling As Integer
+        Private _LevelingExecutionOnly As Boolean
         Private _BoundControlID As String
 
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
@@ -18,13 +19,19 @@ Namespace Xeora.Web.Controller.Directive
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.Execution, ContentArguments)
 
-            Me._Leveling = Me.CaptureLeveling()
+            Me._Leveling = Me.CaptureLeveling(Me._LevelingExecutionOnly)
             Me._BoundControlID = Me.CaptureBoundControlID()
         End Sub
 
         Public ReadOnly Property Level As Integer Implements ILevelable.Level
             Get
                 Return Me._Leveling
+            End Get
+        End Property
+
+        Public ReadOnly Property LevelExecutionOnly As Boolean Implements ILevelable.LevelExecutionOnly
+            Get
+                Return Me._LevelingExecutionOnly
             End Get
         End Property
 
@@ -102,12 +109,13 @@ Namespace Xeora.Web.Controller.Directive
                 [Shared].Execution.BindInfo.Make(
                     String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1))
 
+            ' Execution preparation should be done at the same level with it's parent. Because of that, send parent as parameters
             BindInfo.PrepareProcedureParameters(
                         New [Shared].Execution.BindInfo.ProcedureParser(
                             Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
                                 ProcedureParameter.Value = PropertyController.ParseProperty(
                                                                ProcedureParameter.Query,
-                                                               Me,
+                                                               ControllerLevel.Parent,
                                                                CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
                                                                New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
                                                                                                                        RaiseEvent InstanceRequested(Instance)

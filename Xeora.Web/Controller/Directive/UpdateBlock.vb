@@ -7,13 +7,11 @@ Namespace Xeora.Web.Controller.Directive
     Public Class UpdateBlock
         Inherits DirectiveControllerBase
         Implements IParsingRequires
-        Implements IInstanceRequires
         Implements INamable
 
         Private _ControlID As String = String.Empty
 
         Public Event ParseRequested(DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
-        Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.UpdateBlock, ContentArguments)
@@ -84,9 +82,6 @@ Namespace Xeora.Web.Controller.Directive
                 Dim RenderOnRequestMarker As String = "!RENDERONREQUEST"
 
                 If CoreContent.IndexOf(RenderOnRequestMarker) = 0 Then
-                    Dim Instance As IDomain = Nothing
-                    RaiseEvent InstanceRequested(Instance)
-
                     If String.Compare(Me.UpdateBlockControlID, Me.ControlID) = 0 Then
                         CoreContent = CoreContent.Substring(RenderOnRequestMarker.Length)
                     Else

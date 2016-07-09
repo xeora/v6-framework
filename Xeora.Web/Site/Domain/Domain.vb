@@ -105,8 +105,12 @@ Namespace Xeora.Web.Site
             Me._Deployment.ProvideFileStream(FileStream, RequestedFilePath)
         End Sub
 
-        Public Sub ClearDomainCache()
-            Me._Deployment.ClearDeploymentCache()
+        Public Sub ClearCache()
+            ' Clear Template Partial Render Cache
+            Controller.Directive.PartialCache.ClearCache()
+
+            ' Clear Deployment Template Cache
+            Me._Deployment.ClearCache()
         End Sub
 
         Public Function Render(ByVal TemplateID As String, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String Implements [Shared].IDomain.Render
@@ -256,6 +260,8 @@ Namespace Xeora.Web.Site
                                                     WorkingDirective = New Controller.Directive.EncodedExecution(lMatchItem01.Index, PointedOriginalValue, Nothing)
                                                 Case Controller.DirectiveControllerBase.DirectiveTypes.MessageBlock
                                                     WorkingDirective = New Controller.Directive.MessageBlock(lMatchItem01.Index, PointedOriginalValue, Nothing)
+                                                Case Controller.DirectiveControllerBase.DirectiveTypes.PartialCache
+                                                    WorkingDirective = New Controller.Directive.PartialCache(lMatchItem01.Index, PointedOriginalValue, Nothing)
                                             End Select
 
                                             If Not WorkingDirective Is Nothing Then
@@ -311,6 +317,8 @@ Namespace Xeora.Web.Site
                                             WorkingDirective = New Controller.Directive.UpdateBlock(lMatchItem01.Index, lMatchItem01.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.EncodedExecution
                                             WorkingDirective = New Controller.Directive.EncodedExecution(lMatchItem01.Index, lMatchItem01.Value, Nothing)
+                                        Case Controller.DirectiveControllerBase.DirectiveTypes.PartialCache
+                                            WorkingDirective = New Controller.Directive.PartialCache(lMatchItem01.Index, lMatchItem01.Value, Nothing)
                                     End Select
 
                                     If Not WorkingDirective Is Nothing Then

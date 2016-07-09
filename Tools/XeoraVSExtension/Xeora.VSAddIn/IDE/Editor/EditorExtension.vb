@@ -9,7 +9,7 @@ Namespace Xeora.VSAddIn.IDE.Editor
 
         <Export(GetType(ContentTypeDefinition))>
         <Name(EditorExtension.TemplateContentType)>
-        <BaseDefinition("htmlx")>
+        <BaseDefinition("html")>
         Public Property XeoraTemplateContentTypeDefinition As ContentTypeDefinition
 
         <Export(GetType(FileExtensionToContentTypeDefinition))>

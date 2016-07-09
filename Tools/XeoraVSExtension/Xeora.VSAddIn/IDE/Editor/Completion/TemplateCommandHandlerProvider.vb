@@ -23,8 +23,11 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
         <Import()>
         Public Property ServiceProvider() As SVsServiceProvider
 
+        <Import>
+        Public Property ContentTypeRegistryService As IContentTypeRegistryService
+
         Public Sub VsTextViewCreated(ByVal textViewAdapter As IVsTextView) Implements IVsTextViewCreationListener.VsTextViewCreated
-            Dim textView As ITextView = AdapterService.GetWpfTextView(textViewAdapter)
+            Dim textView As IWpfTextView = AdapterService.GetWpfTextView(textViewAdapter)
             If textView Is Nothing Then Exit Sub
 
             Dim filter As TemplateCommandHandler =

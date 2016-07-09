@@ -140,7 +140,8 @@ Namespace Xeora.VSAddIn.IDE.Editor.Highlighter
                         Dim ClosingID As String = MatchItem.Value.Substring(ColonIndex + 1, MatchItem.Length - ColonIndex - 2)
 
                         If String.Compare(ClosingID, "MB") = 0 OrElse
-                            String.Compare(ClosingID, "XF") = 0 Then
+                            String.Compare(ClosingID, "XF") = 0 OrElse
+                            String.Compare(ClosingID, "PC") = 0 Then
 
                             result.Add(
                                 Me.CreateSpan(span, (span.Start + MatchItem.Index + ColonIndex + 1), (MatchItem.Length - ColonIndex - 1), ClassificationTypes.TagAndDirective))

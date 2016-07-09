@@ -16,9 +16,7 @@ Namespace Xeora.Web.Shared
             Set(ByVal value As String)
                 Threading.Monitor.Enter(Helpers._SiteTitles.SyncRoot)
                 Try
-                    If Helpers._SiteTitles.ContainsKey(Helpers.CurrentRequestID) Then _
-                        Helpers._SiteTitles.Remove(Helpers.CurrentRequestID)
-                    Helpers._SiteTitles.Add(Helpers.CurrentRequestID, value)
+                    Helpers._SiteTitles.Item(Helpers.CurrentRequestID) = value
                 Finally
                     Threading.Monitor.Exit(Helpers._SiteTitles.SyncRoot)
                 End Try
@@ -38,9 +36,7 @@ Namespace Xeora.Web.Shared
             Set(ByVal value As String)
                 Threading.Monitor.Enter(Helpers._Favicons.SyncRoot)
                 Try
-                    If Helpers._Favicons.ContainsKey(Helpers.CurrentRequestID) Then _
-                        Helpers._Favicons.Remove(Helpers.CurrentRequestID)
-                    Helpers._Favicons.Add(Helpers.CurrentRequestID, value)
+                    Helpers._Favicons.Item(Helpers.CurrentRequestID) = value
                 Finally
                     Threading.Monitor.Exit(Helpers._Favicons.SyncRoot)
                 End Try
@@ -295,18 +291,18 @@ Namespace Xeora.Web.Shared
                     String.Format("{0}_DomainIDAccessTree", Configurations.VirtualRoot.Replace("/"c, "_"c))
 
                 If Helpers.IsCookiless Then
-                    SyncLock Helpers.Context.Session.SyncRoot
-                        Try
-                            Helpers.Context.Session.Contents.Item(SearchString) = Value
-                        Catch ex As Exception
-                            ' Just Handle Exceptions
-                            ' TODO: Must investigate SESSION "KEY ADDED" PROBLEMS
-                        End Try
-                    End SyncLock
+                    'SyncLock Helpers.Context.Session.SyncRoot
+                    '    Try
+                    Helpers.Context.Session.Contents.Item(SearchString) = Value
+                    '    Catch ex As Exception
+                    '        ' Just Handle Exceptions
+                    '        ' TODO: Must investigate SESSION "KEY ADDED" PROBLEMS
+                    '    End Try
+                    'End SyncLock
                 Else
                     Dim DomainID_Cookie As New System.Web.HttpCookie(SearchString, String.Join(Of String)("-", Value))
 
-                    DomainID_Cookie.Expires = Date.Now().AddYears(1)
+                    DomainID_Cookie.Expires = Date.Now.AddDays(7)
                     Helpers.Context.Response.Cookies.Add(DomainID_Cookie)
                 End If
             End Set
@@ -343,18 +339,18 @@ Namespace Xeora.Web.Shared
                     String.Format("{0}_DomainLanguageID", Configurations.VirtualRoot.Replace("/"c, "_"c))
 
                 If Helpers.IsCookiless Then
-                    SyncLock Helpers.Context.Session.SyncRoot
-                        Try
-                            Helpers.Context.Session.Contents.Item(LanguageSearchString) = Value
-                        Catch ex As Exception
-                            ' Just Handle Exceptions
-                            ' TODO: Must investigate SESSION "KEY ADDED" PROBLEMS
-                        End Try
-                    End SyncLock
+                    'SyncLock Helpers.Context.Session.SyncRoot
+                    '    Try
+                    Helpers.Context.Session.Contents.Item(LanguageSearchString) = Value
+                    '    Catch ex As Exception
+                    '        ' Just Handle Exceptions
+                    '        ' TODO: Must investigate SESSION "KEY ADDED" PROBLEMS
+                    '    End Try
+                    'End SyncLock
                 Else
                     Dim DomainLanguage_Cookie As New System.Web.HttpCookie(LanguageSearchString, Value)
 
-                    DomainLanguage_Cookie.Expires = Date.Now().AddYears(1)
+                    DomainLanguage_Cookie.Expires = Date.Now.AddDays(7)
                     Helpers.Context.Response.Cookies.Add(DomainLanguage_Cookie)
                 End If
             End Set
@@ -520,6 +516,15 @@ Namespace Xeora.Web.Shared
                 Return _CachingType
             End Get
         End Property
+
+        Public Shared Sub ClearStaticCache()
+            Dim RequestAsm As Reflection.Assembly, objRequest As Type
+
+            RequestAsm = Reflection.Assembly.Load("Xeora.Web.Handler")
+            objRequest = RequestAsm.GetType("Xeora.Web.Handler.RequestModule", False, True)
+
+            objRequest.InvokeMember("ClearStaticCache", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, Nothing)
+        End Sub
 
         Public Shared Sub ReloadApplication()
             Dim RequestAsm As Reflection.Assembly, objRequest As Type

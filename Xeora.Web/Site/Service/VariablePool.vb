@@ -230,7 +230,7 @@ Namespace Xeora.Web.Site.Service
                 Else
                     Threading.Monitor.Enter(Me._SynchronizedObjects.SyncRoot)
                     Try
-                        rObject = New Object
+                        rObject = New Object()
 
                         Me._SynchronizedObjects.Item(String.Format("{0}_{1}", SessionKeyID, name)) = rObject
                     Finally

@@ -24,11 +24,7 @@ Namespace Xeora.Web.Site
 
             Threading.Monitor.Enter(DomainControl._DomainTable.SyncRoot)
             Try
-                If Not DomainControl._DomainTable.ContainsKey(Me._RequestID) Then
-                    DomainControl._DomainTable.Add(RequestID, New Domain(DomainIDAccessTree, LanguageID))
-                Else
-                    DomainControl._DomainTable.Item(RequestID) = New Domain(DomainIDAccessTree, LanguageID)
-                End If
+                DomainControl._DomainTable.Item(RequestID) = New Domain(DomainIDAccessTree, LanguageID)
             Finally
                 Threading.Monitor.Exit(DomainControl._DomainTable.SyncRoot)
             End Try
@@ -288,8 +284,8 @@ Namespace Xeora.Web.Site
             Return rDomainInfoCollection
         End Function
 
-        Public Sub ClearDomainCache()
-            CType(DomainControl.Domain(Me._RequestID), Domain).ClearDomainCache()
+        Public Sub ClearCache()
+            CType(DomainControl.Domain(Me._RequestID), Domain).ClearCache()
         End Sub
 
         Private Sub PrepareServiceSettings()
@@ -451,12 +447,12 @@ Namespace Xeora.Web.Site
 
                         If Not WorkingInstance Is Nothing Then
                             ' Set the Working domain as child domain for this call because call requires the child domain access!
-                            Threading.Monitor.Enter(DomainControl._DomainTable)
+                            Threading.Monitor.Enter(DomainControl._DomainTable.SyncRoot)
                             Try
                                 If DomainControl._DomainTable.ContainsKey(Me._RequestID) Then _
                                     DomainControl._DomainTable.Item(Me._RequestID) = WorkingInstance
                             Finally
-                                Threading.Monitor.Exit(DomainControl._DomainTable)
+                                Threading.Monitor.Exit(DomainControl._DomainTable.SyncRoot)
                             End Try
 
                             ' Okay Something Exists. But is it a Template or xService

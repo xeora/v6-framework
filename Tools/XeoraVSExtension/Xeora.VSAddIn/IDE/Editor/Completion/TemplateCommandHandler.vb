@@ -12,7 +12,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
         Private _CurrentSession As ICompletionSession
 
         Private _Broker As ICompletionBroker
-        Private _TextView As ITextView
+        Private _TextView As IWpfTextView
 
         Public Enum Directives
             Control
@@ -27,10 +27,11 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
             InLineStatement
             UpdateBlock
             MessageBlock
+            PartialCache
             Special
         End Enum
 
-        Public Sub New(ByVal broker As ICompletionBroker, ByVal textView As ITextView)
+        Public Sub New(ByVal broker As ICompletionBroker, ByVal textView As IWpfTextView)
             Me._CurrentSession = Nothing
 
             Me._Broker = broker
@@ -311,11 +312,7 @@ QuickJumpForDelete:
                             Me.Filter()
                         End If
                     Case Else
-                        Try
-                            rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-                        Catch ex As Exception
-                            ' Just Handle Exceptions
-                        End Try
+                        rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
                 End Select
             End If
 
@@ -408,6 +405,8 @@ QuickJumpForDelete:
                             rDirective = Directives.UpdateBlock
                         Case "MB"
                             rDirective = Directives.MessageBlock
+                        Case "PC"
+                            rDirective = Directives.PartialCache
                     End Select
                 End If
 
@@ -480,6 +479,16 @@ QuickJumpForDelete:
                     If HandleChar Then edit.Insert(Me._TextView.Caret.Position.BufferPosition, ":")
 
                     edit.Insert(Me._TextView.Caret.Position.BufferPosition, "{}:MB$")
+                    edit.Apply()
+
+                    Me._TextView.Caret.MoveTo(Me._TextView.Caret.Position.BufferPosition - 5)
+                Case Directives.PartialCache
+                    Dim edit As ITextEdit =
+                        Me._TextView.TextBuffer.CreateEdit()
+
+                    If HandleChar Then edit.Insert(Me._TextView.Caret.Position.BufferPosition, ":")
+
+                    edit.Insert(Me._TextView.Caret.Position.BufferPosition, "{}:PC$")
                     edit.Apply()
 
                     Me._TextView.Caret.MoveTo(Me._TextView.Caret.Position.BufferPosition - 5)

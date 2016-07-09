@@ -376,6 +376,10 @@ Namespace Xeora.Web.Handler
                 Context.Response.Redirect(Context.Request.RawUrl, True)
         End Sub
 
+        Public Shared Sub ClearStaticCache()
+            Controller.Directive.PartialCache.ClearCache()
+        End Sub
+
         Public Shared ReadOnly Property VariablePool() As Site.Service.VariablePool
             Get
                 Return RequestModule._VPService
@@ -610,7 +614,7 @@ Namespace Xeora.Web.Handler
                         Exit For
                     Else
                         If RealFI.LastWriteTime.CompareTo(CacheFI.LastWriteTime) = 0 Then Continue For
-
+                        
                         Dim RealStream As IO.Stream = Nothing, RealHash As Byte()
                         Dim CacheStream As IO.Stream = Nothing, CacheHash As Byte()
 

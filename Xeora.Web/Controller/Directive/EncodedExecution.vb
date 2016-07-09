@@ -85,11 +85,7 @@ Namespace Xeora.Web.Controller.Directive
                         Throw New Exception.EmptyBlockException()
                     End If
                 Else ' Standart Value
-                    If String.Compare(matchXF.Value.Split("~"c)(0), "XF", True) = 0 Then
-                        Throw New Exception.DirectivePointerException()
-                    Else
-                        Me.DefineRenderedValue(Me.InsideValue)
-                    End If
+                    Throw New Exception.DirectivePointerException()
                 End If
             Else
                 Throw New Exception.UnknownDirectiveException()

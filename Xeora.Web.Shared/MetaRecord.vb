@@ -23,6 +23,7 @@ Namespace Xeora.Web.Shared
         Public Enum MetaTagSpace As Byte
             name = 1
             httpequiv = 2
+            [property] = 3
         End Enum
 
         Public Shared Function GetMetaTagHtmlName(ByVal MetaTag As MetaTags) As String
@@ -66,6 +67,8 @@ Namespace Xeora.Web.Shared
                         Name = String.Format("name::{0}", Name)
                     Case MetaTagSpace.httpequiv
                         Name = String.Format("httpequiv::{0}", Name)
+                    Case MetaTagSpace.property
+                        Name = String.Format("property::{0}", Name)
                 End Select
 
                 Dim cMRs As Generic.Dictionary(Of String, String)
@@ -197,6 +200,10 @@ Namespace Xeora.Web.Shared
                 rMTS = MetaTagSpace.httpequiv
 
                 Name = Name.Substring(11)
+            ElseIf Name.IndexOf("property::") = 0 Then
+                rMTS = MetaTagSpace.property
+
+                Name = Name.Substring(10)
             End If
 
             Return rMTS

@@ -144,6 +144,7 @@
     <Compile Include="Controller\Directive\MessageBlock.vb" />
     <Compile Include="Controller\Directive\InLineStatement.vb" />
     <Compile Include="Controller\Directive\Interface\IDeploymentAccessRequires.vb" />
+    <Compile Include="Controller\Directive\PartialCache.vb" />
     <Compile Include="Controller\Directive\UpdateBlock.vb" />
     <Compile Include="Deployment\DeploymentBase.vb" />
     <Compile Include="Deployment\DomainDeployment.vb" />

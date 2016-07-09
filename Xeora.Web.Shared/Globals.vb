@@ -25,10 +25,7 @@ Namespace Xeora.Web.Shared
                 Set(ByVal value As Types)
                     Threading.Monitor.Enter(PageCaching._DefaultType.SyncRoot)
                     Try
-                        If PageCaching._DefaultType.ContainsKey(Helpers.CurrentRequestID) Then _
-                            PageCaching._DefaultType.Remove(Helpers.CurrentRequestID)
-
-                        PageCaching._DefaultType.Add(Helpers.CurrentRequestID, value)
+                        PageCaching._DefaultType.Item(Helpers.CurrentRequestID) = value
                     Finally
                         Threading.Monitor.Exit(PageCaching._DefaultType.SyncRoot)
                     End Try
@@ -58,6 +55,8 @@ Namespace Xeora.Web.Shared
                 Dim rType As Types = PageCaching.DefaultType
 
                 Select Case TypeQueryString
+                    Case "L0"
+                        rType = Types.AllContent
                     Case "L0XC"
                         rType = Types.AllContentCookiless
                     Case "L1"

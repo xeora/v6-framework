@@ -138,8 +138,8 @@ Namespace Xeora.Web.Handler
                                 System.Web.HttpResponse.RemoveOutputCacheItem([Shared].Helpers.Context.Request.FilePath)
                         End Select
                     Else
-                        ' 1 year cache! my god!
-                        [Shared].Helpers.Context.Response.ExpiresAbsolute = Date.Today.AddYears(1)
+                        ' 1 week cache
+                        [Shared].Helpers.Context.Response.ExpiresAbsolute = Date.Now.AddDays(7)
                     End If
 
                     ' Session Cookie Option
@@ -299,7 +299,7 @@ Namespace Xeora.Web.Handler
 
                                 If BindInvokeResult.ReloadRequired Then
                                     ' This is application dependency problem, force to apply auto recovery!
-                                    Me._DomainControl.ClearDomainCache()
+                                    Me._DomainControl.ClearCache()
                                     RequestModule.ReloadApplication([Shared].Helpers.CurrentRequestID)
 
                                     Exit Sub
@@ -405,7 +405,7 @@ Namespace Xeora.Web.Handler
 
                                         If BindInvokeResult.ReloadRequired Then
                                             ' This is application dependency problem, force to apply auto recovery!
-                                            Me._DomainControl.ClearDomainCache()
+                                            Me._DomainControl.ClearCache()
                                             RequestModule.ReloadApplication([Shared].Helpers.CurrentRequestID)
 
                                             Exit Sub
@@ -680,7 +680,7 @@ QUICKFINISH:
                 Try
                     Me._DomainControl.RenderService(Me._MessageResult, String.Empty)
                 Catch ex As Exception.ReloadRequiredException
-                    Me._DomainControl.ClearDomainCache()
+                    Me._DomainControl.ClearCache()
                     RequestModule.ReloadApplication([Shared].Helpers.CurrentRequestID)
 
                     Exit Sub
@@ -704,7 +704,7 @@ QUICKFINISH:
                 Try
                     Me._DomainControl.RenderService(Me._MessageResult, UpdateBlockControlID)
                 Catch ex As Exception.ReloadRequiredException
-                    Me._DomainControl.ClearDomainCache()
+                    Me._DomainControl.ClearCache()
                     RequestModule.ReloadApplication([Shared].Helpers.CurrentRequestID)
 
                     Exit Sub
@@ -746,6 +746,14 @@ QUICKFINISH:
                                         kVP.Value
                                     )
                                 )
+                            Case [Shared].MetaRecord.MetaTagSpace.property
+                                sW.WriteLine(
+                                    String.Format(
+                                        "<meta property=""{0}"" content=""{1}"" />",
+                                        [Shared].MetaRecord.GetMetaTagHtmlName(kVP.Key),
+                                        kVP.Value
+                                    )
+                                )
                         End Select
 
                         Select Case kVP.Key
@@ -778,6 +786,14 @@ QUICKFINISH:
                                 sW.WriteLine(
                                     String.Format(
                                         "<meta http-equiv=""{0}"" content=""{1}"" />",
+                                        KeyName,
+                                        kVP.Value
+                                    )
+                                )
+                            Case [Shared].MetaRecord.MetaTagSpace.property
+                                sW.WriteLine(
+                                    String.Format(
+                                        "<meta property=""{0}"" content=""{1}"" />",
                                         KeyName,
                                         kVP.Value
                                     )

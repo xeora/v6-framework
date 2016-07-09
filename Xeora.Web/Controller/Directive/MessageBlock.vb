@@ -52,12 +52,10 @@ Namespace Xeora.Web.Controller.Directive
                         End If
                     End If
                 Else ' Standart Value
-                    If String.Compare(matchMI.Value.Split("~"c)(0), "MB", True) = 0 Then
-                        Throw New Exception.DirectivePointerException()
-                    Else
-                        Me.DefineRenderedValue(Me.InsideValue)
-                    End If
+                    Throw New Exception.DirectivePointerException()
                 End If
+            Else
+                Throw New Exception.UnknownDirectiveException()
             End If
         End Sub
     End Class

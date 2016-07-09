@@ -16,6 +16,7 @@ Namespace Xeora.Web.Controller
             InLineStatement
             UpdateBlock
             MessageBlock
+            PartialCache
             Undefined
         End Enum
 
@@ -25,15 +26,12 @@ Namespace Xeora.Web.Controller
             Me._DirectiveType = DirectiveType
         End Sub
 
-        Protected Function CaptureLeveling() As Integer
+        Protected Function CaptureLeveling(ByRef LevelingExecutionOnly As Boolean) As Integer
             Dim rCapturedLeveling As Integer = 0
 
             Dim controlValueSplitted As String() =
                 Me.InsideValue.Split(":"c)
 
-            ' Exam Leveling
-            ' TODO: IsLocalLeveling is the point for control who will apply the leveling only parameters not controls itself. It works only on Custom Controls
-            Dim IsLocalLeveling As Boolean = True
             Dim CLevelingMatch As Text.RegularExpressions.Match =
                 Text.RegularExpressions.Regex.Match(controlValueSplitted(0), "\#\d+(\+)?")
 
@@ -43,9 +41,11 @@ Namespace Xeora.Web.Controller
                     CLevelingMatch.Value.Substring(1, CLevelingMatch.Value.Length - 1)
 
                 If CleanValue.IndexOf("+"c) > -1 Then
-                    IsLocalLeveling = False
+                    LevelingExecutionOnly = False
 
                     CleanValue = CleanValue.Substring(0, CleanValue.IndexOf("+"c))
+                Else
+                    LevelingExecutionOnly = True
                 End If
 
                 Integer.TryParse(CleanValue, rCapturedLeveling)
@@ -115,6 +115,8 @@ Namespace Xeora.Web.Controller
                             rDirectiveType = DirectiveTypes.EncodedExecution
                         Case "MB"
                             rDirectiveType = DirectiveTypes.MessageBlock
+                        Case "PC"
+                            rDirectiveType = DirectiveTypes.PartialCache
                     End Select
                 End If
             End If
