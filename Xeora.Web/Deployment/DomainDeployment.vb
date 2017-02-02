@@ -188,18 +188,18 @@ Namespace Xeora.Web.Deployment
             End Get
         End Property
 
-        Public Overrides Function ProvideTemplateContent(ByVal TemplateID As String) As String
+        Public Overrides Function ProvideTemplateContent(ByVal ServiceFullPath As String) As String
             ' -- Check is template file is exists
-            If Not Me.CheckTemplateExists(TemplateID) Then
+            If Not Me.CheckTemplateExists(ServiceFullPath) Then
                 Dim SystemMessage As String = Me._Language.Get("TEMPLATE_NOFOUND")
 
                 If String.IsNullOrEmpty(SystemMessage) Then SystemMessage = [Global].SystemMessages.TEMPLATE_NOFOUND
 
-                Throw New Exception.DeploymentException(String.Format(SystemMessage & "!", TemplateID))
+                Throw New Exception.DeploymentException(String.Format(SystemMessage & "!", ServiceFullPath))
             End If
             ' !--
 
-            Return MyBase.ProvideTemplateContent(TemplateID)
+            Return MyBase.ProvideTemplateContent(ServiceFullPath)
         End Function
 
         Public Overrides Sub ProvideFileStream(ByRef OutputStream As IO.Stream, ByVal RequestedFilePath As String)

@@ -88,6 +88,10 @@
     <Import Include="System.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\ServicePortElement.vb" />
+    <Compile Include="Configuration\RequestTagFilterElement.vb" />
+    <Compile Include="Configuration\MainElement.vb" />
+    <Compile Include="Configuration\XeoraSection.vb" />
     <Compile Include="RequestHandlerFactory.vb" />
     <Compile Include="RequestHandler.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />

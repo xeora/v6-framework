@@ -5,9 +5,9 @@ Namespace Xeora.Web.Site
         Implements [Shared].IDomain
 
         Private _Parent As [Shared].IDomain = Nothing
-        Private _Renderer As Renderer
+        Private _Renderer As Renderer = Nothing
 
-        Private _Deployment As Deployment.DomainDeployment
+        Private _Deployment As Deployment.DomainDeployment = Nothing
         Private _ControlMapXPathNavigator As Xml.XPath.XPathNavigator
 
 #Region " Constructors "
@@ -17,12 +17,32 @@ Namespace Xeora.Web.Site
         End Sub
 
         Public Sub New(ByVal DomainIDAccessTree As String(), ByVal LanguageID As String)
-            If DomainIDAccessTree Is Nothing Then _
-                DomainIDAccessTree = New String() {[Shared].Configurations.DefaultDomain}
+            Me.BuildDomain(DomainIDAccessTree, LanguageID)
+        End Sub
 
-            Me._Deployment = New Deployment.DomainDeployment(DomainIDAccessTree, LanguageID)
+        Private Sub BuildDomain(ByVal DomainIDAccessTree As String(), ByVal LanguageID As String)
+            If DomainIDAccessTree Is Nothing Then _
+                DomainIDAccessTree = [Shared].Configurations.DefaultDomain
+
+            ' First Dispose the existed deployment
+            If Not Me._Deployment Is Nothing Then Me._Deployment.Dispose()
+
+            ' Create the New One
+            Try
+                Me._Deployment = New Deployment.DomainDeployment(DomainIDAccessTree, LanguageID)
+            Catch ex As Exception.DomainNotExistsException
+                ' Try with the default one if requested one is not the default one
+                If String.Compare(String.Join("\", DomainIDAccessTree), String.Join("\"c, [Shared].Configurations.DefaultDomain)) <> 0 Then
+                    Me._Deployment = New Deployment.DomainDeployment([Shared].Configurations.DefaultDomain, LanguageID)
+                Else
+                    Throw
+                End If
+            Catch ex As System.Exception
+                Throw
+            End Try
             AddHandler Me._Deployment.Language.ResolveTranslationRequested, AddressOf Me.ResolveTranslationRequest
 
+            ' TODO: ???????? CHECK PLEASE
             If DomainIDAccessTree.Length > 1 Then
                 Dim DomainIDAccessTreeA As New Generic.List(Of String)
                 DomainIDAccessTreeA.AddRange(DomainIDAccessTree)
@@ -39,8 +59,12 @@ Namespace Xeora.Web.Site
                     DomainIDAccessTreeA.RemoveAt(DomainIDAccessTreeA.Count - 1)
                 Loop
             End If
+            ' !---
 
-            Me._Renderer = New Renderer(Me)
+            If Me._Renderer Is Nothing Then _
+                Me._Renderer = New Renderer()
+
+            Me._Renderer.Inject(Me)
         End Sub
 
         Private Sub ResolveTranslationRequest(ByVal TranslationID As String, ByRef Value As String)
@@ -97,12 +121,16 @@ Namespace Xeora.Web.Site
             End Get
         End Property
 
-        Public Function CheckTemplateExists(ByVal TemplateID As String) As Boolean
-            Return Me._Deployment.CheckTemplateExists(TemplateID)
+        Public Function CheckTemplateExists(ByVal ServiceFullPath As String) As Boolean
+            Return Me._Deployment.CheckTemplateExists(ServiceFullPath)
         End Function
 
         Public Sub ProvideFileStream(ByRef FileStream As IO.Stream, ByVal RequestedFilePath As String)
             Me._Deployment.ProvideFileStream(FileStream, RequestedFilePath)
+        End Sub
+
+        Public Sub PushLanguageChange(ByVal LanguageID As String)
+            Me.BuildDomain(Me._Deployment.DomainIDAccessTree, LanguageID)
         End Sub
 
         Public Sub ClearCache()
@@ -113,8 +141,8 @@ Namespace Xeora.Web.Site
             Me._Deployment.ClearCache()
         End Sub
 
-        Public Function Render(ByVal TemplateID As String, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String Implements [Shared].IDomain.Render
-            Return Me._Renderer.Start(TemplateID, MessageResult, UpdateBlockControlID)
+        Public Function Render(ByVal ServicePathInfo As [Shared].ServicePathInfo, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String Implements [Shared].IDomain.Render
+            Return Me._Renderer.Start(ServicePathInfo, MessageResult, UpdateBlockControlID)
         End Function
 
         Private _xPathStream As IO.StringReader = Nothing
@@ -138,16 +166,18 @@ Namespace Xeora.Web.Site
         End Property
 
         Private Class Renderer
-            Private _Instance As [Shared].IDomain
+            Private _Instance As [Shared].IDomain = Nothing
 
-            Public Sub New(ByVal Instance As [Shared].IDomain)
+            Public Sub Inject(ByVal Instance As [Shared].IDomain)
                 Me._Instance = Instance
             End Sub
 
 #Region " Template Parsing Procedures "
-            Public Function Start(ByVal TemplateID As String, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String
+            Public Function Start(ByVal ServicePathInfo As [Shared].ServicePathInfo, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String
+                If Me._Instance Is Nothing Then Throw New System.Exception("Injection required!")
+
                 Dim TemplateDirective As Controller.Directive.Template =
-                    New Controller.Directive.Template(0, String.Format("$T:{0}$", TemplateID), Nothing)
+                    New Controller.Directive.Template(0, String.Format("$T:{0}$", ServicePathInfo.FullPath), Nothing)
                 TemplateDirective.UpdateBlockControlID = UpdateBlockControlID
                 TemplateDirective.MessageResult = MessageResult
                 AddHandler TemplateDirective.ParseRequested, AddressOf Me.OnParseRequest

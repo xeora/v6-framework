@@ -192,7 +192,7 @@ Namespace Xeora.Web.Manager
             Return [Assembly].InvokeBind(BindInfo, ExecuterTypes.Undefined)
         End Function
 
-        Private Shared _ExecutableLibrary As New Generic.Dictionary(Of String, Loader)
+        Private Shared _ExecutableLibrary As New Concurrent.ConcurrentDictionary(Of String, Loader)
         Private Shared _PrivateBinPath As String = Nothing
         Public Overloads Shared Function InvokeBind(ByVal BindInfo As [Shared].Execution.BindInfo, ByVal ExecuterType As ExecuterTypes) As [Shared].Execution.BindInvokeResult
             If BindInfo Is Nothing Then Throw New NoNullAllowedException("Requires bind!")
@@ -230,13 +230,13 @@ Namespace Xeora.Web.Manager
                     GoTo QUICKEXIT
                 End If
 
-                If Not Assembly._ExecutableLibrary.ContainsKey(AssemblyKey) Then Assembly._ExecutableLibrary.Add(AssemblyKey, ExecutableLoader)
+                Assembly._ExecutableLibrary.TryAdd(AssemblyKey, ExecutableLoader)
             End If
 
             Try
                 ' Invoke must use the same appdomain because of the context sync price
                 Dim InvokedObject As Object =
-                    ExecutableLoader.Invoke(BindInfo.ClassNames, BindInfo.ProcedureName, BindInfo.ProcedureParamValues, ExecuterType.ToString())
+                    ExecutableLoader.Invoke(BindInfo.RequestHttpMethod, BindInfo.ClassNames, BindInfo.ProcedureName, BindInfo.ProcedureParamValues, BindInfo.InstanceExecution, ExecuterType.ToString())
 
                 If TypeOf InvokedObject Is System.Exception Then
                     rBindInvokeResult.InvokeResult = CType(InvokedObject, System.Exception)
@@ -248,8 +248,7 @@ Namespace Xeora.Web.Manager
             End Try
 
             If Not rBindInvokeResult.InvokeResult Is Nothing AndAlso
-                TypeOf rBindInvokeResult.InvokeResult Is System.Exception AndAlso
-                [Shared].Configurations.Debugging Then
+                TypeOf rBindInvokeResult.InvokeResult Is System.Exception Then
 
                 Helper.EventLogging.WriteToLog(
                     CType(rBindInvokeResult.InvokeResult, System.Exception))

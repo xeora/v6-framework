@@ -23,7 +23,7 @@ Namespace Xeora.Web.Shared.Service
                         Dim ThemeAsm As Reflection.Assembly, objTheme As Type
 
                         ThemeAsm = Reflection.Assembly.Load("Xeora.Web")
-                        objTheme = ThemeAsm.GetType("Xeora.Web.Service.ScheduledTasks", False, True)
+                        objTheme = ThemeAsm.GetType("Xeora.Web.Site.Service.ScheduledTasks", False, True)
 
                         ScheduledTasksOperation._Cache = CType(Activator.CreateInstance(objTheme), IScheduledTasks)
                     Catch ex As Exception

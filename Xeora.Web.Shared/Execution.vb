@@ -72,6 +72,8 @@ Namespace Xeora.Web.Shared
 
         <Serializable()>
         Public Class BindInfo
+            Private _RequestHttpMethod As String
+
             Private _ExecutableName As String
             Private _ClassNames As String()
             Private _ProcedureName As String
@@ -79,6 +81,7 @@ Namespace Xeora.Web.Shared
             Private _ProcedureParamValues As Object() = Nothing
 
             Private _IsReady As Boolean
+            Private _InstanceExecution As Boolean
 
             Private Sub New(ByVal ExecutableName As String, ByVal ClassNames As String(), ByVal ProcedureName As String, ByVal ProcedureParams As String())
                 Me._ExecutableName = ExecutableName
@@ -95,7 +98,27 @@ Namespace Xeora.Web.Shared
                 End If
 
                 Me._IsReady = False
+                Me._InstanceExecution = False
             End Sub
+
+            Public Property RequestHttpMethod() As String
+                Get
+                    If String.IsNullOrEmpty(Me._RequestHttpMethod) Then
+                        Dim Context As System.Web.HttpContext = Helpers.Context
+
+                        If Not Context Is Nothing Then
+                            Me._RequestHttpMethod = Context.Request.HttpMethod
+                        Else
+                            Me._RequestHttpMethod = "GET"
+                        End If
+                    End If
+
+                    Return Me._RequestHttpMethod
+                End Get
+                Set(ByVal value As String)
+                    Me._RequestHttpMethod = value
+                End Set
+            End Property
 
             Public ReadOnly Property ExecutableName() As String
                 Get
@@ -131,6 +154,15 @@ Namespace Xeora.Web.Shared
                 Get
                     Return Me._IsReady
                 End Get
+            End Property
+
+            Public Property InstanceExecution() As Boolean
+                Get
+                    Return Me._InstanceExecution
+                End Get
+                Set(ByVal value As Boolean)
+                    Me._InstanceExecution = value
+                End Set
             End Property
 
             Public Sub OverrideProcedureParameters(ByVal ProcedureParams As String())

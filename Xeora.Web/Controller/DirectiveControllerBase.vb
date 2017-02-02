@@ -78,7 +78,7 @@ Namespace Xeora.Web.Controller
                 Me.InsideValue.Split(":"c)
 
             Dim CPIDMatch As Text.RegularExpressions.Match =
-                Text.RegularExpressions.Regex.Match(controlValueSplitted(1), "[\.\w\-]+")
+                Text.RegularExpressions.Regex.Match(controlValueSplitted(1), "[\/\.\w\-]+")
 
             If CPIDMatch.Success Then
                 ' Trim [ and ] character from match result

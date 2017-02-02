@@ -373,28 +373,6 @@ Namespace Xeora.Web.Controller.Directive
             End If
         End Sub
 
-        Protected Function SplitContentByControlIDWithIndex(ByVal Content As String, ByVal ControlIDWithIndex As String) As String()
-            Dim rResultList As New Generic.List(Of String)
-
-            Dim SearchString As String = String.Format("}}:{0}:{{", ControlIDWithIndex)
-            Dim sIdx As Integer, cIdx As Integer = 0
-
-            Do
-                sIdx = Content.IndexOf(SearchString, cIdx)
-
-                If sIdx > -1 Then
-                    rResultList.Add(Content.Substring(cIdx, sIdx - cIdx))
-
-                    ' Set cIdx and Move Forward to Length of SearchString
-                    cIdx = sIdx + SearchString.Length
-                Else
-                    rResultList.Add(Content.Substring(cIdx))
-                End If
-            Loop Until sIdx = -1
-
-            Return rResultList.ToArray()
-        End Function
-
         Public Class SecurityInfos
             Private _SecuritySet As Boolean
             Private _RegisteredGroup As String

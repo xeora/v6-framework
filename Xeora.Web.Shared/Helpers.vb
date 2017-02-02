@@ -43,31 +43,20 @@ Namespace Xeora.Web.Shared
             End Set
         End Property
 
-        Public Overloads Shared Function GetRedirectURL(ByVal TemplateID As String, ParamArray ByVal QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
-            Return Helpers.GetRedirectURL(True, TemplateID, Globals.PageCaching.DefaultType, QueryStrings)
+        Public Overloads Shared Function GetRedirectURL(ByVal ServiceFullPath As String, ParamArray ByVal QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
+            Return Helpers.GetRedirectURL(True, ServiceFullPath, QueryStrings)
         End Function
 
-        Public Overloads Shared Function GetRedirectURL(ByVal TemplateID As String, ByVal CachingType As Globals.PageCaching.Types, ParamArray ByVal QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
-            Return Helpers.GetRedirectURL(True, TemplateID, CachingType, QueryStrings)
-        End Function
-
-        Public Overloads Shared Function GetRedirectURL(ByVal UseSameVariablePool As Boolean, ByVal TemplateID As String, ParamArray ByVal QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
-            Return Helpers.GetRedirectURL(UseSameVariablePool, TemplateID, Globals.PageCaching.DefaultType, QueryStrings)
-        End Function
-
-        Public Overloads Shared Function GetRedirectURL(ByVal UseSameVariablePool As Boolean, ByVal TemplateID As String, ByVal CachingType As Globals.PageCaching.Types, ByVal ParamArray QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
+        Public Overloads Shared Function GetRedirectURL(ByVal UseSameVariablePool As Boolean, ByVal ServiceFullPath As String, ParamArray ByVal QueryStrings As Generic.KeyValuePair(Of String, String)()) As String
             Dim rString As String
 
             Dim URLQueryDictionary As URLQueryDictionary =
                 URLQueryDictionary.Make(QueryStrings)
 
-            If CachingType <> Globals.PageCaching.DefaultType Then _
-                URLQueryDictionary.Item("nocache") = Globals.PageCaching.ParseForQueryString(CachingType)
-
             If Not UseSameVariablePool Then
-                rString = String.Format("{0}{1}", Configurations.ApplicationRoot.BrowserImplementation, TemplateID)
+                rString = String.Format("{0}{1}", Configurations.ApplicationRoot.BrowserImplementation, ServiceFullPath)
             Else
-                rString = String.Format("{0}{1}/{2}", Configurations.ApplicationRoot.BrowserImplementation, Helpers.HashCode, TemplateID)
+                rString = String.Format("{0}{1}/{2}", Configurations.ApplicationRoot.BrowserImplementation, Helpers.HashCode, ServiceFullPath)
             End If
 
             If URLQueryDictionary.Count > 0 Then _
@@ -90,8 +79,8 @@ Namespace Xeora.Web.Shared
             Return DomainWebPath
         End Function
 
-        Public Shared Function ResolveTemplateFromURL(ByVal RequestFilePath As String, ByRef UseDefaultTemplate As Boolean) As String
-            Dim RequestedTemplate As String = String.Empty
+        Public Shared Function ResolveServicePathInfoFromURL(ByVal RequestFilePath As String, ByRef UseDefaultTemplate As Boolean) As ServicePathInfo
+            Dim rServicePathInfo As ServicePathInfo = Nothing
 
             If Not String.IsNullOrEmpty(RequestFilePath) Then
                 Dim ByPass As Boolean = False
@@ -108,7 +97,7 @@ Namespace Xeora.Web.Shared
                             rqMatch = Text.RegularExpressions.Regex.Match(RequestFilePath, mItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
 
                             If rqMatch.Success Then
-                                RequestedTemplate = mItem.ResolveInfo.TemplateID
+                                rServicePathInfo = mItem.ResolveInfo.ServicePathInfo
                                 ByPass = True
 
                                 Exit For
@@ -120,42 +109,42 @@ Namespace Xeora.Web.Shared
                 If Not ByPass Then
                     ' RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(Configurations.ApplicationRoot.BrowserImplementation) + Configurations.ApplicationRoot.BrowserImplementation.Length)
 
-                    ' Take Care HashCode if it is exists
-                    ' work with application browser path
-                    Dim ApplicationRootPath As String = Configurations.ApplicationRoot.BrowserImplementation
-                    Dim mR As Text.RegularExpressions.Match =
-                        Text.RegularExpressions.Regex.Match(RequestFilePath, String.Format("{0}\d+/", ApplicationRootPath))
-                    If mR.Success AndAlso mR.Index = 0 Then _
-                        RequestFilePath = RequestFilePath.Remove(ApplicationRootPath.Length, (mR.Length - ApplicationRootPath.Length))
-
-                    ' Take Care DomainContentsPath if exists
+                    ' Take Care Application Path and HashCode if it is exists work with application browser path
+                    ' this comes /APPPATH/path?somekey=withquery
+                    ' or this /APPPATH/432432/path?somekey=withquery
+                    ' or this /Standart_tr-TR/somefile.png
+                    ' take care of it!
                     Dim CurrentDomainContentPath As String =
                         Helpers.GetDomainContentsPath()
+
+                    ' first test if it is domain content path
                     If RequestFilePath.IndexOf(CurrentDomainContentPath) = 0 Then
                         ' This is a DomainContents Request
                         ' So no Template and also no default template usage
-                        RequestFilePath = String.Empty : UseDefaultTemplate = False
+                        UseDefaultTemplate = False
                     Else
-                        ' this comes /APPPATH/path?somekey=withquery, take care of it!
-                        RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(ApplicationRootPath) + ApplicationRootPath.Length)
+                        Dim ApplicationRootPath As String = Configurations.ApplicationRoot.BrowserImplementation
+                        Dim mR As Text.RegularExpressions.Match =
+                            Text.RegularExpressions.Regex.Match(RequestFilePath, String.Format("{0}(\d+/)?", ApplicationRootPath))
+                        If mR.Success AndAlso mR.Index = 0 Then _
+                            RequestFilePath = RequestFilePath.Remove(0, mR.Length)
 
                         ' Check if there is any query string exists! if so, template will be till there. 
                         If RequestFilePath.IndexOf("?"c) > -1 Then _
                             RequestFilePath = RequestFilePath.Substring(0, RequestFilePath.IndexOf("?"c))
 
-                        If RequestFilePath.IndexOf("/"c) > -1 Then
-                            ' Template request can not contains slash! This is a wrong request or Static file Request
-                            RequestFilePath = String.Empty : UseDefaultTemplate = False
+                        If String.IsNullOrEmpty(RequestFilePath) Then
+                            UseDefaultTemplate = True
                         Else
-                            If String.IsNullOrEmpty(RequestFilePath) Then UseDefaultTemplate = True
+                            rServicePathInfo = ServicePathInfo.Parse(RequestFilePath)
+
+                            If String.IsNullOrEmpty(rServicePathInfo.ServiceID) Then UseDefaultTemplate = True
                         End If
                     End If
-
-                    RequestedTemplate = RequestFilePath
                 End If
             End If
 
-            Return RequestedTemplate
+            Return rServicePathInfo
         End Function
 
         Public Shared Function GetMimeType(ByVal FileExtension As String) As String
@@ -232,26 +221,43 @@ Namespace Xeora.Web.Shared
             Return rString.ToString()
         End Function
 
-        Public Shared Function ProvideDomainContentsFileStream(ByRef OutputStream As IO.Stream, ByVal FileName As String) As Boolean
-            Dim rBoolean As Boolean = True
-
+        Public Shared Sub ProvideDomainContentsFileStream(ByRef OutputStream As IO.Stream, ByVal FileName As String)
             Dim DomainAsm As Reflection.Assembly, objDomain As Type
 
             DomainAsm = Reflection.Assembly.Load("Xeora.Web")
             objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
 
-            objDomain.InvokeMember("ProvideFileStream", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, New Object() {OutputStream, FileName})
+            Dim workingDomainControl As IDomainControl =
+                CType(objDomain.InvokeMember("QuickAccess", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
 
-            Return rBoolean
-        End Function
+            workingDomainControl.ProvideFileStream(OutputStream, FileName)
+        End Sub
+
+        Public Shared Sub PushLanguageChange(ByVal LanguageID As String)
+            Dim DomainAsm As Reflection.Assembly, objDomain As Type
+
+            DomainAsm = Reflection.Assembly.Load("Xeora.Web")
+            objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
+
+            Dim workingDomainControl As IDomainControl =
+                CType(objDomain.InvokeMember("QuickAccess", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
+
+            workingDomainControl.PushLanguageChange(LanguageID)
+        End Sub
 
         Private Shared ReadOnly Property IsCookiless() As Boolean
             Get
-                Dim CookilessSessionString As String =
-                    String.Format("{0}_Cookieless", Configurations.VirtualRoot.Replace("/"c, "_"c))
                 Dim _IsCookiless As Boolean = False
 
-                Boolean.TryParse(CType(Helpers.Context.Session.Contents.Item(CookilessSessionString), String), _IsCookiless)
+                Select Case Globals.PageCaching.DefaultType
+                    Case Globals.PageCaching.Types.AllContentCookiless,
+                         Globals.PageCaching.Types.NoCacheCookiless,
+                         Globals.PageCaching.Types.TextsOnlyCookiless
+
+                        _IsCookiless = True
+                    Case Else
+                        _IsCookiless = False
+                End Select
 
                 Return _IsCookiless
             End Get
@@ -259,28 +265,27 @@ Namespace Xeora.Web.Shared
 
         Public Shared Property CurrentDomainIDAccessTree() As String()
             Get
-                Dim rCurrentDomainIDAccessTree As String() = New String() {}
+                Dim rCurrentDomainIDAccessTree As String() = Nothing
                 Dim SearchString As String =
                     String.Format("{0}_DomainIDAccessTree", Configurations.VirtualRoot.Replace("/"c, "_"c))
 
-                If Helpers.IsCookiless Then
-                    If Helpers.Context.Session.Contents.Item(SearchString) Is Nothing Then
-                        rCurrentDomainIDAccessTree = New String() {Configurations.DefaultDomain}
+                If Not Helpers.Context.Session.Contents.Item(SearchString) Is Nothing Then _
+                    rCurrentDomainIDAccessTree = CType(Helpers.Context.Session.Contents.Item(SearchString), String())
 
-                        Helpers.CurrentDomainIDAccessTree = rCurrentDomainIDAccessTree
-                    Else
-                        rCurrentDomainIDAccessTree = CType(Helpers.Context.Session.Contents.Item(SearchString), String())
-                    End If
-                Else
+                If Not Helpers.IsCookiless AndAlso rCurrentDomainIDAccessTree Is Nothing Then
                     If Helpers.Context.Request.Cookies.Item(SearchString) Is Nothing OrElse
                         Helpers.Context.Request.Cookies.Item(SearchString).Value Is Nothing OrElse
                         Helpers.Context.Request.Cookies.Item(SearchString).Value.Trim().Length = 0 Then
 
-                        rCurrentDomainIDAccessTree = New String() {Configurations.DefaultDomain}
-
+                        rCurrentDomainIDAccessTree = Configurations.DefaultDomain
                         Helpers.CurrentDomainIDAccessTree = rCurrentDomainIDAccessTree
                     Else
-                        rCurrentDomainIDAccessTree = Helpers.Context.Request.Cookies.Item(SearchString).Value.Split("-"c)
+                        rCurrentDomainIDAccessTree = Helpers.Context.Request.Cookies.Item(SearchString).Value.Split("\"c)
+                    End If
+                Else
+                    If rCurrentDomainIDAccessTree Is Nothing Then
+                        rCurrentDomainIDAccessTree = Configurations.DefaultDomain
+                        Helpers.CurrentDomainIDAccessTree = rCurrentDomainIDAccessTree
                     End If
                 End If
 
@@ -290,19 +295,12 @@ Namespace Xeora.Web.Shared
                 Dim SearchString As String =
                     String.Format("{0}_DomainIDAccessTree", Configurations.VirtualRoot.Replace("/"c, "_"c))
 
-                If Helpers.IsCookiless Then
-                    'SyncLock Helpers.Context.Session.SyncRoot
-                    '    Try
-                    Helpers.Context.Session.Contents.Item(SearchString) = Value
-                    '    Catch ex As Exception
-                    '        ' Just Handle Exceptions
-                    '        ' TODO: Must investigate SESSION "KEY ADDED" PROBLEMS
-                    '    End Try
-                    'End SyncLock
-                Else
-                    Dim DomainID_Cookie As New System.Web.HttpCookie(SearchString, String.Join(Of String)("-", Value))
+                Helpers.Context.Session.Contents.Item(SearchString) = Value
 
-                    DomainID_Cookie.Expires = Date.Now.AddDays(7)
+                If Not Helpers.IsCookiless Then
+                    Dim DomainID_Cookie As New System.Web.HttpCookie(SearchString, String.Join(Of String)("\", Value))
+
+                    DomainID_Cookie.Expires = Date.Now.AddMonths(1)
                     Helpers.Context.Response.Cookies.Add(DomainID_Cookie)
                 End If
             End Set
@@ -311,17 +309,13 @@ Namespace Xeora.Web.Shared
         Public Shared Property CurrentDomainLanguageID() As String
             Get
                 Dim rCurrentDomainLanguage As String = Nothing
-
                 Dim LanguageSearchString As String =
                     String.Format("{0}_DomainLanguageID", Configurations.VirtualRoot.Replace("/"c, "_"c))
 
-                If Helpers.IsCookiless Then
-                    If Helpers.Context.Session.Contents.Item(LanguageSearchString) Is Nothing Then
-                        rCurrentDomainLanguage = Nothing
-                    Else
-                        rCurrentDomainLanguage = CType(Helpers.Context.Session.Contents.Item(LanguageSearchString), String)
-                    End If
-                Else
+                If Not Helpers.Context.Session.Contents.Item(LanguageSearchString) Is Nothing Then _
+                    rCurrentDomainLanguage = CType(Helpers.Context.Session.Contents.Item(LanguageSearchString), String)
+
+                If Not Helpers.IsCookiless AndAlso String.IsNullOrEmpty(rCurrentDomainLanguage) Then
                     If Helpers.Context.Request.Cookies.Item(LanguageSearchString) Is Nothing OrElse
                         Helpers.Context.Request.Cookies.Item(LanguageSearchString).Value Is Nothing OrElse
                         Helpers.Context.Request.Cookies.Item(LanguageSearchString).Value.Trim().Length = 0 Then
@@ -338,34 +332,27 @@ Namespace Xeora.Web.Shared
                 Dim LanguageSearchString As String =
                     String.Format("{0}_DomainLanguageID", Configurations.VirtualRoot.Replace("/"c, "_"c))
 
-                If Helpers.IsCookiless Then
-                    'SyncLock Helpers.Context.Session.SyncRoot
-                    '    Try
-                    Helpers.Context.Session.Contents.Item(LanguageSearchString) = Value
-                    '    Catch ex As Exception
-                    '        ' Just Handle Exceptions
-                    '        ' TODO: Must investigate SESSION "KEY ADDED" PROBLEMS
-                    '    End Try
-                    'End SyncLock
-                Else
+                Helpers.Context.Session.Contents.Item(LanguageSearchString) = Value
+
+                If Not Helpers.IsCookiless Then
                     Dim DomainLanguage_Cookie As New System.Web.HttpCookie(LanguageSearchString, Value)
 
-                    DomainLanguage_Cookie.Expires = Date.Now.AddDays(7)
+                    DomainLanguage_Cookie.Expires = Date.Now.AddMonths(1)
                     Helpers.Context.Response.Cookies.Add(DomainLanguage_Cookie)
                 End If
             End Set
         End Property
 
         Public Overloads Shared Function CreateDomainInstance() As IDomain
-            Dim rIDomain As IDomain
             Dim DomainAsm As Reflection.Assembly, objDomain As Type
 
             DomainAsm = Reflection.Assembly.Load("Xeora.Web")
             objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
 
-            rIDomain = CType(objDomain.InvokeMember("Domain", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomain)
+            Dim workingDomainControl As IDomainControl =
+                CType(objDomain.InvokeMember("QuickAccess", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
 
-            Return rIDomain
+            Return workingDomainControl.Domain
         End Function
 
         Public Overloads Shared Function CreateDomainInstance(ByVal DomainIDAccessTree As String()) As IDomain
@@ -482,38 +469,6 @@ Namespace Xeora.Web.Shared
                 End If
 
                 Return _HashCode
-            End Get
-        End Property
-
-        Public Shared ReadOnly Property CachingType() As Globals.PageCaching.Types
-            Get
-                Dim _CachingType As Globals.PageCaching.Types =
-                    Globals.PageCaching.Types.AllContent
-
-                SyncLock URLMapping.InstanceLock
-                    Dim URLMI As URLMapping = URLMapping.Current
-
-                    If URLMI.IsActive Then
-                        Dim SHCMatch As Text.RegularExpressions.Match =
-                            Text.RegularExpressions.Regex.Match(Context.Request.FilePath, "\d+(L\d(XC)?)?/")
-
-                        If SHCMatch.Success Then
-                            ' Search and set request caching variable if it's exists
-                            Dim RequestCaching As String = String.Empty
-                            Dim rCIdx As Integer = SHCMatch.Value.IndexOf(","c)
-                            If rCIdx > -1 Then _
-                                RequestCaching = SHCMatch.Value.Substring(rCIdx + 1, SHCMatch.Length - (rCIdx + 2))
-                            ' !--
-
-                            _CachingType = Globals.PageCaching.ParseFromQueryString(RequestCaching)
-                        End If
-                    Else
-                        _CachingType = Globals.PageCaching.ParseFromQueryString(
-                                        Helpers.Context.Request.QueryString.Item("nocache"))
-                    End If
-                End SyncLock
-
-                Return _CachingType
             End Get
         End Property
 

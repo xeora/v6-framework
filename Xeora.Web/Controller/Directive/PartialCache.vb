@@ -7,8 +7,10 @@ Namespace Xeora.Web.Controller.Directive
     Public Class PartialCache
         Inherits DirectiveControllerBase
         Implements IParsingRequires
+        Implements IInstanceRequires
 
         Public Event ParseRequested(DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
+        Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.PartialCache, ContentArguments)
@@ -38,8 +40,10 @@ Namespace Xeora.Web.Controller.Directive
             If matchMI.Success Then
                 If String.Compare(matchMI.Value.Split("~"c)(0), "PC") = 0 Then
                     ' Cache Handling will be here!
+                    Dim Instance As IDomain = Nothing
+                    RaiseEvent InstanceRequested(Instance)
 
-                    Dim UniqueCacheID As String = [Object].ProvideUniqueCacheID(Me)
+                    Dim UniqueCacheID As String = [Object].ProvideUniqueCacheID(Me, Instance)
 
                     If Me.Objects.ContainsKey(UniqueCacheID) Then
                         Me.DefineRenderedValue(CType(Me.Objects.Item(UniqueCacheID), [Object]).Content)
@@ -105,19 +109,18 @@ Namespace Xeora.Web.Controller.Directive
                 Me._Date = Date.Now
             End Sub
 
-            Public Shared Function ProvideUniqueCacheID(ByVal PartialCache As PartialCache) As String
+            Public Shared Function ProvideUniqueCacheID(ByVal PartialCache As PartialCache, ByVal Instance As IDomain) As String
                 If PartialCache Is Nothing Then Throw New NullReferenceException("PartialCache Parameter must not be null!")
 
-                Dim DomainIDAccessTreeString As String = String.Join(Of String)("-", Helpers.CurrentDomainIDAccessTree)
-                Dim LanguageID As String = Helpers.CurrentDomainLanguageID
-                Dim TemplateID As String = String.Empty
+                Dim DomainIDAccessTreeString As String = String.Join(Of String)("\", Helpers.CurrentDomainIDAccessTree)
+                Dim ServiceFullPath As String = String.Empty
 
                 Dim WorkingObject As ControllerBase =
                     PartialCache.Parent
 
                 Do
                     If TypeOf WorkingObject Is Template Then
-                        TemplateID = CType(WorkingObject, Template).ControlID
+                        ServiceFullPath = CType(WorkingObject, Template).ControlID
 
                         Exit Do
                     End If
@@ -131,10 +134,10 @@ Namespace Xeora.Web.Controller.Directive
 
                 If matchMI.Success Then Integer.TryParse(matchMI.Groups.Item("PositionID").Value, PositionID)
 
-                If String.IsNullOrEmpty(LanguageID) OrElse String.IsNullOrEmpty(TemplateID) OrElse PositionID = -1 Then _
+                If String.IsNullOrEmpty(Instance.Language.ID) OrElse String.IsNullOrEmpty(ServiceFullPath) OrElse PositionID = -1 Then _
                     Throw New Exception.ParseException()
 
-                Return String.Format("{0}_{1}_{2}_{3}", DomainIDAccessTreeString, LanguageID, TemplateID, PositionID)
+                Return String.Format("{0}_{1}_{2}_{3}", DomainIDAccessTreeString, Instance.Language.ID, ServiceFullPath, PositionID)
             End Function
 
             Public ReadOnly Property UniqueCacheID As String

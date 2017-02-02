@@ -28,5 +28,14 @@ Namespace Xeora.Web.Shared
         ''' second way is IIS is stopping and Xeora Framework will be unloaded.
         ''' </summary>
         Sub LastTouch()
+
+        ''' <summary>
+        ''' URLResolver is called when URLMapping is active and defined resolutions would not
+        ''' reach any success about resolving the request file path. If you have any custom
+        ''' resolution for request file path, do it in this function and return the result.
+        ''' </summary>
+        ''' <param name="RequestFilePath">Requested File Path comes right after Application Root</param>
+        ''' <returns>Return ResolvedMapped to proceed</returns>
+        Function URLResolver(ByVal RequestFilePath As String) As URLMapping.ResolvedMapped
     End Interface
 End Namespace

@@ -94,17 +94,14 @@ Namespace Xeora.Web.Controller.Directive.Control
 
                 CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
 
-                Dim ContentCollection As String() = Me.SplitContentByControlIDWithIndex(CoreContent, ControlIDWithIndex)
+                Dim ContentDescription As [Global].ContentDescription =
+                    New [Global].ContentDescription(CoreContent, ControlIDWithIndex)
 
-                If ContentCollection.Length > 0 Then
-                    For mC As Integer = 0 To ContentCollection.Length - 1
-                        Select Case mC
-                            Case 0
-                                ContentTrue = ContentCollection(mC)
-                            Case 1
-                                ContentFalse = ContentCollection(mC)
-                        End Select
-                    Next
+                If ContentDescription.HasParts Then
+                    ContentTrue = ContentDescription.Parts.Item(0)
+
+                    If ContentDescription.Parts.Count > 1 Then _
+                        ContentFalse = ContentDescription.Parts.Item(1)
 
                     ' Call Related Function and Exam It
                     Dim ControllerLevel As ControllerBase = Me

@@ -57,14 +57,14 @@ Namespace Xeora.Web.Site.Setting
             End Get
         End Property
 
-        Public Function RenderxService(ByVal ExecuteIn As String, ByVal TemplateID As String) As String Implements [Shared].IDomain.IxService.RenderxService
+        Public Function RenderxService(ByVal ExecuteIn As String, ByVal ServiceID As String) As String Implements [Shared].IDomain.IxService.RenderxService
             ' call = Calling Function Providing in Query String
             Dim BindInfo As [Shared].Execution.BindInfo =
                 [Shared].Execution.BindInfo.Make(
                     String.Format(
                         "{0}?{1}.{2},~execParams",
                         ExecuteIn,
-                        TemplateID,
+                        ServiceID,
                         [Shared].Helpers.Context.Request.QueryString.Item("call"))
                 )
 

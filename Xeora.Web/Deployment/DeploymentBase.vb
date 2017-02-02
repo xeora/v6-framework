@@ -36,7 +36,7 @@ Namespace Xeora.Web.Deployment
                 )
 
             If Not IO.Directory.Exists(Me._WorkingRoot) Then _
-                Throw New Exception.DeploymentException([Global].SystemMessages.PATH_NOTEXISTS, New IO.DirectoryNotFoundException(String.Format("WorkingPath: {0}", Me._WorkingRoot)))
+                Throw New Exception.DomainNotExistsException([Global].SystemMessages.PATH_NOTEXISTS, New IO.DirectoryNotFoundException(String.Format("WorkingPath: {0}", Me._WorkingRoot)))
 
             Dim ReleaseTestPath As String =
                 IO.Path.Combine(Me._WorkingRoot, "Content.xeora")
@@ -199,20 +199,20 @@ Namespace Xeora.Web.Deployment
             Return rEncoding
         End Function
 
-        Public Function CheckTemplateExists(ByVal TemplateID As String) As Boolean
+        Public Function CheckTemplateExists(ByVal ServiceFullPath As String) As Boolean
             Dim rBoolean As Boolean = False
 
             Select Case Me._DeploymentType
                 Case [Shared].DomainInfo.DeploymentTypes.Development
                     rBoolean = IO.File.Exists(
                                     IO.Path.Combine(
-                                        Me.TemplatesRegistration, String.Format("{0}.xchtml", TemplateID)
+                                        Me.TemplatesRegistration, String.Format("{0}.xchtml", ServiceFullPath)
                                     )
                                 )
                 Case [Shared].DomainInfo.DeploymentTypes.Release
                     Dim XeoraFileInfo As XeoraDomainDecompiler.XeoraFileInfo =
                         Me._Decompiler.GetFileInfo(
-                            Me.TemplatesRegistration, String.Format("{0}.xchtml", TemplateID)
+                            Me.TemplatesRegistration, String.Format("{0}.xchtml", ServiceFullPath)
                         )
 
                     rBoolean = XeoraFileInfo.Index > -1
@@ -221,14 +221,14 @@ Namespace Xeora.Web.Deployment
             Return rBoolean
         End Function
 
-        Public Overridable Function ProvideTemplateContent(ByVal TemplateID As String) As String
+        Public Overridable Function ProvideTemplateContent(ByVal ServiceFullPath As String) As String
             Dim rTemplateContent As String = String.Empty
 
             Select Case Me._DeploymentType
                 Case [Shared].DomainInfo.DeploymentTypes.Development
                     Dim TemplateFile As String =
                         IO.Path.Combine(
-                            Me.TemplatesRegistration, String.Format("{0}.xchtml", TemplateID))
+                            Me.TemplatesRegistration, String.Format("{0}.xchtml", ServiceFullPath))
 
                     Dim fS As IO.FileStream = Nothing, buffer As Byte() = CType(Array.CreateInstance(GetType(Byte), 102400), Byte()), rB As Integer
                     Dim encoding As Text.Encoding, TemplateContent As New Text.StringBuilder()
@@ -253,7 +253,7 @@ Namespace Xeora.Web.Deployment
                 Case [Shared].DomainInfo.DeploymentTypes.Release
                     Dim XeoraFileInfo As XeoraDomainDecompiler.XeoraFileInfo =
                         Me._Decompiler.GetFileInfo(
-                            Me.TemplatesRegistration, String.Format("{0}.xchtml", TemplateID)
+                            Me.TemplatesRegistration, String.Format("{0}.xchtml", ServiceFullPath)
                         )
 
                     If XeoraFileInfo.Index > -1 Then

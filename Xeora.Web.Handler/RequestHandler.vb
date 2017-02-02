@@ -7,7 +7,7 @@ Namespace Xeora.Web.Handler
 
         Public ReadOnly Property IsReusable() As Boolean Implements System.Web.IHttpHandler.IsReusable
             Get
-                Return True
+                Return False
             End Get
         End Property
 
@@ -82,15 +82,9 @@ Namespace Xeora.Web.Handler
 
                 Try
                     ' DomainIDAccessTree should be always the DefaultDomain according to the request it will change in the following code lines
-                    Dim DomainIDAccessTree As String() = New String() {[Shared].Configurations.DefaultDomain}
-                    ' LanguageID should be the language that visiter uses, It can be null which is not important because it will be created using
-                    ' default domain default language id
-                    Dim LanguageID As String = [Shared].Helpers.CurrentDomainLanguageID
+                    Dim DomainIDAccessTree As String() = [Shared].Configurations.DefaultDomain
                     ' Create with default ones
-                    Me._DomainControl = New Site.DomainControl(Me._RequestID, DomainIDAccessTree, LanguageID)
-
-                    ' Reset the languageID because it may changed on false language id
-                    LanguageID = Site.DomainControl.Domain(Me._RequestID).Language.ID
+                    Me._DomainControl = New Site.DomainControl(Me._RequestID, DomainIDAccessTree, [Shared].Helpers.CurrentDomainLanguageID, True)
 
                     ' Resolve If Request is Mapped (and if urlmapping is active)
                     If Me._DomainControl.URLMapping.IsActive Then
@@ -104,7 +98,7 @@ Namespace Xeora.Web.Handler
                             Dim RequestURL As String =
                                 String.Format("{0}{1}",
                                     [Shared].Configurations.ApplicationRoot.BrowserImplementation,
-                                    ResolvedMapped.TemplateID
+                                    ResolvedMapped.ServicePathInfo.FullPath
                                 )
                             If ResolvedMapped.URLQueryDictionary.Count > 0 Then _
                                 RequestURL = String.Concat(RequestURL, "?", ResolvedMapped.URLQueryDictionary.ToString())
@@ -115,46 +109,29 @@ Namespace Xeora.Web.Handler
                     End If
                     ' !---
 
-                    If [Shared].Helpers.Context.Response.ContentEncoding Is Nothing Then _
-                        [Shared].Helpers.Context.Response.ContentEncoding = Text.Encoding.UTF8
-
                     ' Lets prepare the caching settings in server and on client
-                    Dim RequestedCaching As [Shared].Globals.PageCaching.Types =
-                        [Shared].Globals.PageCaching.ParseFromQueryString(
-                            [Shared].Helpers.Context.Request.QueryString.Item("nocache"))
-
-                    If RequestedCaching <> [Shared].Globals.PageCaching.Types.AllContent AndAlso
-                        RequestedCaching <> [Shared].Globals.PageCaching.Types.AllContentCookiless Then
+                    If [Shared].Globals.PageCaching.DefaultType <> [Shared].Globals.PageCaching.Types.AllContent AndAlso
+                        [Shared].Globals.PageCaching.DefaultType <> [Shared].Globals.PageCaching.Types.AllContentCookiless Then
 
                         [Shared].Helpers.Context.Response.CacheControl = "no-cache"
                         [Shared].Helpers.Context.Response.AddHeader("Pragma", "no-cache")
                         [Shared].Helpers.Context.Response.Expires = -1
                         [Shared].Helpers.Context.Response.ExpiresAbsolute = Date.Today.AddMilliseconds(-1)
 
-                        Select Case RequestedCaching
+                        Select Case [Shared].Globals.PageCaching.DefaultType
                             Case [Shared].Globals.PageCaching.Types.NoCache,
-                                 [Shared].Globals.PageCaching.Types.NoCacheCookiless
+                                    [Shared].Globals.PageCaching.Types.NoCacheCookiless
 
                                 System.Web.HttpResponse.RemoveOutputCacheItem([Shared].Helpers.Context.Request.FilePath)
                         End Select
                     Else
-                        ' 1 week cache
-                        [Shared].Helpers.Context.Response.ExpiresAbsolute = Date.Now.AddDays(7)
+                        ' 1 month cache
+                        [Shared].Helpers.Context.Response.ExpiresAbsolute = Date.Now.AddMonths(1)
                     End If
+                    ' !---
 
-                    ' Session Cookie Option
-                    Dim CookilessSessionString As String =
-                        String.Format("{0}_Cookieless", [Shared].Configurations.VirtualRoot.Replace("/"c, "_"c))
-                    Select Case RequestedCaching
-                        Case [Shared].Globals.PageCaching.Types.AllContentCookiless,
-                             [Shared].Globals.PageCaching.Types.NoCacheCookiless,
-                             [Shared].Globals.PageCaching.Types.TextsOnlyCookiless
-
-                            [Shared].Helpers.Context.Session.Contents.Item(CookilessSessionString) = True
-                        Case Else
-                            [Shared].Helpers.Context.Session.Contents.Item(CookilessSessionString) = False
-                    End Select
-                    ' !--
+                    If [Shared].Helpers.Context.Response.ContentEncoding Is Nothing Then _
+                        [Shared].Helpers.Context.Response.ContentEncoding = Text.Encoding.UTF8
 
                     ' Let's check if the browser accept compressed output
                     Dim AcceptEncodings As String =
@@ -164,17 +141,17 @@ Namespace Xeora.Web.Handler
 
                     ' This is a xService or Template request
                     Dim UseDefaultTemplate As Boolean
-                    Dim CapturedTemplateID As String =
-                        [Shared].Helpers.ResolveTemplateFromURL([Shared].Helpers.Context.Request.RawUrl, UseDefaultTemplate)
+                    Dim CapturedServicePathInfo As [Shared].ServicePathInfo =
+                        [Shared].Helpers.ResolveServicePathInfoFromURL([Shared].Helpers.Context.Request.Url.PathAndQuery, UseDefaultTemplate)
 
-                    If Not String.IsNullOrEmpty(CapturedTemplateID) OrElse UseDefaultTemplate Then _
-                        Me._DomainControl.ServiceID = CapturedTemplateID
+                    If Not CapturedServicePathInfo Is Nothing OrElse UseDefaultTemplate Then _
+                        Me._DomainControl.ServicePathInfo = CapturedServicePathInfo
 
-                    If String.IsNullOrEmpty(Me._DomainControl.ServiceID) Then
+                    If Me._DomainControl.ServicePathInfo Is Nothing Then
                         ' Requested File is not a xService Or Template
 
                         Dim DomainContentsPath As String =
-                            [Shared].Helpers.GetDomainContentsPath(DomainIDAccessTree, LanguageID)
+                            [Shared].Helpers.GetDomainContentsPath(Me._DomainControl.Domain.IDAccessTree, Me._DomainControl.Domain.Language.ID)
                         Dim RequestedFileVirtualPath As String =
                             [Shared].Helpers.Context.Request.Path
 
@@ -203,7 +180,7 @@ Namespace Xeora.Web.Handler
                                         ChildDomainIDAccessTree = SplittedRequestedDomainWebPath(0).Split("-"c)
                                         ChildDomainLanguageID = SplittedRequestedDomainWebPath(1)
 
-                                        Me._DomainControl = New Site.DomainControl(Me._RequestID, ChildDomainIDAccessTree, ChildDomainLanguageID)
+                                        Me._DomainControl = New Site.DomainControl(Me._RequestID, ChildDomainIDAccessTree, ChildDomainLanguageID, False)
 
                                         DomainContentsPath = [Shared].Helpers.GetDomainContentsPath(ChildDomainIDAccessTree, ChildDomainLanguageID)
                                     End If
@@ -237,7 +214,7 @@ Namespace Xeora.Web.Handler
                         Context.Items.Item("_sys_TemplateRequest") = True
 
                         ' Set Title Globals
-                        [Shared].Helpers.SiteTitle = Site.DomainControl.Domain(Me._RequestID).Language.Get("SITETITLE")
+                        [Shared].Helpers.SiteTitle = Me._DomainControl.Domain.Language.Get("SITETITLE")
 
                         If String.Compare([Shared].Helpers.Context.Request.HttpMethod, "GET", True) = 0 Then
                             ' Check if hashcode is assign to the requested template
@@ -247,12 +224,12 @@ Namespace Xeora.Web.Handler
                             ParentURL = ParentURL.Remove(0, ParentURL.IndexOf([Shared].Configurations.ApplicationRoot.BrowserImplementation) + [Shared].Configurations.ApplicationRoot.BrowserImplementation.Length)
 
                             Dim mR_Parent As Text.RegularExpressions.Match =
-                                Text.RegularExpressions.Regex.Match(ParentURL, String.Format("\d+/{0}", Me._DomainControl.ServiceID))
+                                Text.RegularExpressions.Regex.Match(ParentURL, String.Format("\d+/{0}", Me._DomainControl.ServicePathInfo.FullPath))
 
                             ' Not assigned, so assign!
                             If Not mR_Parent.Success Then
                                 Dim RewrittenPath As String =
-                                    String.Format("{0}{1}/{2}", [Shared].Configurations.ApplicationRoot.BrowserImplementation, [Shared].Helpers.HashCode, Me._DomainControl.ServiceID)
+                                    String.Format("{0}{1}/{2}", [Shared].Configurations.ApplicationRoot.BrowserImplementation, [Shared].Helpers.HashCode, Me._DomainControl.ServicePathInfo.FullPath)
                                 Dim QueryString As String =
                                     [Shared].Helpers.Context.Request.ServerVariables.Item("QUERY_STRING")
 
@@ -264,7 +241,7 @@ Namespace Xeora.Web.Handler
                         End If
 
                         If Me._DomainControl.IsAuthenticationRequired Then
-                            Me.RedirectToAuthenticationPage(Me._DomainControl.ServiceID)
+                            Me.RedirectToAuthenticationPage(Me._DomainControl.ServicePathInfo.FullPath)
                         Else
                             Dim MethodResultContent As String = Nothing
 
@@ -288,7 +265,7 @@ Namespace Xeora.Web.Handler
                                                                            Nothing,
                                                                            Nothing,
                                                                            New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
-                                                                                                                                                        Instance = Site.DomainControl.Domain(Me._RequestID)
+                                                                                                                                                        Instance = Me._DomainControl.Domain
                                                                                                                                                     End Sub)
                                                                         )
                                         End Sub)
@@ -358,9 +335,6 @@ Namespace Xeora.Web.Handler
                                         Dim BindInfo As [Shared].Execution.BindInfo =
                                             Me._DomainControl.SocketEndPoint
 
-                                        Dim vI As Version = Reflection.Assembly.GetExecutingAssembly().GetName().Version
-                                        Context.Response.Headers.Add("X-FrameworkVersion", String.Format("{0}.{1}.{2}", vI.Major, vI.Minor, vI.Build))
-
                                         BindInfo.PrepareProcedureParameters(
                                             New [Shared].Execution.BindInfo.ProcedureParser(
                                                 Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
@@ -369,7 +343,7 @@ Namespace Xeora.Web.Handler
                                                                                     Nothing,
                                                                                     Nothing,
                                                                                     New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
-                                                                                                                                                                 Instance = Site.DomainControl.Domain(Me._RequestID)
+                                                                                                                                                                 Instance = Me._DomainControl.Domain
                                                                                                                                                              End Sub)
                                                                                 )
                                                 End Sub)
@@ -523,8 +497,7 @@ QUICKFINISH:
                                     CurrentContextCatch.Request.ServerVariables("HTTP_HOST"),
                                     [Shared].Helpers.GetRedirectURL(
                                         False,
-                                        Site.DomainControl.Domain(Me._RequestID).Settings.Configurations.DefaultPage,
-                                        Site.DomainControl.Domain(Me._RequestID).Settings.Configurations.DefaultCaching
+                                        Me._DomainControl.Domain.Settings.Configurations.DefaultPage
                                     )
                                 )
                             )
@@ -578,24 +551,91 @@ QUICKFINISH:
 
             Private Sub PostRequestedStaticFileToClient()
                 ' This is a common file located somewhere in the webserver
+                Dim Context As System.Web.HttpContext =
+                    [Shared].Helpers.Context
                 Dim RequestFilePath As String =
-                    [Shared].Helpers.Context.Request.PhysicalPath
+                    Context.Request.PhysicalPath
 
                 If Not IO.File.Exists(RequestFilePath) Then
-                    [Shared].Helpers.Context.Response.StatusCode = 404
+                    Context.Response.StatusCode = 404
                 Else
-                    Dim RequestFileStream As IO.Stream =
-                        New IO.FileStream(RequestFilePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
-
-                    Me.WriteOutput(
+                    Dim ContentType As String =
                         [Shared].Helpers.GetMimeType(
                             IO.Path.GetExtension(RequestFilePath)
-                        ),
-                        RequestFileStream,
-                        Me._SupportCompression
-                    )
+                        )
 
-                    RequestFileStream.Close() : GC.SuppressFinalize(RequestFileStream)
+                    Dim Range As String =
+                        Context.Request.Headers.Item("Range")
+                    Dim IsPartialRequest As Boolean =
+                        Not String.IsNullOrEmpty(Range)
+
+                    Dim RequestFileStream As IO.Stream = Nothing
+
+                    If Not IsPartialRequest Then
+                        Context.Response.AppendHeader("Accept-Ranges", "bytes")
+
+                        Try
+                            RequestFileStream =
+                                New IO.FileStream(RequestFilePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+
+                            Context.Response.AppendHeader("Content-Length", RequestFileStream.Length.ToString())
+
+                            Me.WriteOutput(ContentType, RequestFileStream, False)
+                        Catch ex As System.Exception
+                            Throw
+                        Finally
+                            If Not RequestFileStream Is Nothing Then RequestFileStream.Close() : GC.SuppressFinalize(RequestFileStream)
+                        End Try
+                    Else
+                        Dim beginRange As Integer = 0, endRange As Integer = -1
+
+                        If Range.IndexOf("bytes=") = 0 Then
+                            Range = Range.Remove(0, "bytes=".Length)
+
+                            If Not Integer.TryParse(Range.Split("-"c)(0), beginRange) Then beginRange = 0
+                            If Not Integer.TryParse(Range.Split("-"c)(1), endRange) Then endRange = -1
+                        End If
+
+                        Context.Response.Buffer = False
+                        Context.Response.BufferOutput = False
+
+                        Context.Response.StatusCode = 206
+                        Context.Response.AppendHeader("Content-Type", ContentType)
+
+                        Try
+                            RequestFileStream = New IO.FileStream(RequestFilePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+
+                            Dim requestingLength As Long = RequestFileStream.Length
+
+                            If endRange = -1 Then
+                                requestingLength = requestingLength - beginRange
+
+                                Context.Response.AppendHeader("Content-Range", String.Format("bytes {0}-{1}/{2}", beginRange, requestingLength - 1, RequestFileStream.Length))
+                            Else
+                                requestingLength = endRange - beginRange
+
+                                Context.Response.AppendHeader("Content-Range", String.Format("bytes {0}-{1}/{2}", beginRange, endRange, RequestFileStream.Length))
+                            End If
+                            Context.Response.AppendHeader("Content-Length", requestingLength.ToString())
+
+                            RequestFileStream.Seek(beginRange, IO.SeekOrigin.Begin)
+
+                            Dim buffer As Byte() = CType(Array.CreateInstance(GetType(Byte), 8192), Byte()), bR As Integer
+                            Do
+                                bR = RequestFileStream.Read(buffer, 0, buffer.Length)
+
+                                If requestingLength < bR Then bR = CType(requestingLength, Integer)
+
+                                Context.Response.OutputStream.Write(buffer, 0, bR)
+
+                                requestingLength -= bR
+                            Loop Until requestingLength = 0 OrElse bR = 0
+                        Catch ex As System.Exception
+                            Throw
+                        Finally
+                            If Not RequestFileStream Is Nothing Then RequestFileStream.Close() : GC.SuppressFinalize(RequestFileStream)
+                        End Try
+                    End If
 
                     ' Remove RedirectLocation if it exists
                     [Shared].Helpers.Context.Items.Remove("RedirectLocation")
@@ -606,7 +646,7 @@ QUICKFINISH:
                 Dim RequestFileStream As IO.Stream = Nothing
 
                 ' Write File Content To Theme File Stream
-                Site.DomainControl.ProvideFileStream(RequestFileStream, RequestedFilePathInDomainContents)
+                Me._DomainControl.ProvideFileStream(RequestFileStream, RequestedFilePathInDomainContents)
 
                 If RequestFileStream Is Nothing Then
                     [Shared].Helpers.Context.Response.StatusCode = 404
@@ -649,7 +689,7 @@ QUICKFINISH:
                     Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
                         ' Get AuthenticationPage 
                         Dim AuthenticationPage As String =
-                            Site.DomainControl.Domain(Me._RequestID).Settings.Configurations.AuthenticationPage
+                            Me._DomainControl.Domain.Settings.Configurations.AuthenticationPage
 
                         If Not String.IsNullOrEmpty(CurrentRequestedTemplate) AndAlso
                             String.Compare(AuthenticationPage, CurrentRequestedTemplate, True) <> 0 Then
@@ -665,8 +705,7 @@ QUICKFINISH:
                             "RedirectLocation",
                             [Shared].Helpers.GetRedirectURL(
                                 True,
-                                AuthenticationPage,
-                                [Shared].Globals.PageCaching.DefaultType
+                                AuthenticationPage
                             )
                         )
 
@@ -811,11 +850,8 @@ QUICKFINISH:
                         )
                     End If
 
-                    If Not CurrentContextCatch.Request.QueryString.Item("nocache") Is Nothing AndAlso
-                        (
-                            String.Compare(CurrentContextCatch.Request.QueryString.Item("nocache"), "L2", True) = 0 OrElse
-                            String.Compare(CurrentContextCatch.Request.QueryString.Item("nocache"), "L2XC", True) = 0
-                        ) Then
+                    If [Shared].Globals.PageCaching.DefaultType = [Shared].Globals.PageCaching.Types.NoCache OrElse
+                        [Shared].Globals.PageCaching.DefaultType = [Shared].Globals.PageCaching.Types.NoCacheCookiless Then
 
                         If Not IsPragmaAdded Then sW.WriteLine("<meta http-equiv=""Pragma"" content=""no-cache"" />")
                         If Not IsCacheControlAdded Then sW.WriteLine("<meta http-equiv=""Cache-Control"" content=""no-cache"" />")
@@ -843,8 +879,8 @@ QUICKFINISH:
                             "<link type=""text/css"" rel=""stylesheet"" href=""{0}"" />",
                             IO.Path.Combine(
                                 [Shared].Helpers.GetDomainContentsPath(
-                                    Site.DomainControl.Domain(Me._RequestID).IDAccessTree,
-                                    Site.DomainControl.Domain(Me._RequestID).Language.ID
+                                    Me._DomainControl.Domain.IDAccessTree,
+                                    Me._DomainControl.Domain.Language.ID
                                 ), "styles.css").Replace("\"c, "/"c)
                         )
                     )
@@ -906,12 +942,11 @@ QUICKFINISH:
             End Sub
 
             Private Overloads Sub WriteOutput(ByVal ContentType As String, ByVal OutputContent As String, ByVal SendAsCompressed As Boolean)
-                ' This header for examing Response.End and also sent to the browser about the version of Solid Web Content
+                ' This header is for testing Response.End
                 Dim ResponseEndRaised As Boolean = False
                 Try
-                    Dim vI As Version = Reflection.Assembly.GetExecutingAssembly().GetName().Version
-
-                    [Shared].Helpers.Context.Response.AppendHeader("X-FrameworkVersion", String.Format("{0}.{1}.{2}", vI.Major, vI.Minor, vI.Build))
+                    [Shared].Helpers.Context.Response.AppendHeader("_Dummy_", "XCT")
+                    [Shared].Helpers.Context.Response.Headers.Remove("_Dummy_")
                 Catch ex As System.Web.HttpException
                     ResponseEndRaised = True
                 Catch ex As System.Exception
@@ -938,8 +973,6 @@ QUICKFINISH:
                 Dim ContentBuffer As Byte() = CType(Array.CreateInstance(GetType(Byte), 4096), Byte()), bC As Integer
 
                 If SendAsCompressed Then
-                    Dim ExceptionText As String = Nothing
-
                     Dim gzippedStream As New IO.MemoryStream()
                     Dim gzipCompression As IO.Compression.GZipStream = Nothing
 
@@ -952,16 +985,12 @@ QUICKFINISH:
                             gzipCompression.Write(ContentBuffer, 0, bC)
                         Loop While bC > 0
                     Catch ex As System.Exception
-                        ExceptionText = ex.ToString()
+                        If Not gzippedStream Is Nothing Then gzippedStream.Close() : GC.SuppressFinalize(gzippedStream)
+
+                        Throw
                     Finally
                         If Not gzipCompression Is Nothing Then gzipCompression.Close() : GC.SuppressFinalize(gzipCompression)
                     End Try
-
-                    If Not ExceptionText Is Nothing Then
-                        If Not gzippedStream Is Nothing Then gzippedStream.Close() : GC.SuppressFinalize(gzippedStream)
-
-                        Throw New System.Exception(ExceptionText)
-                    End If
 
                     If gzippedStream.Length < OutputStream.Length Then
                         [Shared].Helpers.Context.Response.AppendHeader("Content-Type", ContentType)
@@ -976,7 +1005,10 @@ QUICKFINISH:
                 Else
                     [Shared].Helpers.Context.Response.AppendHeader("Content-Type", ContentType)
 
-                    If Me.Bandwidth > 0 Then ContentBuffer = CType(Array.CreateInstance(GetType(Byte), Me.Bandwidth), Byte())
+                    Dim Bandwidth As Long =
+                        CType(CType(RequestModule.XeoraSettings, Configuration.XeoraSection).Main.Bandwidth, Long)
+
+                    If Bandwidth > 0 Then ContentBuffer = CType(Array.CreateInstance(GetType(Byte), Bandwidth), Byte())
 
                     OutputStream.Seek(0, IO.SeekOrigin.Begin)
 
@@ -986,30 +1018,11 @@ QUICKFINISH:
                         If bC > 0 Then
                             [Shared].Helpers.Context.Response.OutputStream.Write(ContentBuffer, 0, bC)
 
-                            If Me.Bandwidth > 0 AndAlso bC = Me.Bandwidth Then Threading.Thread.Sleep(1000)
+                            If Bandwidth > 0 AndAlso bC = Bandwidth Then Threading.Thread.Sleep(1000)
                         End If
                     Loop Until bC = 0
                 End If
             End Sub
-
-            Private Shared _Bandwidth As Long = -1
-            Private ReadOnly Property Bandwidth() As Long
-                Get
-                    If XeoraHandler._Bandwidth = -1 Then
-                        Dim _Bandwidth As String = Configuration.ConfigurationManager.AppSettings.Item("Bandwidth")
-
-                        If Not String.IsNullOrEmpty(_Bandwidth) Then
-                            Try
-                                XeoraHandler._Bandwidth = Long.Parse(_Bandwidth)
-                            Catch ex As System.Exception
-                                XeoraHandler._Bandwidth = 0
-                            End Try
-                        End If
-                    End If
-
-                    Return XeoraHandler._Bandwidth
-                End Get
-            End Property
         End Class
     End Class
 End Namespace

@@ -10,6 +10,8 @@ Namespace Xeora.Web.Handler
         Private Shared _pApplicationID As String = String.Empty
         Private Shared _pApplicationLocation As String = String.Empty
 
+        Private Shared _xeoraSettings As Configuration.XeoraSection
+
         Private Shared _HttpContextTable As Hashtable
 
         Private Shared _pSessionIDManager As System.Web.SessionState.ISessionIDManager
@@ -102,8 +104,6 @@ Namespace Xeora.Web.Handler
             AddHandler app.EndRequest, New EventHandler(AddressOf Me.OnEndRequest)
             ' !---
 
-            Me.LoadApplication(False)
-
             ' If not already initialized, initialize timer and configuration.
             Threading.Monitor.Enter(Me)
             Try
@@ -112,17 +112,350 @@ Namespace Xeora.Web.Handler
                         RequestModule._HttpContextTable = Hashtable.Synchronized(New Hashtable())
 
                     ' Get the configuration section and set timeout and CookieMode values.
-                    Dim cfg As Configuration.Configuration =
+                    Dim cfg As System.Configuration.Configuration =
                         System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration(
                                     System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
-                    Dim wConfig As System.Web.Configuration.SessionStateSection =
+
+                    ' Take care framework defaults
+                    Dim IsModified As Boolean = False
+
+                    ' Session CookieID
+                    Dim sConfig As System.Web.Configuration.SessionStateSection =
                         CType(cfg.GetSection("system.web/sessionState"), System.Web.Configuration.SessionStateSection)
 
-                    RequestModule._pSessionStateMode = wConfig.Mode
-                    RequestModule._pTimeout = CInt(wConfig.Timeout.TotalMinutes)
+                    If String.Compare(sConfig.CookieName, "xcsid") <> 0 Then
+                        sConfig.CookieName = "xcsid"
+
+                        IsModified = True
+                    End If
+
+                    ' disable ASP related headers 
+                    Dim hConfig As System.Web.Configuration.HttpRuntimeSection =
+                        CType(cfg.GetSection("system.web/httpRuntime"), System.Web.Configuration.HttpRuntimeSection)
+
+                    If hConfig.EnableVersionHeader Then
+                        hConfig.EnableVersionHeader = False
+
+                        IsModified = True
+                    End If
+
+                    If IsModified Then _
+                        cfg.Save(System.Configuration.ConfigurationSaveMode.Modified)
+
+                    IsModified = False
+
+                    Dim confDocStream As IO.Stream = Nothing
+                    Dim xmlDocument As System.Xml.XmlDocument
+                    Try
+                        confDocStream = New IO.FileStream(cfg.FilePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
+
+                        xmlDocument = New System.Xml.XmlDocument()
+                        xmlDocument.PreserveWhitespace = True
+                        xmlDocument.Load(confDocStream)
+                    Catch ex As System.Exception
+                        Throw
+                    Finally
+                        If Not confDocStream Is Nothing Then confDocStream.Close()
+                    End Try
+
+                    Dim xmlNodes As System.Xml.XmlNodeList = Nothing
+                    ' take care xeora configuration section
+                    xmlNodes = xmlDocument.SelectNodes("/configuration/configSections")
+
+                    If xmlNodes.Count = 0 Then
+                        xmlNodes = xmlDocument.SelectNodes("/configuration")
+
+                        If xmlNodes.Count = 0 Then
+                            Throw New System.Exception("Application Configuration File Error!")
+                        Else
+                            Dim sectionNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("section")
+                            Dim nameAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("name")
+                            nameAttribute.Value = "xeora"
+                            Dim typeAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("type")
+                            typeAttribute.Value = String.Format("Xeora.Web.Configuration.XeoraSection, {0}", System.Reflection.Assembly.GetExecutingAssembly().FullName)
+
+                            sectionNode.Attributes.Append(nameAttribute)
+                            sectionNode.Attributes.Append(typeAttribute)
+
+                            Dim configSectionsNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("configSections")
+
+                            configSectionsNode.AppendChild(sectionNode)
+
+                            xmlNodes.Item(0).InsertBefore(configSectionsNode, xmlNodes.Item(0).FirstChild)
+
+                            IsModified = True
+                        End If
+                    Else
+                        xmlNodes = xmlDocument.SelectNodes("/configuration/configSections/section[@name='xeora']")
+
+                        If xmlNodes.Count <> 1 Then
+                            If xmlNodes.Count > 1 Then
+                                For Each xmlNode As Xml.XmlNode In xmlNodes
+                                    xmlNode.ParentNode.RemoveChild(xmlNode)
+                                Next
+                            End If
+
+                            xmlNodes = xmlDocument.SelectNodes("/configuration/configSections")
+
+                            Dim sectionNode As Xml.XmlNode =
+                            xmlDocument.CreateElement("section")
+                            Dim nameAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("name")
+                            nameAttribute.Value = "xeora"
+                            Dim typeAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("type")
+                            typeAttribute.Value = String.Format("Xeora.Web.Configuration.XeoraSection, {0}", System.Reflection.Assembly.GetCallingAssembly().FullName)
+
+                            sectionNode.Attributes.Append(nameAttribute)
+                            sectionNode.Attributes.Append(typeAttribute)
+
+                            xmlNodes.Item(0).AppendChild(sectionNode)
+
+                            IsModified = True
+                        End If
+                    End If
+
+                    ' take care xeora configuration section
+                    xmlNodes = xmlDocument.SelectNodes("/configuration/xeora")
+
+                    If xmlNodes.Count <> 1 Then
+                        If xmlNodes.Count > 1 Then
+                            For Each xmlNode As Xml.XmlNode In xmlNodes
+                                xmlNode.ParentNode.RemoveChild(xmlNode)
+                            Next
+                        End If
+                        xmlNodes = xmlDocument.SelectNodes("/configuration")
+
+                        Dim xeoraNode As Xml.XmlNode =
+                            xmlDocument.CreateElement("xeora")
+                        Dim nameAttribute As Xml.XmlAttribute =
+                            xmlDocument.CreateAttribute("configSource")
+                        nameAttribute.Value = "xeora.config"
+
+                        xeoraNode.Attributes.Append(nameAttribute)
+
+                        xmlNodes.Item(0).AppendChild(xeoraNode)
+
+                        IsModified = True
+                    End If
+
+                    ' take care framework headers
+                    xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol")
+
+                    If xmlNodes.Count = 0 Then
+                        xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer")
+
+                        If xmlNodes.Count = 0 Then
+                            Throw New System.Exception("Application Configuration File Error!")
+                        Else
+                            Dim removeNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("remove")
+                            Dim removeNameAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("name")
+                            removeNameAttribute.Value = "X-Powered-By"
+                            removeNode.Attributes.Append(removeNameAttribute)
+
+                            Dim addNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("add")
+                            Dim addNameAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("name")
+                            addNameAttribute.Value = "X-Powered-By"
+                            Dim addValueAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("value")
+                            addValueAttribute.Value = "XeoraCube"
+
+                            addNode.Attributes.Append(addNameAttribute)
+                            addNode.Attributes.Append(addValueAttribute)
+
+                            Dim customHeadersNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("customHeaders")
+
+                            Dim protocolNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("httpProtocol")
+
+                            customHeadersNode.AppendChild(removeNode)
+                            customHeadersNode.AppendChild(addNode)
+                            protocolNode.AppendChild(customHeadersNode)
+
+                            xmlNodes.Item(0).AppendChild(protocolNode)
+
+                            IsModified = True
+                        End If
+                    Else
+                        xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
+
+                        If xmlNodes.Count = 0 Then
+                            xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol")
+
+                            Dim removeNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("remove")
+                            Dim removeNameAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("name")
+                            removeNameAttribute.Value = "X-Powered-By"
+                            removeNode.Attributes.Append(removeNameAttribute)
+
+                            Dim addNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("add")
+                            Dim addNameAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("name")
+                            addNameAttribute.Value = "X-Powered-By"
+                            Dim addValueAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("value")
+                            addValueAttribute.Value = "XeoraCube"
+
+                            addNode.Attributes.Append(addNameAttribute)
+                            addNode.Attributes.Append(addValueAttribute)
+
+                            Dim customHeadersNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("customHeaders")
+
+                            customHeadersNode.AppendChild(removeNode)
+                            customHeadersNode.AppendChild(addNode)
+
+                            xmlNodes.Item(0).AppendChild(customHeadersNode)
+
+                            IsModified = True
+                        Else
+                            Dim xpbModified As Boolean = False
+                            xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders/remove[@name='X-Powered-By']")
+
+                            If xmlNodes.Count <> 1 Then
+                                If xmlNodes.Count > 1 Then
+                                    For Each xmlNode As Xml.XmlNode In xmlNodes
+                                        xmlNode.ParentNode.RemoveChild(xmlNode)
+                                    Next
+                                End If
+
+                                xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
+
+                                Dim removeNode As Xml.XmlNode =
+                                    xmlDocument.CreateElement("remove")
+                                Dim removeNameAttribute As Xml.XmlAttribute =
+                                    xmlDocument.CreateAttribute("name")
+                                removeNameAttribute.Value = "X-Powered-By"
+                                removeNode.Attributes.Append(removeNameAttribute)
+
+                                xmlNodes.Item(0).AppendChild(removeNode)
+
+                                IsModified = True
+                                xpbModified = True
+                            End If
+
+                            xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders/add[@name='X-Powered-By']")
+
+                            If xmlNodes.Count <> 1 OrElse xpbModified Then
+                                If xmlNodes.Count > 1 OrElse xpbModified Then
+                                    For Each xmlNode As Xml.XmlNode In xmlNodes
+                                        xmlNode.ParentNode.RemoveChild(xmlNode)
+                                    Next
+                                End If
+
+                                xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
+
+                                Dim addNode As Xml.XmlNode =
+                                    xmlDocument.CreateElement("add")
+                                Dim addNameAttribute As Xml.XmlAttribute =
+                                    xmlDocument.CreateAttribute("name")
+                                addNameAttribute.Value = "X-Powered-By"
+                                Dim addValueAttribute As Xml.XmlAttribute =
+                                    xmlDocument.CreateAttribute("value")
+                                addValueAttribute.Value = "XeoraCube"
+
+                                addNode.Attributes.Append(addNameAttribute)
+                                addNode.Attributes.Append(addValueAttribute)
+
+                                xmlNodes.Item(0).AppendChild(addNode)
+
+                                IsModified = True
+                            Else
+                                If String.Compare(xmlNodes.Item(0).Attributes.GetNamedItem("value").Value, "XeoraCube") <> 0 Then
+                                    xmlNodes.Item(0).Attributes.GetNamedItem("value").Value = "XeoraCube"
+                                    IsModified = True
+                                End If
+                            End If
+
+                            xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders/add[@name='X-FrameworkVersion']")
+
+                            Dim vI As Version = Reflection.Assembly.GetExecutingAssembly().GetName().Version
+                            Dim vIS As String = String.Format("{0}.{1}.{2}", vI.Major, vI.Minor, vI.Build)
+
+                            If xmlNodes.Count <> 1 Then
+                                If xmlNodes.Count > 1 Then
+                                    For Each xmlNode As Xml.XmlNode In xmlNodes
+                                        xmlNode.ParentNode.RemoveChild(xmlNode)
+                                    Next
+                                End If
+
+                                xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
+
+                                Dim addNode As Xml.XmlNode =
+                                    xmlDocument.CreateElement("add")
+                                Dim addNameAttribute As Xml.XmlAttribute =
+                                    xmlDocument.CreateAttribute("name")
+                                addNameAttribute.Value = "X-FrameworkVersion"
+                                Dim addValueAttribute As Xml.XmlAttribute =
+                                    xmlDocument.CreateAttribute("value")
+                                addValueAttribute.Value = vIS
+
+                                addNode.Attributes.Append(addNameAttribute)
+                                addNode.Attributes.Append(addValueAttribute)
+
+                                xmlNodes.Item(0).AppendChild(addNode)
+
+                                IsModified = True
+                            Else
+                                If String.Compare(xmlNodes.Item(0).Attributes.GetNamedItem("value").Value, vIS) <> 0 Then
+                                    xmlNodes.Item(0).Attributes.GetNamedItem("value").Value = vIS
+                                    IsModified = True
+                                End If
+                            End If
+                        End If
+                    End If
+
+                    If IsModified Then
+                        Dim cfgBackupFilePath As String =
+                            String.Format("{0}.backup", cfg.FilePath)
+
+                        confDocStream = Nothing
+                        Try
+                            IO.File.Move(cfg.FilePath, cfgBackupFilePath)
+
+                            confDocStream =
+                                New IO.FileStream(cfg.FilePath, IO.FileMode.Create, IO.FileAccess.ReadWrite, IO.FileShare.ReadWrite)
+                            xmlDocument.Save(confDocStream)
+
+                            IO.File.Delete(cfgBackupFilePath)
+                        Catch ex As System.Exception
+                            If IO.File.Exists(cfgBackupFilePath) Then
+                                If IO.File.Exists(cfg.FilePath) Then _
+                                    IO.File.Delete(cfg.FilePath)
+
+                                IO.File.Move(cfgBackupFilePath, cfg.FilePath)
+                            End If
+
+                            Throw
+                        Finally
+                            If Not confDocStream Is Nothing Then confDocStream.Close()
+                        End Try
+                    End If
+                    ' !---
+
+                    If IsModified Then
+                        cfg = System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration(
+                                System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
+                    End If
+
+                    RequestModule._xeoraSettings = CType(cfg.GetSection("xeora"), Configuration.XeoraSection)
+
+                    RequestModule._pSessionStateMode = sConfig.Mode
+                    RequestModule._pTimeout = CInt(sConfig.Timeout.TotalMinutes)
 
                     If RequestModule._pSessionStateMode = System.Web.SessionState.SessionStateMode.Off Then
-                        RequestModule._pCookieMode = wConfig.Cookieless
+                        RequestModule._pCookieMode = sConfig.Cookieless
 
                         RequestModule._pSessionItems = Hashtable.Synchronized(New Hashtable)
                     End If
@@ -132,6 +465,8 @@ Namespace Xeora.Web.Handler
             Finally
                 Threading.Monitor.Exit(Me)
             End Try
+
+            Me.LoadApplication(False)
         End Sub
 
         '
@@ -166,13 +501,17 @@ Namespace Xeora.Web.Handler
                 app.Context.Request.RawUrl
 
             If RootPath.IndexOf("~/") > -1 Then
-                RootPath = RootPath.Remove(0, RootPath.IndexOf("~/") + 2)
+                Dim tildeIdx As Integer = RootPath.IndexOf("~/")
+
+                RootPath = RootPath.Remove(0, tildeIdx + 2)
                 RootPath = RootPath.Insert(0, [Shared].Configurations.ApplicationRoot.BrowserImplementation)
 
                 app.Context.RewritePath(RootPath)
             ElseIf RootPath.IndexOf("¨/") > -1 Then
                 ' It search something outside of XeoraCube Handler
-                RootPath = RootPath.Remove(0, RootPath.IndexOf("¨/") + 2)
+                Dim helfIdx As Integer = RootPath.IndexOf("¨/")
+
+                RootPath = RootPath.Remove(0, helfIdx + 2)
                 RootPath = RootPath.Insert(0, [Shared].Configurations.VirtualRoot)
 
                 app.Context.Response.Clear()
@@ -279,7 +618,6 @@ Namespace Xeora.Web.Handler
             End If
         End Sub
 
-
         '
         ' Event handler for HttpApplication.PreRequestHandlerExecute
         '
@@ -383,6 +721,12 @@ Namespace Xeora.Web.Handler
         Public Shared ReadOnly Property VariablePool() As Site.Service.VariablePool
             Get
                 Return RequestModule._VPService
+            End Get
+        End Property
+
+        Public Shared ReadOnly Property XeoraSettings() As Object
+            Get
+                Return RequestModule._xeoraSettings
             End Get
         End Property
 
@@ -516,9 +860,17 @@ Namespace Xeora.Web.Handler
                         IO.Path.Combine(
                             [Shared].Configurations.PyhsicalRoot,
                             [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
-                            "Domains",
-                            [Shared].Configurations.DefaultDomain
+                            "Domains"
                         )
+                    For dC As Integer = 0 To [Shared].Configurations.DefaultDomain.Length - 1
+                        If dC > 0 Then
+                            DefaultDomainRootLocation =
+                                IO.Path.Combine(DefaultDomainRootLocation, "Addons")
+                        End If
+
+                        DefaultDomainRootLocation =
+                            IO.Path.Combine(DefaultDomainRootLocation, [Shared].Configurations.DefaultDomain(dC))
+                    Next
 
                     Me.LoadDomainExecutables(DefaultDomainRootLocation)
 
@@ -568,11 +920,19 @@ Namespace Xeora.Web.Handler
             If IO.Directory.Exists(RequestModule._pApplicationLocation) Then
                 Dim DefaultDomainRootLocation As String =
                     IO.Path.Combine(
-                        [Shared].Configurations.PyhsicalRoot,
+                        CType(RequestModule.XeoraSettings, Configuration.XeoraSection).Main.PyhsicalRoot,
                         [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
-                        "Domains",
-                        [Shared].Configurations.DefaultDomain
+                        "Domains"
                     )
+                For dC As Integer = 0 To CType(RequestModule.XeoraSettings, Configuration.XeoraSection).Main.DefaultDomain.Length - 1
+                    If dC > 0 Then
+                        DefaultDomainRootLocation =
+                            IO.Path.Combine(DefaultDomainRootLocation, "Addons")
+                    End If
+
+                    DefaultDomainRootLocation =
+                        IO.Path.Combine(DefaultDomainRootLocation, CType(RequestModule.XeoraSettings, Configuration.XeoraSection).Main.DefaultDomain(dC))
+                Next
 
                 rBoolean = Me.ExamReloadRequirement(DefaultDomainRootLocation)
             Else
@@ -589,70 +949,64 @@ Namespace Xeora.Web.Handler
             If Me._CacheFileHashCache Is Nothing Then _
                 Me._CacheFileHashCache = New Dictionary(Of String, Byte())
 
-            Dim DomainExecutablesLocation As String =
-                IO.Path.Combine(DomainRootPath, "Executables")
-
-            Dim DI As New IO.DirectoryInfo(DomainExecutablesLocation)
-            Dim MD5 As Security.Cryptography.MD5 =
-                Security.Cryptography.MD5.Create()
+            Dim DI As IO.DirectoryInfo =
+                New IO.DirectoryInfo(
+                    IO.Path.Combine(DomainRootPath, "Executables"))
+            Dim MD5 As Security.Cryptography.MD5 = Nothing
 
             For Each RealFI As IO.FileInfo In DI.GetFiles("*.dll")
-                Dim CacheFileLocation As String =
-                    IO.Path.Combine(RequestModule._pApplicationLocation, RealFI.Name)
+                Dim CacheFI As IO.FileInfo =
+                    New IO.FileInfo(
+                        IO.Path.Combine(RequestModule._pApplicationLocation, RealFI.Name))
 
-                If Not IO.File.Exists(CacheFileLocation) Then
+                If Not CacheFI.Exists OrElse RealFI.Length <> CacheFI.Length Then
                     rBoolean = True
 
                     Exit For
                 Else
-                    Dim CacheFI As IO.FileInfo =
-                        New IO.FileInfo(CacheFileLocation)
+                    If RealFI.LastWriteTime.CompareTo(CacheFI.LastWriteTime) = 0 Then Continue For
 
-                    If RealFI.Length <> CacheFI.Length Then
+                    Dim RealStream As IO.Stream = Nothing, RealHash As Byte()
+                    Dim CacheStream As IO.Stream = Nothing, CacheHash As Byte()
+
+                    If MD5 Is Nothing Then MD5 = Security.Cryptography.MD5.Create()
+
+                    Try
+                        RealStream = RealFI.Open(IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                        RealHash = MD5.ComputeHash(RealStream)
+
+                        If Me._CacheFileHashCache.ContainsKey(CacheFI.FullName) Then
+                            CacheHash = Me._CacheFileHashCache.Item(CacheFI.FullName)
+                        Else
+                            CacheStream = CacheFI.Open(IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                            CacheHash = MD5.ComputeHash(CacheStream)
+
+                            Me._CacheFileHashCache.Add(CacheFI.FullName, CacheHash)
+                        End If
+
+                        rBoolean = Not RealHash.SequenceEqual(CacheHash)
+                    Catch ex As System.Exception
                         rBoolean = True
+                    Finally
+                        If Not RealStream Is Nothing Then RealStream.Close()
+                        If Not CacheStream Is Nothing Then CacheStream.Close()
+                    End Try
 
-                        Exit For
-                    Else
-                        If RealFI.LastWriteTime.CompareTo(CacheFI.LastWriteTime) = 0 Then Continue For
-                        
-                        Dim RealStream As IO.Stream = Nothing, RealHash As Byte()
-                        Dim CacheStream As IO.Stream = Nothing, CacheHash As Byte()
-
-                        Try
-                            RealStream = RealFI.Open(IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
-                            RealHash = MD5.ComputeHash(RealStream)
-
-                            If Me._CacheFileHashCache.ContainsKey(CacheFileLocation) Then
-                                CacheHash = Me._CacheFileHashCache.Item(CacheFileLocation)
-                            Else
-                                CacheStream = CacheFI.Open(IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
-                                CacheHash = MD5.ComputeHash(CacheStream)
-
-                                Me._CacheFileHashCache.Add(CacheFileLocation, CacheHash)
-                            End If
-
-                            rBoolean = Not RealHash.SequenceEqual(CacheHash)
-                        Catch ex As System.Exception
-                            rBoolean = True
-                        Finally
-                            If Not RealStream Is Nothing Then RealStream.Close()
-                            If Not CacheStream Is Nothing Then CacheStream.Close()
-                        End Try
-
-                        If rBoolean Then Exit For
-                    End If
+                    If rBoolean Then Exit For
                 End If
             Next
 
-            Dim DomainChildrenDI As IO.DirectoryInfo =
-                New IO.DirectoryInfo(IO.Path.Combine(DomainRootPath, "Addons"))
+            If Not rBoolean Then
+                Dim DomainChildrenDI As IO.DirectoryInfo =
+                    New IO.DirectoryInfo(IO.Path.Combine(DomainRootPath, "Addons"))
 
-            If DomainChildrenDI.Exists Then
-                For Each ChildDomainDI As IO.DirectoryInfo In DomainChildrenDI.GetDirectories()
-                    rBoolean = Me.ExamReloadRequirement(ChildDomainDI.FullName)
+                If DomainChildrenDI.Exists Then
+                    For Each ChildDomainDI As IO.DirectoryInfo In DomainChildrenDI.GetDirectories()
+                        rBoolean = Me.ExamReloadRequirement(ChildDomainDI.FullName)
 
-                    If rBoolean Then Exit For
-                Next
+                        If rBoolean Then Exit For
+                    Next
+                End If
             End If
 
             Return rBoolean

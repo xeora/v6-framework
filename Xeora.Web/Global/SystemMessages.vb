@@ -17,7 +17,7 @@ Namespace Xeora.Web.Global
         Public Const TEMPLATE_AUTH As String = "This Template Requires Authentication"
         Public Const TEMPLATE_NOFOUND As String = "{0} Named Template file is not found"
 
-        Public Const TEMPLATE_IDMUSTBESET As String = "TemplateID must be set"
+        Public Const TEMPLATE_IDMUSTBESET As String = "ServiceID must be set"
 
         Public Const XSERVICE_AUTH As String = "This xService Requires Authentication"
 

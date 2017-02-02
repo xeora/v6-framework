@@ -4,7 +4,7 @@ Namespace Xeora.Web.Helper
     Public Class OverrideBinder
         Inherits System.Runtime.Serialization.SerializationBinder
 
-        Private Shared _AssemblyCache As New Generic.Dictionary(Of String, System.Reflection.Assembly)
+        Private Shared _AssemblyCache As New Concurrent.ConcurrentDictionary(Of String, System.Reflection.Assembly)
 
         Public Overrides Function BindToType(ByVal assemblyName As String, ByVal typeName As String) As System.Type
             Dim typeToDeserialize As Type = Nothing
@@ -21,7 +21,7 @@ Namespace Xeora.Web.Helper
                     If sShortAssemblyName = ayAssembly.FullName.Substring(0, assemblyName.IndexOf(","c)) Then
                         typeToDeserialize = Me.GetDeserializeType(ayAssembly, typeName)
 
-                        OverrideBinder._AssemblyCache.Add(sShortAssemblyName, ayAssembly)
+                        OverrideBinder._AssemblyCache.TryAdd(sShortAssemblyName, ayAssembly)
 
                         Exit For
                     End If

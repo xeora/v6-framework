@@ -13,20 +13,37 @@ Namespace Xeora.Web.Helper
             Me._LoggingCache = New Generic.SortedDictionary(Of Long, LoggingObject)
         End Sub
 
+        Private Shared _LoggingPath As String = Nothing
         Private ReadOnly Property LoggingPath() As String
             Get
-                Dim rString As String =
-                    Configuration.ConfigurationManager.AppSettings.Item("LoggingPath")
+                If String.IsNullOrEmpty(EventLogging._LoggingPath) Then
+                    Try
+                        Dim RequestAsm As Reflection.Assembly, objRequest As Type
 
-                If String.IsNullOrEmpty(rString) Then
-                    rString =
-                        IO.Path.Combine(
-                            [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
-                            "XeoraLogs"
-                        )
+                        RequestAsm = Reflection.Assembly.Load("Xeora.Web.Handler")
+                        objRequest = RequestAsm.GetType("Xeora.Web.Handler.RequestModule", False, True)
+
+                        Dim XeoraSettingsObject As Object =
+                            objRequest.InvokeMember("XeoraSettings", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, Nothing)
+
+                        Dim WorkingObject As Object =
+                            XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, XeoraSettingsObject, Nothing)
+
+                        EventLogging._LoggingPath = CType(WorkingObject.GetType().InvokeMember("LoggingPath", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
+
+                        If String.IsNullOrEmpty(EventLogging._LoggingPath) Then
+                            EventLogging._LoggingPath =
+                                IO.Path.Combine(
+                                    [Shared].Configurations.PyhsicalRoot,
+                                    "XeoraLogs"
+                                )
+                        End If
+                    Catch ex As System.Exception
+                        Throw New Reflection.TargetInvocationException("Xeora Settings are unable to read!", ex)
+                    End Try
                 End If
 
-                Return rString
+                Return EventLogging._LoggingPath
             End Get
         End Property
 

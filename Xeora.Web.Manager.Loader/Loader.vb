@@ -13,7 +13,7 @@ Namespace Xeora.Web.Manager
 
         Private _MissingFileException As Boolean = False
 
-        Private ExecutableInstance As Object = Nothing
+        Private _ExecutableInstances As System.Collections.Hashtable
 
         Public Sub New(ByVal ExecutablesPath As String, ByVal ExecutableName As String)
             If String.IsNullOrEmpty(ExecutablesPath) Then Throw New System.ArgumentNullException("ExecutablesPath must not be null!")
@@ -28,6 +28,8 @@ Namespace Xeora.Web.Manager
                                         Me._ExecutablesPath,
                                         String.Format("{0}.dll", Me._ExecutableName)
                                     )
+
+            Me._ExecutableInstances = System.Collections.Hashtable.Synchronized(New System.Collections.Hashtable())
 
             Try
                 Me._AssemblyDll = System.Reflection.Assembly.LoadFile(Me._PostBackPath)
@@ -139,11 +141,11 @@ Namespace Xeora.Web.Manager
             Return rBoolean
         End Function
 
-        Public Function Invoke(ByVal ClassNames As String(), ByVal FunctionName As String, ByVal FunctionParams As Object(), ByVal ExecuterType As String) As Object
-            Return Me.InvokeInternal(ClassNames, FunctionName, FunctionParams, ExecuterType)
+        Public Function Invoke(ByVal HttpMethodType As String, ByVal ClassNames As String(), ByVal FunctionName As String, ByVal FunctionParams As Object(), ByVal InstanceExecute As Boolean, ByVal ExecuterType As String) As Object
+            Return Me.InvokeInternal(HttpMethodType, ClassNames, FunctionName, FunctionParams, InstanceExecute, ExecuterType)
         End Function
 
-        Private Function InvokeInternal(ByVal ClassNames As String(), ByVal FunctionName As String, ByVal FunctionParams As Object(), ByVal ExecuterType As String) As Object
+        Private Function InvokeInternal(ByVal HttpMethodType As String, ByVal ClassNames As String(), ByVal FunctionName As String, ByVal FunctionParams As Object(), ByVal InstanceExecute As Boolean, ByVal ExecuterType As String) As Object
             If String.IsNullOrEmpty(FunctionName) Then Throw New System.ArgumentNullException("FunctionName must be defined!")
             If FunctionParams Is Nothing Then FunctionParams = New Object() {}
 
@@ -181,14 +183,22 @@ Namespace Xeora.Web.Manager
 
                         Throw New System.Exception("Calling Assembly is not a XeoraCube Executable!")
                     Else
-                        If ExecutableInstance Is Nothing Then
+                        If Not Me._ExecutableInstances.ContainsKey(ExamInterface) Then
+                            System.Threading.Monitor.Enter(Me._ExecutableInstances.SyncRoot)
                             Try
-                                ExecutableInstance = System.Activator.CreateInstance(ExamInterface)
+                                Me._ExecutableInstances.Item(ExamInterface) = System.Activator.CreateInstance(ExamInterface)
                             Catch ex As System.Exception
                                 Throw New System.Exception("Unable to create an instance of XeoraCube Executable!", ex)
-                            End Try
+                            Finally
+                                Try
+                                    Dim ExecuteObject As Object =
+                                        Me._ExecutableInstances.Item(ExamInterface)
 
-                            ExecutableInstance.GetType().GetMethod("FirstTouch").Invoke(ExecutableInstance, Nothing)
+                                    ExecuteObject.GetType().GetMethod("FirstTouch").Invoke(ExecuteObject, Nothing)
+                                Finally
+                                    System.Threading.Monitor.Exit(Me._ExecutableInstances.SyncRoot)
+                                End Try
+                            End Try
                         End If
                     End If
                 End If
@@ -201,14 +211,45 @@ Namespace Xeora.Web.Manager
                     AssemblyObject = Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", Me._ExecutableName), True, True)
                 End If
 
-                AssemblyMethod = Me.GetAssemblyMethod(AssemblyObject, FunctionName, FunctionParams, ExecuterType)
+                AssemblyMethod = Me.GetAssemblyMethod(AssemblyObject, HttpMethodType, FunctionName, FunctionParams, ExecuterType)
 
                 If Not AssemblyMethod Is Nothing Then
                     Dim ExecutionID As String = System.Guid.NewGuid().ToString()
 
-                    ExecutableInstance.GetType().GetMethod("BeforeExecute").Invoke(ExecutableInstance, New Object() {ExecutionID, AssemblyMethod})
+                    If Me._ExecutableInstances.ContainsKey(ExamInterface) Then
+                        System.Threading.Monitor.Enter(Me._ExecutableInstances.SyncRoot)
+                        Try
+                            Dim ExecuteObject As Object =
+                                Me._ExecutableInstances.Item(ExamInterface)
 
-                    rObject = AssemblyMethod.Invoke(
+                            ExecuteObject.GetType().GetMethod("BeforeExecute").Invoke(ExecuteObject, New Object() {ExecutionID, AssemblyMethod})
+                        Finally
+                            System.Threading.Monitor.Exit(Me._ExecutableInstances.SyncRoot)
+                        End Try
+                    End If
+
+                    If InstanceExecute Then
+                        If Not Me._ExecutableInstances.ContainsKey(AssemblyObject) Then
+                            System.Threading.Monitor.Enter(Me._ExecutableInstances.SyncRoot)
+                            Try
+                                Me._ExecutableInstances.Item(AssemblyObject) = System.Activator.CreateInstance(AssemblyObject)
+                            Catch ex As System.Exception
+                                Throw New System.Exception("Unable to create an instance of XeoraCube Executable Class!", ex)
+                            Finally
+                                System.Threading.Monitor.Exit(Me._ExecutableInstances.SyncRoot)
+                            End Try
+                        End If
+
+                        rObject = AssemblyMethod.Invoke(
+                                        Me._ExecutableInstances.Item(AssemblyObject),
+                                        System.Reflection.BindingFlags.DeclaredOnly Or
+                                        System.Reflection.BindingFlags.InvokeMethod,
+                                        Nothing,
+                                        FunctionParams,
+                                        System.Threading.Thread.CurrentThread.CurrentCulture
+                                    )
+                    Else
+                        rObject = AssemblyMethod.Invoke(
                                         AssemblyObject,
                                         System.Reflection.BindingFlags.DeclaredOnly Or
                                         System.Reflection.BindingFlags.InvokeMethod,
@@ -216,8 +257,19 @@ Namespace Xeora.Web.Manager
                                         FunctionParams,
                                         System.Threading.Thread.CurrentThread.CurrentCulture
                                     )
+                    End If
 
-                    ExecutableInstance.GetType().GetMethod("AfterExecute").Invoke(ExecutableInstance, New Object() {ExecutionID, rObject})
+                    If Me._ExecutableInstances.ContainsKey(ExamInterface) Then
+                        System.Threading.Monitor.Enter(Me._ExecutableInstances.SyncRoot)
+                        Try
+                            Dim ExecuteObject As Object =
+                                Me._ExecutableInstances.Item(ExamInterface)
+
+                            ExecuteObject.GetType().GetMethod("AfterExecute").Invoke(ExecuteObject, New Object() {ExecutionID, rObject})
+                        Finally
+                            System.Threading.Monitor.Exit(Me._ExecutableInstances.SyncRoot)
+                        End Try
+                    End If
                 Else
                     Dim sB As New System.Text.StringBuilder
 
@@ -238,14 +290,14 @@ Namespace Xeora.Web.Manager
             Return rObject
         End Function
 
-        Private Function GetAssemblyMethod(ByRef AssemblyObject As System.Type, ByVal FunctionName As String, ByRef FunctionParams As Object(), ByVal ExecuterType As String) As System.Reflection.MethodInfo
+        Private Function GetAssemblyMethod(ByRef AssemblyObject As System.Type, ByVal HttpMethodType As String, ByVal FunctionName As String, ByRef FunctionParams As Object(), ByVal ExecuterType As String) As System.Reflection.MethodInfo
             Dim rAssemblyMethod As System.Reflection.MethodInfo = Nothing
 
             ' Sort and Filter Searching Function
             Dim AOMIs As System.Reflection.MethodInfo() = AssemblyObject.GetMethods()
             System.Array.Sort(AOMIs, New MethodInfoNameComparer(Nothing))
 
-            Dim mIF As New MethodInfoFinder(FunctionName)
+            Dim mIF As New MethodInfoFinder(HttpMethodType, FunctionName)
             Dim MIFIdx As Integer =
                 System.Array.FindIndex(
                     AOMIs,
@@ -361,7 +413,7 @@ Namespace Xeora.Web.Manager
             If rAssemblyMethod Is Nothing AndAlso
                 Not AssemblyObject.BaseType Is Nothing Then
 
-                rAssemblyMethod = Me.GetAssemblyMethod(AssemblyObject.BaseType, FunctionName, FunctionParams, ExecuterType)
+                rAssemblyMethod = Me.GetAssemblyMethod(AssemblyObject.BaseType, HttpMethodType, FunctionName, FunctionParams, ExecuterType)
 
                 If Not rAssemblyMethod Is Nothing Then AssemblyObject = AssemblyObject.BaseType
             End If
@@ -442,14 +494,34 @@ Namespace Xeora.Web.Manager
         End Function
 
         Private Class MethodInfoFinder
+            Private _HttpMethodType As String
             Private _SearchName As String
 
-            Public Sub New(ByVal SearchName As String)
+            Public Sub New(ByVal HttpMethodType As String, ByVal SearchName As String)
+                Me._HttpMethodType = HttpMethodType
                 Me._SearchName = SearchName
             End Sub
 
             Public Function MethodInfoFinder(ByVal mI As System.Reflection.MethodInfo) As Boolean
-                Return String.Compare(Me._SearchName, mI.Name, True) = 0
+                Dim AttributeCheck As Boolean =
+                    (String.Compare(Me._SearchName, mI.Name, True) = 0)
+
+                For Each aT As Object In mI.GetCustomAttributes(False)
+                    If String.Compare(aT.ToString(), "Xeora.Web.Shared.Attribute.HttpMethodAttribute", True) = 0 Then
+                        Dim WorkingType As System.Type = aT.GetType()
+
+                        Dim HttpMethod As Object =
+                            WorkingType.InvokeMember("Method", System.Reflection.BindingFlags.GetProperty, Nothing, aT, Nothing)
+                        Dim BindProcedureName As Object =
+                            WorkingType.InvokeMember("BindProcedureName", System.Reflection.BindingFlags.GetProperty, Nothing, aT, Nothing)
+
+                        AttributeCheck = (String.Compare(HttpMethod.ToString(), Me._HttpMethodType) = 0) AndAlso (String.Compare(BindProcedureName.ToString(), Me._SearchName) = 0)
+
+                        Exit For
+                    End If
+                Next
+
+                Return AttributeCheck
             End Function
         End Class
 
@@ -506,8 +578,24 @@ Namespace Xeora.Web.Manager
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not Me.disposedValue Then
                 If disposing Then
-                    If Not ExecutableInstance Is Nothing Then _
-                        ExecutableInstance.GetType().GetMethod("LastTouch").Invoke(ExecutableInstance, Nothing)
+                    Dim ExamInterface As System.Type =
+                        Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", Me._ExecutableName), False, True)
+
+                    If Me._ExecutableInstances.ContainsKey(ExamInterface) Then
+                        Dim ExecuteObject As Object =
+                            Me._ExecutableInstances.Item(ExamInterface)
+
+                        ExecuteObject.GetType().GetMethod("LastTouch").Invoke(ExecuteObject, Nothing)
+
+                        System.Threading.Monitor.Enter(Me._ExecutableInstances.SyncRoot)
+                        Try
+                            Me._ExecutableInstances.Remove(ExamInterface)
+                        Catch ex As System.Exception
+                            Throw New System.Exception("Unable to create an instance of XeoraCube Executable!", ex)
+                        Finally
+                            System.Threading.Monitor.Exit(Me._ExecutableInstances.SyncRoot)
+                        End Try
+                    End If
                 End If
             End If
             Me.disposedValue = True

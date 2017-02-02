@@ -91,27 +91,10 @@ Namespace Xeora.Web.Controller.Directive.Control
 
                 CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
 
-                Dim ContentCollection As String() = Me.SplitContentByControlIDWithIndex(CoreContent, ControlIDWithIndex)
+                Dim ContentDescription As [Global].ContentDescription =
+                    New [Global].ContentDescription(CoreContent, ControlIDWithIndex)
 
-                If ContentCollection.Length > 0 Then
-                    ' Catch Error Template Block (Is Exists)
-                    Dim ReContentCollection As New Generic.List(Of String)
-                    Dim MessageTemplate As String = String.Empty, TemplatePointerText As String = "!MESSAGETEMPLATE"
-
-                    For cC As Integer = 0 To ContentCollection.Length - 1
-                        If ContentCollection(cC).IndexOf(TemplatePointerText) = 0 Then
-                            If String.IsNullOrEmpty(MessageTemplate) Then
-                                MessageTemplate = ContentCollection(cC).Substring(TemplatePointerText.Length)
-                            Else
-                                Throw New Exception.MultipleBlockException("Only One Message Template Block Allowed for a DataList Control!")
-                            End If
-                        Else
-                            ReContentCollection.Add(ContentCollection(cC))
-                        End If
-                    Next
-                    ContentCollection = ReContentCollection.ToArray()
-                    ' ---- 
-
+                If ContentDescription.HasParts Then
                     ' Reset Variables
                     Helpers.VariablePool.Set(Me.ControlID, Nothing)
 
@@ -162,7 +145,8 @@ Namespace Xeora.Web.Controller.Directive.Control
                             If BindInvokeResult.InvokeResult Is Nothing OrElse
                                 (
                                     Not TypeOf BindInvokeResult.InvokeResult Is ControlResult.PartialDataTable AndAlso
-                                    Not TypeOf BindInvokeResult.InvokeResult Is ControlResult.DirectDataAccess
+                                    Not TypeOf BindInvokeResult.InvokeResult Is ControlResult.DirectDataAccess AndAlso
+                                    Not TypeOf BindInvokeResult.InvokeResult Is ControlResult.ObjectFeed
                                 ) Then
 
                                 Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
@@ -178,7 +162,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                                     If Not RepeaterList.Message Is Nothing Then
                                         Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
 
-                                        If String.IsNullOrEmpty(MessageTemplate) Then
+                                        If Not ContentDescription.HasMessageTemplate Then
                                             Me.DefineRenderedValue(RepeaterList.Message.Message)
                                         Else
                                             DataListArgs.AppendKeyWithValue("MessageType", RepeaterList.Message.Type)
@@ -186,7 +170,7 @@ Namespace Xeora.Web.Controller.Directive.Control
 
                                             Dim DummyControllerContainer As ControllerBase =
                                                 ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                            Me.RequestParse(MessageTemplate, DummyControllerContainer)
+                                            Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
                                             DummyControllerContainer.Render(Me)
 
                                             Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
@@ -219,11 +203,11 @@ Namespace Xeora.Web.Controller.Directive.Control
 
                                             DataListArgs.Reset(dRValues)
 
-                                            ContentIndex = rC Mod ContentCollection.Length
+                                            ContentIndex = rC Mod ContentDescription.Parts.Count
 
                                             Dim DummyControllerContainer As ControllerBase =
                                                 ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                            Me.RequestParse(ContentCollection(ContentIndex), DummyControllerContainer)
+                                            Me.RequestParse(ContentDescription.Parts.Item(ContentIndex), DummyControllerContainer)
                                             DummyControllerContainer.Render(Me)
 
                                             RenderedContent.Append(DummyControllerContainer.RenderedValue)
@@ -243,7 +227,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                                         If Not DataReaderInfo.Message Is Nothing Then
                                             Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
 
-                                            If String.IsNullOrEmpty(MessageTemplate) Then
+                                            If Not ContentDescription.HasMessageTemplate Then
                                                 Me.DefineRenderedValue(DataReaderInfo.Message.Message)
                                             Else
                                                 DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
@@ -251,7 +235,7 @@ Namespace Xeora.Web.Controller.Directive.Control
 
                                                 Dim DummyControllerContainer As ControllerBase =
                                                     ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                                Me.RequestParse(MessageTemplate, DummyControllerContainer)
+                                                Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
                                                 DummyControllerContainer.Render(Me)
 
                                                 Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
@@ -260,7 +244,8 @@ Namespace Xeora.Web.Controller.Directive.Control
                                             Helper.EventLogging.WriteToLog(
                                                 String.Format("DirectDataAccess [{0}] failed! DatabaseCommand must not be null!", Me.ControlID))
                                         Else
-                                            Throw New NullReferenceException("DirectDataAccess failed! DatabaseCommand must not be null!")
+                                            Throw New NullReferenceException(
+                                                String.Format("DirectDataAccess [{0}] failed! DatabaseCommand must not be null!", Me.ControlID))
                                         End If
                                     Else
                                         Dim DBConnection As IDbConnection =
@@ -290,11 +275,11 @@ Namespace Xeora.Web.Controller.Directive.Control
                                                     ' this is for user interaction
                                                     If Not IsItemIndexColumnExists Then DataListArgs.AppendKeyWithValue("ItemIndex", rC)
 
-                                                    ContentIndex = rC Mod ContentCollection.Length
+                                                    ContentIndex = rC Mod ContentDescription.Parts.Count
 
                                                     Dim DummyControllerContainer As ControllerBase =
                                                         ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                                    Me.RequestParse(ContentCollection(ContentIndex), DummyControllerContainer)
+                                                    Me.RequestParse(ContentDescription.Parts.Item(ContentIndex), DummyControllerContainer)
                                                     DummyControllerContainer.Render(Me)
 
                                                     RenderedContent.Append(DummyControllerContainer.RenderedValue)
@@ -308,7 +293,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                                                 Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
 
                                                 If Not DataReaderInfo.Message Is Nothing Then
-                                                    If String.IsNullOrEmpty(MessageTemplate) Then
+                                                    If Not ContentDescription.HasMessageTemplate Then
                                                         Me.DefineRenderedValue(DataReaderInfo.Message.Message)
                                                     Else
                                                         DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
@@ -316,7 +301,7 @@ Namespace Xeora.Web.Controller.Directive.Control
 
                                                         Dim DummyControllerContainer As ControllerBase =
                                                             ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                                        Me.RequestParse(MessageTemplate, DummyControllerContainer)
+                                                        Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
                                                         DummyControllerContainer.Render(Me)
 
                                                         Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
@@ -346,7 +331,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                                             If Not DataReaderInfo.Message Is Nothing Then
                                                 Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
 
-                                                If String.IsNullOrEmpty(MessageTemplate) Then
+                                                If Not ContentDescription.HasMessageTemplate Then
                                                     Me.DefineRenderedValue(DataReaderInfo.Message.Message)
                                                 Else
                                                     DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
@@ -354,7 +339,7 @@ Namespace Xeora.Web.Controller.Directive.Control
 
                                                     Dim DummyControllerContainer As ControllerBase =
                                                         ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                                    Me.RequestParse(MessageTemplate, DummyControllerContainer)
+                                                    Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
                                                     DummyControllerContainer.Render(Me)
 
                                                     Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
@@ -365,6 +350,56 @@ Namespace Xeora.Web.Controller.Directive.Control
                                                 Throw New Exception.DirectDataAccessException(ex)
                                             End If
                                         End Try
+                                    End If
+                                ElseIf TypeOf BindInvokeResult.InvokeResult Is ControlResult.ObjectFeed Then
+                                    Dim ObjectList As ControlResult.ObjectFeed =
+                                        CType(BindInvokeResult.InvokeResult, ControlResult.ObjectFeed)
+
+                                    Dim DataListArgs As New [Global].ArgumentInfoCollection
+
+                                    If Not ObjectList.Message Is Nothing Then
+                                        Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
+
+                                        If Not ContentDescription.HasMessageTemplate Then
+                                            Me.DefineRenderedValue(ObjectList.Message.Message)
+                                        Else
+                                            DataListArgs.AppendKeyWithValue("MessageType", ObjectList.Message.Type)
+                                            DataListArgs.AppendKeyWithValue("Message", ObjectList.Message.Message)
+
+                                            Dim DummyControllerContainer As ControllerBase =
+                                                ControllerBase.ProvideDummyController(Me, DataListArgs)
+                                            Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
+                                            DummyControllerContainer.Render(Me)
+
+                                            Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
+                                        End If
+                                    Else
+                                        Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(ObjectList.Count, ObjectList.Total))
+
+                                        Dim RenderedContent As New Text.StringBuilder
+                                        Dim ContentIndex As Integer = 0, rC As Integer = 0
+
+                                        For Each Current As Object In ObjectList.Objects
+                                            DataListArgs.Reset()
+
+                                            DataListArgs.AppendKeyWithValue("_sys_ItemIndex", rC)
+                                            DataListArgs.AppendKeyWithValue("ItemIndex", rC)
+
+                                            DataListArgs.AppendKeyWithValue("CurrentObject", Current)
+
+                                            ContentIndex = rC Mod ContentDescription.Parts.Count
+
+                                            Dim DummyControllerContainer As ControllerBase =
+                                                ControllerBase.ProvideDummyController(Me, DataListArgs)
+                                            Me.RequestParse(ContentDescription.Parts.Item(ContentIndex), DummyControllerContainer)
+                                            DummyControllerContainer.Render(Me)
+
+                                            RenderedContent.Append(DummyControllerContainer.RenderedValue)
+
+                                            rC += 1
+                                        Next
+
+                                        Me.DefineRenderedValue(RenderedContent.ToString())
                                     End If
                                 End If
                             End If

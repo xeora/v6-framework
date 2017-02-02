@@ -6,10 +6,12 @@ Namespace Xeora.Web.Shared
         Public Shared InstanceLock As Object = New Object()
 
         Private _IsActive As Boolean
+        Private _ResolverBindInfo As Execution.BindInfo
         Private _Items As URLMappingItem.URLMappingItemCollection
 
         Public Sub New()
             Me._IsActive = False
+            Me._ResolverBindInfo = Nothing
             Me._Items = New URLMappingItem.URLMappingItemCollection
 
             SyncLock URLMapping.InstanceLock
@@ -23,6 +25,15 @@ Namespace Xeora.Web.Shared
             End Get
             Set(ByVal value As Boolean)
                 Me._IsActive = value
+            End Set
+        End Property
+
+        Public Property ResolverBindInfo As Execution.BindInfo
+            Get
+                Return Me._ResolverBindInfo
+            End Get
+            Set(ByVal value As Execution.BindInfo)
+                Me._ResolverBindInfo = value
             End Set
         End Property
 
@@ -47,7 +58,7 @@ Namespace Xeora.Web.Shared
                     rqMatch = Text.RegularExpressions.Regex.Match(RequestFilePath, mItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
 
                     If rqMatch.Success Then
-                        rResolvedMapped = New ResolvedMapped(True, mItem.ResolveInfo.TemplateID)
+                        rResolvedMapped = New ResolvedMapped(True, mItem.ResolveInfo.ServicePathInfo)
 
                         Dim medItemValue As String
                         For Each medItem As ResolveInfos.MappedItem In mItem.ResolveInfo.MappedItems
@@ -60,11 +71,21 @@ Namespace Xeora.Web.Shared
                         Next
 
                         Exit For
+                    Else
+                        Dim DomainAsm As Reflection.Assembly, objDomain As Type
+
+                        DomainAsm = Reflection.Assembly.Load("Xeora.Web")
+                        objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
+
+                        Dim workingDomainControl As IDomainControl =
+                            CType(objDomain.InvokeMember("QuickAccess", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
+
+                        rResolvedMapped = workingDomainControl.QueryURLResolver(RequestFilePath)
                     End If
                 Next
 
                 If rResolvedMapped Is Nothing Then _
-                    rResolvedMapped = New ResolvedMapped(False, String.Empty)
+                    rResolvedMapped = New ResolvedMapped(False, Nothing)
             End If
 
             Return rResolvedMapped
@@ -158,13 +179,13 @@ Namespace Xeora.Web.Shared
         Public Class ResolvedMapped
             Private _IsResolved As Boolean
 
-            Private _TemplateID As String
+            Private _ServicePathInfo As ServicePathInfo
             Private _URLQueryDictionary As URLQueryDictionary
 
-            Public Sub New(ByVal IsResolved As Boolean, ByVal TemplateID As String)
+            Public Sub New(ByVal IsResolved As Boolean, ByVal ServicePathInfo As ServicePathInfo)
                 Me._IsResolved = IsResolved
 
-                Me._TemplateID = TemplateID
+                Me._ServicePathInfo = ServicePathInfo
                 Me._URLQueryDictionary = New URLQueryDictionary
             End Sub
 
@@ -174,9 +195,9 @@ Namespace Xeora.Web.Shared
                 End Get
             End Property
 
-            Public ReadOnly Property TemplateID() As String
+            Public ReadOnly Property ServicePathInfo() As ServicePathInfo
                 Get
-                    Return Me._TemplateID
+                    Return Me._ServicePathInfo
                 End Get
             End Property
 
@@ -188,19 +209,19 @@ Namespace Xeora.Web.Shared
         End Class
 
         Public Class ResolveInfos
-            Private _TemplateID As String
+            Private _ServicePathInfo As ServicePathInfo
             Private _MapFormat As String
             Private _MappedItems As MappedItem.MappedItemCollection
 
-            Public Sub New(ByVal TemplateID As String)
-                Me._TemplateID = TemplateID
+            Public Sub New(ByVal ServicePathInfo As ServicePathInfo)
+                Me._ServicePathInfo = ServicePathInfo
                 Me._MapFormat = String.Empty
                 Me._MappedItems = New MappedItem.MappedItemCollection
             End Sub
 
-            Public ReadOnly Property TemplateID() As String
+            Public ReadOnly Property ServicePathInfo() As ServicePathInfo
                 Get
-                    Return Me._TemplateID
+                    Return Me._ServicePathInfo
                 End Get
             End Property
 

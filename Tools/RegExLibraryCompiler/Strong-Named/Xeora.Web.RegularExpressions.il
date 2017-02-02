@@ -20,16 +20,16 @@
   .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 ) 
   .custom instance void [mscorlib]System.Security.SecurityRulesAttribute::.ctor(valuetype [mscorlib]System.Security.SecurityRuleSet) = ( 01 00 02 00 00 ) 
   .hash algorithm 0x00008004
-  .ver 6:0:0:1001
+  .ver 6:0:0:1002
 }
 .module Xeora.Web.RegularExpressions.dll
-// MVID: {36B4BC29-63B3-4DCF-86FA-0930C6E6A2E2}
+// MVID: {6910F0F6-73F8-4CB3-AA32-1F785C3E699E}
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
 .subsystem 0x0003       // WINDOWS_CUI
 .corflags 0x00000001    //  ILONLY
-// Image base: 0x0000002EB2C50000
+// Image base: 0x01070000
 
 
 // =============== CLASS MEMBERS DECLARATION ===================
@@ -2348,7 +2348,7 @@
     IL_1055:  stloc.s    V_6
     IL_1057:  sub
     IL_1058:  callvirt   instance char [mscorlib]System.String::get_Chars(int32)
-    IL_105d:  ldstr      bytearray (00 00 02 00 0A 00 2D 00 2F 00 00 00 02 00 04 00   // ......-./.......
+    IL_105d:  ldstr      bytearray (00 00 02 00 0A 00 2D 00 30 00 00 00 02 00 04 00   // ......-.0.......
                                     05 00 03 00 01 00 06 00 09 00 13 00 00 00 ) 
     IL_1062:  call       bool [System]System.Text.RegularExpressions.RegexRunner::CharInClass(char,
                                                                                               string)
@@ -2383,7 +2383,7 @@
     IL_109e:  add
     IL_109f:  stloc.s    V_0
     IL_10a1:  callvirt   instance char [mscorlib]System.String::get_Chars(int32)
-    IL_10a6:  ldstr      bytearray (00 00 02 00 0A 00 2D 00 2F 00 00 00 02 00 04 00   // ......-./.......
+    IL_10a6:  ldstr      bytearray (00 00 02 00 0A 00 2D 00 30 00 00 00 02 00 04 00   // ......-.0.......
                                     05 00 03 00 01 00 06 00 09 00 13 00 00 00 ) 
     IL_10ab:  call       bool [System]System.Text.RegularExpressions.RegexRunner::CharInClass(char,
                                                                                               string)
@@ -7017,10 +7017,10 @@
     IL_0001:  call       instance void [System]System.Text.RegularExpressions.Regex::.ctor()
     IL_0006:  ldarg.0
     IL_0007:  ldstr      "\\$((([#]+|[\\^\\-\\+\\*\\~])\?(\\w+)|(\\w+\\.)*\\w+\\@[#\\-]*["
-    + "\\w+\\.]+)\\$|[\\.\\w\\-]+\\:\\{|\\w(\\#\\d+(\\+)\?)\?(\\[[\\.\\w\\-]+\\])\?\\:([\\.\\w\\-]+\\$|"
-    + "[\\.\\w\\-]+\\:\\{|[\\.\\w\\-]+\\\?[\\.\\w\\-]+(\\,((\\|)\?([#\\.\\^\\-\\+\\*\\~]*([\\w+][^\\$]"
-    + "*)|\\=([\\S+][^\\$]*)|(\\w+\\.)*\\w+\\@[#\\-]*[\\w+\\.]+)\?)*)\?\\$))|\\}\\:[\\.\\w\\-]+"
-    + "\\:\\{|\\}\\:[\\.\\w\\-]+\\$"
+    + "\\w+\\.]+)\\$|[\\.\\w\\-]+\\:\\{|\\w(\\#\\d+(\\+)\?)\?(\\[[\\.\\w\\-]+\\])\?\\:([\\/\\.\\w\\-]+"
+    + "\\$|[\\.\\w\\-]+\\:\\{|[\\.\\w\\-]+\\\?[\\.\\w\\-]+(\\,((\\|)\?([#\\.\\^\\-\\+\\*\\~]*([\\w+][^"
+    + "\\$]*)|\\=([\\S+][^\\$]*)|(\\w+\\.)*\\w+\\@[#\\-]*[\\w+\\.]+)\?)*)\?\\$))|\\}\\:[\\.\\w\\-"
+    + "]+\\:\\{|\\}\\:[\\.\\w\\-]+\\$"
     IL_000c:  stfld      string [System]System.Text.RegularExpressions.Regex::pattern
     IL_0011:  ldarg.0
     IL_0012:  ldc.i4.s   2

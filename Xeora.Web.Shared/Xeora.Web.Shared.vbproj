@@ -124,6 +124,8 @@
     <Import Include="System.Diagnostics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Attribute\HttpMethodAttribute.vb" />
+    <Compile Include="ControlResult\ObjectFeed.vb" />
     <Compile Include="MetaRecord.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="Helpers.vb">
@@ -149,6 +151,7 @@
     <Compile Include="Service\IVariablePool.vb" />
     <Compile Include="Service\ScheduledTasksOperation.vb" />
     <Compile Include="Service\VariablePoolOperation.vb" />
+    <Compile Include="ServicePathInfo.vb" />
     <Compile Include="URLMapping.vb" />
     <Compile Include="URLQueryDictionary.vb" />
     <Compile Include="xService.vb" />
