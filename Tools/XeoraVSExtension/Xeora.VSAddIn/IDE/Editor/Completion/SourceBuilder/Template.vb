@@ -34,9 +34,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
         Public Overrides Function Build() As Intellisense.Completion()
             Dim CompList As New Generic.List(Of Intellisense.Completion)()
             Dim TemplatesPath As String =
-                PackageControl.IDEControl.DTE.ActiveDocument.Path
+                MyBase.LocateTemplatesPath(PackageControl.IDEControl.DTE.ActiveDocument.Path)
 
-            Me.Fill(CompList, TemplatesPath)
+            Me.Fill(CompList, TemplatesPath, TemplatesPath)
 
             If PackageControl.IDEControl.GetActiveItemDomainType() = Globals.ActiveDomainTypes.Child Then
                 Dim DomainID As String = String.Empty
@@ -55,7 +55,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                             String.Compare(SearchDI.Name, "Addons", True) = 0
                         ) Then
 
-                        Me.Fill(CompList, IO.Path.Combine(SearchDI.FullName, DomainID, "Templates"))
+                        Me.Fill(CompList, IO.Path.Combine(SearchDI.FullName, DomainID, "Templates"), IO.Path.Combine(SearchDI.FullName, DomainID, "Templates"))
 
                         If String.Compare(SearchDI.Name, "Domains", True) = 0 Then SearchDI = Nothing
                     End If
@@ -73,7 +73,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                 }
         End Function
 
-        Private Sub Fill(ByRef Container As Generic.List(Of Intellisense.Completion), ByVal TemplatesPath As String)
+        Private Sub Fill(ByRef Container As Generic.List(Of Intellisense.Completion), ByVal TemplatesPath As String, ByVal TemplatesRootPath As String)
             Dim cFStream As IO.FileStream = Nothing
 
             Try
@@ -81,7 +81,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                     IO.Directory.GetFiles(TemplatesPath, "*.xchtml")
 
                 cFStream = New IO.FileStream(
-                                IO.Path.Combine(TemplatesPath, "Configuration.xml"),
+                                IO.Path.Combine(TemplatesRootPath, "Configuration.xml"),
                                 IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
                 Dim xPathDocument As New Xml.XPath.XPathDocument(cFStream)
                 Dim xPathNavigator As Xml.XPath.XPathNavigator =
@@ -91,7 +91,10 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                 Dim TemplateID As String, ImageIndex As Integer
                 For Each TemplateFileName As String In TemplateFileNames
                     ImageIndex = 4
-                    TemplateID = IO.Path.GetFileNameWithoutExtension(TemplateFileName)
+                    TemplateID = TemplateFileName.Replace(TemplatesRootPath, String.Empty)
+                    TemplateID = TemplateID.Replace(".xchtml", String.Empty)
+                    If TemplateID.IndexOf("\"c) = 0 Then TemplateID = TemplateID.Substring(1)
+                    TemplateID = TemplateID.Replace("\", "/")
 
                     If String.Compare(Me.WorkingTemplateID, TemplateID) = 0 Then Continue For
 
@@ -153,6 +156,10 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                             )
                         )
                     End If
+                Next
+
+                For Each SubDirectory As String In IO.Directory.GetDirectories(TemplatesPath)
+                    Me.Fill(Container, SubDirectory, TemplatesRootPath)
                 Next
             Catch ex As Exception
                 ' Just Handle Exceptions

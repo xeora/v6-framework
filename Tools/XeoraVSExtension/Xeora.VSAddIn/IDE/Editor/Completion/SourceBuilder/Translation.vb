@@ -7,7 +7,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
         Public Overrides Function Build() As Intellisense.Completion()
             Dim CompList As New Generic.List(Of Intellisense.Completion)()
             Dim LanguagesPath As String =
-                IO.Path.Combine(PackageControl.IDEControl.DTE.ActiveDocument.Path, "..", "Languages")
+                IO.Path.Combine(MyBase.LocateTemplatesPath(PackageControl.IDEControl.DTE.ActiveDocument.Path), "..", "Languages")
 
             Me.Fill(CompList, LanguagesPath, False)
 

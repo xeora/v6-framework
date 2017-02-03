@@ -5,6 +5,18 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
         Public MustOverride Function Build() As Intellisense.Completion()
         Public MustOverride Function Builders() As Intellisense.Completion()
 
+        Protected Function LocateTemplatesPath(ByVal ActivePath As String) As String
+            Dim CheckDI As New IO.DirectoryInfo(ActivePath)
+
+            Do Until CheckDI Is Nothing OrElse String.Compare(CheckDI.Name, "Templates") = 0
+                CheckDI = CheckDI.Parent
+            Loop
+
+            If CheckDI Is Nothing Then Return ActivePath
+
+            Return CheckDI.FullName
+        End Function
+
         Protected Function IsExists(ByRef Container As Generic.List(Of Intellisense.Completion), ByVal SearchKey As String) As Boolean
             Return Container.FindIndex(New Predicate(Of Intellisense.Completion)(Function(item As Intellisense.Completion)
                                                                                      String.Compare(item.DisplayText, SearchKey)
@@ -44,7 +56,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
             If String.IsNullOrEmpty(SearchingDomainRootPath) Then
                 ' If SearchLocation is empty, start from the top domain and search all executables and also child addons
                 ' Let's first start assigning the active document path which locating under the Templates folder
-                SearchingDomainRootPath = PackageControl.IDEControl.DTE.ActiveDocument.Path
+                SearchingDomainRootPath = Me.LocateTemplatesPath(PackageControl.IDEControl.DTE.ActiveDocument.Path)
 
                 Dim DomainID As String = String.Empty
                 Dim SearchLocationDI As New IO.DirectoryInfo(SearchingDomainRootPath)

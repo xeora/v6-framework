@@ -271,7 +271,7 @@ Namespace Xeora.VSAddIn
 
                     Case "cs"
                         parser = ICSharpCode.NRefactory.ParserFactory.CreateParser(
-                                    ICSharpCode.NRefactory.SupportedLanguage.VBNet,
+                                    ICSharpCode.NRefactory.SupportedLanguage.CSharp,
                                     codeContentReader)
                 End Select
 
@@ -286,7 +286,7 @@ Namespace Xeora.VSAddIn
                     Dim NodeList As Generic.List(Of ICSharpCode.NRefactory.Ast.INode) =
                         parser.CompilationUnit.Children
 
-                    Dim NSFound As Boolean = False, TypeFound As Boolean = False, FuncFound As Boolean = False, TypeNames As String() = JoinedTypeName.Split("+"c), WorkingTypeID As Integer = 0
+                    Dim NSFound As Boolean = False, TypeFound As Boolean = False, FuncFound As Boolean = False, TypeNames As String() = JoinedTypeName.Split("."c), WorkingTypeID As Integer = 0
                     Do While Not NodeList Is Nothing AndAlso NodeList.Count > 0
                         If NSFound AndAlso TypeFound AndAlso Not FuncFound Then
                             If TypeOf NodeList.Item(0) Is ICSharpCode.NRefactory.Ast.MethodDeclaration AndAlso
@@ -438,62 +438,73 @@ RESEARCHPOINT:
                     Case "F"c, Char.MinValue
                         If Not String.IsNullOrWhiteSpace(SearchID) Then
                             Dim AssemblyName_s As String() = SearchID.Split("?"c)
+                            If AssemblyName_s.Length < 2 Then Return
+
+                            Dim ClassNameStructure As String = AssemblyName_s(1).Split(","c)(0)
+
                             Dim AssemblyName As String = AssemblyName_s(0)
+                            Dim ClassName As String = String.Empty
+                            If ClassNameStructure.LastIndexOf("."c) > -1 Then _
+                                ClassName = ClassNameStructure.Substring(0, ClassNameStructure.LastIndexOf("."c))
 
-                            If AssemblyName_s.Length = 2 Then
-                                Dim ClassName_s As String() = AssemblyName_s(1).Split("."c)
-                                Dim ClassName As String = ClassName_s(0)
+                            Dim FunctionName As String =
+                                ClassNameStructure.Replace(String.Format("{0}.", ClassName), String.Empty)
 
-                                If ClassName_s.Length = 2 Then
-                                    Dim FunctionName_s As String() = ClassName_s(1).Split(","c)
-                                    Dim FunctionName As String = FunctionName_s(0)
-                                    Dim ParametersLength As Integer = 0
-
-                                    If FunctionName_s.Length = 2 Then _
-                                        ParametersLength = FunctionName_s(1).Split("|"c).Length
-
-                                    Dim MainProjectItem As ProjectItem
-                                    For Each proj As Project In Me._Parent.DTE.Solution.Projects
-                                        MainProjectItem = Me._Parent.SearchProjectItemRecursive(proj.ProjectItems, New String() {String.Format("{0}.vb", AssemblyName), String.Format("{0}.cs", AssemblyName)})
-
-                                        If Not MainProjectItem Is Nothing Then
-                                            Dim docType As String =
-                                                MainProjectItem.Name.Substring(MainProjectItem.Name.LastIndexOf("."c) + 1)
-
-                                            Dim PrevState As Boolean = MainProjectItem.IsOpen
-                                            Dim itemWindow As Window =
-                                                MainProjectItem.Open(Constants.vsViewKindCode)
-
-                                            Dim TS As TextSelection =
-                                                CType(itemWindow.Document.Selection, TextSelection)
-
-                                            TS.EndOfDocument()
-                                            Dim DocEndOffset As Integer =
-                                                TS.ActivePoint.AbsoluteCharOffset
-                                            TS.StartOfDocument()
-
-                                            Dim EP As EditPoint =
-                                                TS.ActivePoint.CreateEditPoint()
-
-                                            Dim CodeContent As String =
-                                                EP.GetText(DocEndOffset)
-
-                                            Dim LineNumber As Integer =
-                                                Me.GetDefinitionLineNumber(docType, "Xeora.Domain", String.Format("{0}+{1}", AssemblyName, ClassName), FunctionName, ParametersLength, CodeContent)
-
-                                            If LineNumber > -1 Then
-                                                TS.MoveToLineAndOffset(LineNumber, 1)
-
-                                                itemWindow.Activate()
-                                            Else
-                                                If Not PrevState Then itemWindow.Close()
-                                            End If
-
-                                            Exit For
-                                        End If
-                                    Next
-                                End If
+                            Dim ParametersLength As Integer = 0
+                            If AssemblyName_s(1).IndexOf(","c) > -1 Then
+                                Dim Parameters As String = AssemblyName_s(1).Substring(AssemblyName_s(1).IndexOf(","c) + 1)
+                                ParametersLength = Parameters.Split("|"c).Length
                             End If
+
+                            Dim SearchList As New Generic.List(Of String)
+                            SearchList.Add(String.Format("{0}.vb", AssemblyName))
+                            SearchList.Add(String.Format("{0}.cs", AssemblyName))
+
+                            For Each CN As String In ClassName.Split("."c)
+                                SearchList.Add(String.Format("{0}.vb", CN))
+                                SearchList.Add(String.Format("{0}.cs", CN))
+                            Next
+
+                            Dim MainProjectItem As ProjectItem
+                            For Each proj As Project In Me._Parent.DTE.Solution.Projects
+                                MainProjectItem = Me._Parent.SearchProjectItemRecursive(proj.ProjectItems, SearchList.ToArray())
+
+                                If Not MainProjectItem Is Nothing Then
+                                    Dim docType As String =
+                                        MainProjectItem.Name.Substring(MainProjectItem.Name.LastIndexOf("."c) + 1)
+
+                                    Dim PrevState As Boolean = MainProjectItem.IsOpen
+                                    Dim itemWindow As Window =
+                                        MainProjectItem.Open(Constants.vsViewKindCode)
+
+                                    Dim TS As TextSelection =
+                                        CType(itemWindow.Document.Selection, TextSelection)
+
+                                    TS.EndOfDocument()
+                                    Dim DocEndOffset As Integer =
+                                        TS.ActivePoint.AbsoluteCharOffset
+                                    TS.StartOfDocument()
+
+                                    Dim EP As EditPoint =
+                                        TS.ActivePoint.CreateEditPoint()
+
+                                    Dim CodeContent As String =
+                                        EP.GetText(DocEndOffset)
+
+                                    Dim LineNumber As Integer =
+                                        Me.GetDefinitionLineNumber(docType, "Xeora.Domain", ClassName, FunctionName, ParametersLength, CodeContent)
+
+                                    If LineNumber > -1 Then
+                                        TS.MoveToLineAndOffset(LineNumber, 1)
+
+                                        itemWindow.Activate()
+
+                                        Exit For
+                                    Else
+                                        If Not PrevState Then itemWindow.Close()
+                                    End If
+                                End If
+                            Next
                         End If
                 End Select
             End Sub
@@ -987,7 +998,12 @@ RESEARCHPOINT:
                         If String.Compare(CheckDI.Name, "Templates", True) = 0 Then
                             CheckDI = CheckDI.Parent
                         Else
-                            Return False
+                            If CheckDI.FullName.IndexOf("Templates") > -1 Then
+                                CheckDI = CheckDI.Parent
+                                DeepCounter -= 1
+                            Else
+                                Return False
+                            End If
                         End If
                     Case 1 ' DomainName or AddonName
                         CheckDI = CheckDI.Parent

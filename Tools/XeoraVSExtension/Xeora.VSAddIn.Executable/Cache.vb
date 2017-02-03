@@ -34,6 +34,14 @@
                         Select Case QueryType
                             Case QueryTypes.Classes
                                 rBoolean = cI.BaseClass.ClassesTouched
+
+                                If Not ClassIDs Is Nothing Then
+                                    Dim CO As CacheInfo.ClassInfo =
+                                        cI.Find(ClassIDs)
+
+                                    If CO Is Nothing OrElse (Not CO Is Nothing AndAlso Not CO.ClassesTouched) Then rBoolean = False
+                                End If
+
                             Case QueryTypes.Methods
                                 rBoolean = True
 

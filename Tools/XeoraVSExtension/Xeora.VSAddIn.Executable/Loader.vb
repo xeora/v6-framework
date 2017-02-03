@@ -198,7 +198,8 @@
                 For Each BaseClass As Type In AssemblyClasses
                     If String.Compare(BaseClass.Namespace, "Xeora.Domain") = 0 Then
                         If ClassIDs Is Nothing OrElse ClassIDs.Length = 0 Then
-                            If String.Compare(BaseClass.Name, AssemblyID) <> 0 Then _
+                            If String.Compare(BaseClass.Name, AssemblyID) <> 0 AndAlso
+                                BaseClass.Attributes = Reflection.TypeAttributes.Public Then _
                                 rStringList.Add(BaseClass.Name)
                         Else
                             If String.Compare(BaseClass.Name, ClassIDs(0)) = 0 Then

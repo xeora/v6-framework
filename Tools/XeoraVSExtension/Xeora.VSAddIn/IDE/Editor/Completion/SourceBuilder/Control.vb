@@ -23,7 +23,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
         Public Overrides Function Build() As Intellisense.Completion()
             Dim CompList As New Generic.List(Of Intellisense.Completion)()
             Dim TemplatesPath As String =
-                PackageControl.IDEControl.DTE.ActiveDocument.Path
+                MyBase.LocateTemplatesPath(PackageControl.IDEControl.DTE.ActiveDocument.Path)
 
             If Me._TextBuffer Is Nothing Then
                 Me.Fill(CompList, TemplatesPath)

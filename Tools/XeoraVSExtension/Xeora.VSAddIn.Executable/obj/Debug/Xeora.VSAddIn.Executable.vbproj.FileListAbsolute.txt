@@ -1,14 +1,6 @@
-P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\bin\Debug\Xeora.VSAddIn.AddInLoader.dll
-P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\bin\Debug\Xeora.VSAddIn.AddInLoader.pdb
-P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Debug\Xeora.VSAddIn.Executable.vbprojResolveAssemblyReference.cache
-P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Debug\Resources.resources
-P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Debug\Xeora.VSAddIn.Executable.vbproj.GenerateResource.Cache
-P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Debug\Xeora.VSAddIn.AddInLoader.dll
-P:\XeoraCube\Tools\XeoraVSExtension\Xeora.AddInLoader\obj\Debug\Xeora.VSAddIn.AddInLoader.pdb
 P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn.Executable\bin\Debug\Xeora.VSAddIn.Executable.dll
 P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn.Executable\bin\Debug\Xeora.VSAddIn.Executable.pdb
 P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn.Executable\obj\Debug\Resources.resources
 P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn.Executable\obj\Debug\Xeora.VSAddIn.Executable.vbproj.GenerateResource.Cache
 P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn.Executable\obj\Debug\Xeora.VSAddIn.Executable.dll
 P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn.Executable\obj\Debug\Xeora.VSAddIn.Executable.pdb
-P:\XeoraCube\Tools\XeoraVSExtension\Xeora.VSAddIn.Executable\obj\Debug\Xeora.VSAddIn.Executable.vbprojResolveAssemblyReference.cache

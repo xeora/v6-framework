@@ -7,7 +7,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
         Public Overrides Function Build() As Intellisense.Completion()
             Dim CompList As New Generic.List(Of Intellisense.Completion)()
             Dim ExecutablesPath As String =
-                IO.Path.GetFullPath(IO.Path.Combine(PackageControl.IDEControl.DTE.ActiveDocument.Path, "..", "Executables"))
+                IO.Path.GetFullPath(IO.Path.Combine(MyBase.LocateTemplatesPath(PackageControl.IDEControl.DTE.ActiveDocument.Path), "..", "Executables"))
 
             ' Fill Current Domain Executables
             Me.Fill(CompList, ExecutablesPath)
