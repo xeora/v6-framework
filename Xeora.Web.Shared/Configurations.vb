@@ -32,12 +32,12 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
-        Public Shared ReadOnly Property PyhsicalRoot() As String
+        Public Shared ReadOnly Property PhysicalRoot() As String
             Get
                 Dim WorkingObject As Object =
                     Configurations.XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
 
-                Return CType(WorkingObject.GetType().InvokeMember("PyhsicalRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
+                Return CType(WorkingObject.GetType().InvokeMember("PhysicalRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
             End Get
         End Property
 
@@ -203,7 +203,7 @@ Namespace Xeora.Web.Shared
                     rWorkingPathFormat = New WorkingPathFormat()
 
                     Dim wPath As String =
-                        IO.Path.Combine(Configurations.PyhsicalRoot, Configurations.ApplicationRoot.FileSystemImplementation)
+                        IO.Path.Combine(Configurations.PhysicalRoot, Configurations.ApplicationRoot.FileSystemImplementation)
                     rWorkingPathFormat.WorkingPath = wPath
 
                     For Each match As Text.RegularExpressions.Match In Text.RegularExpressions.Regex.Matches(wPath, "\W")
@@ -369,7 +369,7 @@ Namespace Xeora.Web.Shared
                     Configurations._TemporaryRoot = IO.Path.GetTempPath()
 
                     If String.IsNullOrEmpty(Configurations._TemporaryRoot) Then _
-                        Configurations._TemporaryRoot = IO.Path.Combine(Configurations.PyhsicalRoot, "tmp")
+                        Configurations._TemporaryRoot = IO.Path.Combine(Configurations.PhysicalRoot, "tmp")
 
                     If Not IO.Directory.Exists(Configurations._TemporaryRoot) Then _
                         IO.Directory.CreateDirectory(Configurations._TemporaryRoot)

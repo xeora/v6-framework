@@ -858,7 +858,7 @@ Namespace Xeora.Web.Handler
 
                     Dim DefaultDomainRootLocation As String =
                         IO.Path.Combine(
-                            [Shared].Configurations.PyhsicalRoot,
+                            [Shared].Configurations.PhysicalRoot,
                             [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
                             "Domains"
                         )
@@ -920,7 +920,7 @@ Namespace Xeora.Web.Handler
             If IO.Directory.Exists(RequestModule._pApplicationLocation) Then
                 Dim DefaultDomainRootLocation As String =
                     IO.Path.Combine(
-                        CType(RequestModule.XeoraSettings, Configuration.XeoraSection).Main.PyhsicalRoot,
+                        CType(RequestModule.XeoraSettings, Configuration.XeoraSection).Main.PhysicalRoot,
                         [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
                         "Domains"
                     )

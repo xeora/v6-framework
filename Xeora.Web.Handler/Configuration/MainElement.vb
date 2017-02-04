@@ -32,10 +32,10 @@ Namespace Xeora.Web.Configuration
             End Function
         End Class
 
-        <ConfigurationProperty("pyhsicalRoot", IsRequired:=True)>
-        Public ReadOnly Property PyhsicalRoot As String
+        <ConfigurationProperty("physicalRoot", IsRequired:=True)>
+        Public ReadOnly Property PhysicalRoot As String
             Get
-                Return CType(MyBase.Item("pyhsicalRoot"), String)
+                Return CType(MyBase.Item("physicalRoot"), String)
             End Get
         End Property
 

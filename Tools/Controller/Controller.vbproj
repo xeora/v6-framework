@@ -62,9 +62,6 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
-    <Reference Include="Xeora.Web.Shared">
-      <HintPath>..\..\..\BeyinPilim\SupportDlls\Xeora.Web.Shared.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Import Include="Microsoft.VisualBasic" />
@@ -150,6 +147,12 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Xeora.Web.Shared\Xeora.Web.Shared.vbproj">
+      <Project>{3bd395f0-49e9-418c-8ec1-88fa5a3239b2}</Project>
+      <Name>Xeora.Web.Shared</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

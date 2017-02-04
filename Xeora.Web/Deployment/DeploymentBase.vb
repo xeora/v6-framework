@@ -29,7 +29,7 @@ Namespace Xeora.Web.Deployment
 
             Me._WorkingRoot =
                 IO.Path.Combine(
-                    [Shared].Configurations.PyhsicalRoot,
+                    [Shared].Configurations.PhysicalRoot,
                     [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
                     "Domains",
                     Me.CreateDomainAccessPathString()

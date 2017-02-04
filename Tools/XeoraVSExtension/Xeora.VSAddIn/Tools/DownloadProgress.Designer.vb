@@ -50,7 +50,7 @@
             Me.lPullingFile.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.5!, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, CType(162, Byte))
             Me.lPullingFile.Location = New System.Drawing.Point(17, 97)
             Me.lPullingFile.Name = "lPullingFile"
-            Me.lPullingFile.Size = New System.Drawing.Size(679, 29)
+            Me.lPullingFile.Size = New System.Drawing.Size(679, 48)
             Me.lPullingFile.TabIndex = 2
             Me.lPullingFile.Text = "Xeora.Web.dll is pulling"
             Me.lPullingFile.TextAlign = System.Drawing.ContentAlignment.MiddleRight
@@ -59,7 +59,7 @@
             '
             Me.AutoScaleDimensions = New System.Drawing.SizeF(12.0!, 25.0!)
             Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-            Me.ClientSize = New System.Drawing.Size(720, 147)
+            Me.ClientSize = New System.Drawing.Size(716, 154)
             Me.ControlBox = False
             Me.Controls.Add(Me.lPullingFile)
             Me.Controls.Add(Me.pbStatus)

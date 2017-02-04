@@ -310,7 +310,7 @@ Namespace Xeora.Web.Site
                     Dim DomainDI As IO.DirectoryInfo =
                         New IO.DirectoryInfo(
                             IO.Path.Combine(
-                                [Shared].Configurations.PyhsicalRoot,
+                                [Shared].Configurations.PhysicalRoot,
                                 String.Format("{0}Domains", [Shared].Configurations.ApplicationRoot.FileSystemImplementation)
                             )
                         )

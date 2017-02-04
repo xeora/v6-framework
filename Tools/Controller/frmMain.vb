@@ -58,7 +58,7 @@ Public Class frmMain
             Dim templatesPath As String = IO.Path.Combine(selectedThemePath, "Templates")
             Dim languagesPath As String = IO.Path.Combine(selectedThemePath, "Languages")
 
-            Dim cMapFilePath As String = IO.Path.Combine(templatesPath, "ControlsMap.xml")
+            Dim cMapFilePath As String = IO.Path.Combine(templatesPath, "Controls.xml")
 
             If Not IO.File.Exists(cMapFilePath) Then
                 MessageBox.Show("No Control Mapping File found!")
@@ -102,7 +102,7 @@ Public Class frmMain
                 NotExists = True
                 translationID = xPathIter.Current.GetAttribute("id", xPathIter.Current.BaseURI)
 
-                For Each tFI As IO.FileInfo In New IO.DirectoryInfo(templatesPath).GetFiles("*.htm")
+                For Each tFI As IO.FileInfo In New IO.DirectoryInfo(templatesPath).GetFiles("*.xchtml")
                     Dim sR As IO.StreamReader = tFI.OpenText()
                     Dim fileContent As String = sR.ReadToEnd()
 

@@ -34,7 +34,7 @@ Namespace Xeora.Web.Helper
                         If String.IsNullOrEmpty(EventLogging._LoggingPath) Then
                             EventLogging._LoggingPath =
                                 IO.Path.Combine(
-                                    [Shared].Configurations.PyhsicalRoot,
+                                    [Shared].Configurations.PhysicalRoot,
                                     "XeoraLogs"
                                 )
                         End If

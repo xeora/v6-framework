@@ -671,28 +671,9 @@ RESEARCHPOINT:
                                 SW = IO.File.CreateText(WebConfigFileLocation)
                                 SW.WriteLine("<?xml version=""1.0""?>")
                                 SW.WriteLine("<configuration>")
-                                SW.WriteLine("  <appSettings>")
-                                SW.WriteLine("      <!--  You have to put ""\"" at the end of the value attribute of ApplicationRoot")
-                                SW.WriteLine("            If there is not ""\"" exists...")
-                                SW.WriteLine("")
-                                SW.WriteLine("            LoggingRoot Directory HAVE TO HAVE the PERMISSION to write And read file for ASP.NET account...")
-                                SW.WriteLine("      -->")
-                                SW.WriteLine(String.Format("      <add key=""DefaultDomain"" value=""{0}"" />", ProjectSettings.DomainID))
-                                SW.WriteLine(String.Format("      <add key=""VirtualRoot"" value=""{0}"" /> <!-- You may need to set to the proper virtual directory path according to your IIS settings -->", ProjectSettings.VirtualPath))
-                                SW.WriteLine("      <add key=""PyhsicalRoot"" value=""" & WorkingFolder & """ />")
-                                SW.WriteLine("      <add key=""ApplicationRoot"" value="".\"" />")
-                                SW.WriteLine(String.Format("      <add key=""Debugging"" value=""{0}"" />", ProjectSettings.DebuggingActive.ToString()))
-                                SW.WriteLine(String.Format("      <add key=""VariablePoolServicePort"" value=""{0}"" /> <!-- VariablePoolServicePort should be unique for each Xeora Application in the server -->", ProjectSettings.VariablePoolServicePort))
-                                SW.WriteLine(String.Format("      <add key=""ScheduledTasksServicePort"" value=""{0}"" />", ProjectSettings.ScheduledTasksServicePort))
-                                SW.WriteLine("      <add key=""Bandwidth"" value=""0"" />")
-                                SW.WriteLine("      <add key=""RequestTagFiltering"" value=""None"" />")
-                                SW.WriteLine("      <add key=""RequestTagFilteringItems"" value=""&gt;script"" />")
-                                SW.WriteLine("      <add key=""RequestTagFilteringExceptions"" value="""" />")
-                                SW.WriteLine("      <add key=""LoggingPath"" value=""" & IO.Path.Combine(WorkingFolder, "XeoraLogs") & """ />")
-                                SW.WriteLine("  </appSettings>")
                                 SW.WriteLine("  <connectionStrings />")
                                 SW.WriteLine("  <system.web>")
-                                SW.WriteLine("      <httpRuntime executionTimeout = ""86400"" maxRequestLength=""2048000"" requestValidationMode=""2.0"" />")
+                                SW.WriteLine("      <httpRuntime executionTimeout=""86400"" maxRequestLength=""2048000"" requestValidationMode=""2.0"" />")
                                 SW.WriteLine("      <!-- ")
                                 SW.WriteLine("          Set compilation debug=""True"" To insert debugging ")
                                 SW.WriteLine("          symbols into the compiled page. Because this ")
@@ -776,6 +757,31 @@ RESEARCHPOINT:
                                 '    Configuration.Save()
                             End If
 
+                            ProjectItem = Me._Parent.CheckProjectItemExists(ProjectWorking.ProjectItems, "xeora.config")
+                            Dim XeoraConfigFileLocation As String =
+                                IO.Path.Combine(WorkingFolder, "xeora.config")
+
+                            If ProjectItem Is Nothing OrElse NoOtherDomainExists Then
+                                SW = IO.File.CreateText(XeoraConfigFileLocation)
+                                SW.WriteLine("<?xml version=""1.0"" encoding=""utf-8""?>")
+                                SW.WriteLine("<xeora>")
+                                SW.WriteLine(String.Format("      <main defaultDomain=""{0}"" physicalRoot=""{1}"" virtualRoot=""{2}"" debugging=""{3}"" loggingPath=""{4}"" />",
+                                                           ProjectSettings.DomainID,
+                                                           WorkingFolder,
+                                                           ProjectSettings.VirtualPath,
+                                                           ProjectSettings.DebuggingActive.ToString(),
+                                                           IO.Path.Combine(WorkingFolder, "XeoraLogs")))
+                                SW.WriteLine("      <!-- You may need to set to the proper virtual directory path according to your IIS settings -->")
+                                SW.WriteLine(String.Format("      <servicePort variablePool=""{0}"" scheduledTasks=""{1}"" />",
+                                                           ProjectSettings.VariablePoolServicePort,
+                                                           ProjectSettings.ScheduledTasksServicePort))
+                                SW.WriteLine("      <!-- VariablePoolServicePort should be unique for each Xeora Application in the server -->")
+                                SW.WriteLine("</xeora>")
+                                SW.Close()
+
+                                ProjectWorking.ProjectItems.AddFromFile(XeoraConfigFileLocation)
+                            End If
+
                             If Not ReleasePulled Then Me.RePullRelease(BinProjectItem, CType(IIf(ProjectSettings.Use64bitRelease, 2, 1), Integer))
                         End If
                     End If
@@ -809,7 +815,7 @@ RESEARCHPOINT:
                             ProjectList.ProjectList.Add(Project.Name, Project.FullName)
                     Next
 
-                    ProjectList.ShowDialog(Me._Parent)
+                    ProjectList.ShowDialog(PackageControl.IDEControl)
 
                     If ProjectList.DialogResult = DialogResult.OK Then
                         WorkingFolder = ProjectList.SelectedProject.Value
@@ -829,6 +835,11 @@ RESEARCHPOINT:
                                 DomainProjectItemExists = True
                         Next
                     End If
+                Else
+                    Dim DI As New IO.DirectoryInfo(CType(BinProjectItem.Properties.Item("FullPath").Value, String))
+                    DI = DI.Parent
+
+                    WorkingFolder = DI.FullName
                 End If
 
                 If Not BinProjectItem Is Nothing AndAlso DomainProjectItemExists Then
