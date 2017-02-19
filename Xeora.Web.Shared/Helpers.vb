@@ -56,7 +56,7 @@ Namespace Xeora.Web.Shared
             If Not UseSameVariablePool Then
                 rString = String.Format("{0}{1}", Configurations.ApplicationRoot.BrowserImplementation, ServiceFullPath)
             Else
-                rString = String.Format("{0}{1}/{2}", Configurations.ApplicationRoot.BrowserImplementation, Helpers.HashCode, ServiceFullPath)
+                rString = String.Format("{0}{1}/{2}", Configurations.ApplicationRoot.BrowserImplementation, Helpers.Context.Request.HashCode, ServiceFullPath)
             End If
 
             If URLQueryDictionary.Count > 0 Then _
@@ -228,7 +228,7 @@ Namespace Xeora.Web.Shared
             objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
 
             Dim workingDomainControl As IDomainControl =
-                CType(objDomain.InvokeMember("QuickAccess", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
+                CType(objDomain.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
 
             workingDomainControl.ProvideFileStream(OutputStream, FileName)
         End Sub
@@ -240,7 +240,7 @@ Namespace Xeora.Web.Shared
             objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
 
             Dim workingDomainControl As IDomainControl =
-                CType(objDomain.InvokeMember("QuickAccess", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
+                CType(objDomain.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
 
             workingDomainControl.PushLanguageChange(LanguageID)
         End Sub
@@ -269,18 +269,18 @@ Namespace Xeora.Web.Shared
                 Dim SearchString As String =
                     String.Format("{0}_DomainIDAccessTree", Configurations.VirtualRoot.Replace("/"c, "_"c))
 
-                If Not Helpers.Context.Session.Contents.Item(SearchString) Is Nothing Then _
-                    rCurrentDomainIDAccessTree = CType(Helpers.Context.Session.Contents.Item(SearchString), String())
+                If Not Helpers.Context.Session.Item(SearchString) Is Nothing Then _
+                    rCurrentDomainIDAccessTree = CType(Helpers.Context.Session.Item(SearchString), String())
 
                 If Not Helpers.IsCookiless AndAlso rCurrentDomainIDAccessTree Is Nothing Then
-                    If Helpers.Context.Request.Cookies.Item(SearchString) Is Nothing OrElse
-                        Helpers.Context.Request.Cookies.Item(SearchString).Value Is Nothing OrElse
-                        Helpers.Context.Request.Cookies.Item(SearchString).Value.Trim().Length = 0 Then
+                    If Helpers.Context.Request.Cookie.Item(SearchString) Is Nothing OrElse
+                        Helpers.Context.Request.Cookie.Item(SearchString).Value Is Nothing OrElse
+                        Helpers.Context.Request.Cookie.Item(SearchString).Value.Trim().Length = 0 Then
 
                         rCurrentDomainIDAccessTree = Configurations.DefaultDomain
                         Helpers.CurrentDomainIDAccessTree = rCurrentDomainIDAccessTree
                     Else
-                        rCurrentDomainIDAccessTree = Helpers.Context.Request.Cookies.Item(SearchString).Value.Split("\"c)
+                        rCurrentDomainIDAccessTree = Helpers.Context.Request.Cookie.Item(SearchString).Value.Split("\"c)
                     End If
                 Else
                     If rCurrentDomainIDAccessTree Is Nothing Then
@@ -295,13 +295,13 @@ Namespace Xeora.Web.Shared
                 Dim SearchString As String =
                     String.Format("{0}_DomainIDAccessTree", Configurations.VirtualRoot.Replace("/"c, "_"c))
 
-                Helpers.Context.Session.Contents.Item(SearchString) = Value
+                Helpers.Context.Session.Item(SearchString) = Value
 
                 If Not Helpers.IsCookiless Then
                     Dim DomainID_Cookie As New System.Web.HttpCookie(SearchString, String.Join(Of String)("\", Value))
 
                     DomainID_Cookie.Expires = Date.Now.AddMonths(1)
-                    Helpers.Context.Response.Cookies.Add(DomainID_Cookie)
+                    Helpers.Context.Response.Cookie.Add(DomainID_Cookie)
                 End If
             End Set
         End Property
@@ -312,17 +312,17 @@ Namespace Xeora.Web.Shared
                 Dim LanguageSearchString As String =
                     String.Format("{0}_DomainLanguageID", Configurations.VirtualRoot.Replace("/"c, "_"c))
 
-                If Not Helpers.Context.Session.Contents.Item(LanguageSearchString) Is Nothing Then _
-                    rCurrentDomainLanguage = CType(Helpers.Context.Session.Contents.Item(LanguageSearchString), String)
+                If Not Helpers.Context.Session.Item(LanguageSearchString) Is Nothing Then _
+                    rCurrentDomainLanguage = CType(Helpers.Context.Session.Item(LanguageSearchString), String)
 
                 If Not Helpers.IsCookiless AndAlso String.IsNullOrEmpty(rCurrentDomainLanguage) Then
-                    If Helpers.Context.Request.Cookies.Item(LanguageSearchString) Is Nothing OrElse
-                        Helpers.Context.Request.Cookies.Item(LanguageSearchString).Value Is Nothing OrElse
-                        Helpers.Context.Request.Cookies.Item(LanguageSearchString).Value.Trim().Length = 0 Then
+                    If Helpers.Context.Request.Cookie.Item(LanguageSearchString) Is Nothing OrElse
+                        Helpers.Context.Request.Cookie.Item(LanguageSearchString).Value Is Nothing OrElse
+                        Helpers.Context.Request.Cookie.Item(LanguageSearchString).Value.Trim().Length = 0 Then
 
                         rCurrentDomainLanguage = Nothing
                     Else
-                        rCurrentDomainLanguage = Helpers.Context.Request.Cookies.Item(LanguageSearchString).Value
+                        rCurrentDomainLanguage = Helpers.Context.Request.Cookie.Item(LanguageSearchString).Value
                     End If
                 End If
 
@@ -332,13 +332,13 @@ Namespace Xeora.Web.Shared
                 Dim LanguageSearchString As String =
                     String.Format("{0}_DomainLanguageID", Configurations.VirtualRoot.Replace("/"c, "_"c))
 
-                Helpers.Context.Session.Contents.Item(LanguageSearchString) = Value
+                Helpers.Context.Session.Item(LanguageSearchString) = Value
 
                 If Not Helpers.IsCookiless Then
                     Dim DomainLanguage_Cookie As New System.Web.HttpCookie(LanguageSearchString, Value)
 
                     DomainLanguage_Cookie.Expires = Date.Now.AddMonths(1)
-                    Helpers.Context.Response.Cookies.Add(DomainLanguage_Cookie)
+                    Helpers.Context.Response.Cookie.Add(DomainLanguage_Cookie)
                 End If
             End Set
         End Property
@@ -350,7 +350,7 @@ Namespace Xeora.Web.Shared
             objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
 
             Dim workingDomainControl As IDomainControl =
-                CType(objDomain.InvokeMember("QuickAccess", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
+                CType(objDomain.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
 
             Return workingDomainControl.Domain
         End Function
@@ -385,15 +385,15 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
-        Public Shared ReadOnly Property Context() As System.Web.HttpContext
+        Public Shared ReadOnly Property Context() As IHttpContext
             Get
-                Dim rContext As System.Web.HttpContext
+                Dim rContext As IHttpContext
                 Dim RequestAsm As Reflection.Assembly, objRequest As Type
 
                 RequestAsm = Reflection.Assembly.Load("Xeora.Web.Handler")
                 objRequest = RequestAsm.GetType("Xeora.Web.Handler.RequestModule", False, True)
 
-                rContext = CType(objRequest.InvokeMember("Context", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), System.Web.HttpContext)
+                rContext = CType(objRequest.InvokeMember("Context", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IHttpContext)
 
                 Return rContext
             End Get
@@ -403,7 +403,7 @@ Namespace Xeora.Web.Shared
             Get
                 Dim rString As String
                 Try
-                    rString = CType(Helpers.Context.Session.Contents.Item("_sys_Referrer"), String)
+                    rString = CType(Helpers.Context.Session.Item("_sys_Referrer"), String)
                 Catch ex As Exception
                     rString = String.Empty
                 End Try
@@ -448,29 +448,29 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
-        Public Shared ReadOnly Property HashCode() As String
-            Get
-                Dim _HashCode As String
+        'Public Shared ReadOnly Property HashCode() As String
+        '    Get
+        '        Dim _HashCode As String
 
-                Dim RequestFilePath As String =
-                    Context.Request.FilePath
+        '        Dim RequestFilePath As String =
+        '            Context.Request.FilePath
 
-                RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(Configurations.ApplicationRoot.BrowserImplementation) + Configurations.ApplicationRoot.BrowserImplementation.Length)
+        '        RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(Configurations.ApplicationRoot.BrowserImplementation) + Configurations.ApplicationRoot.BrowserImplementation.Length)
 
-                Dim mR As Text.RegularExpressions.Match =
-                    Text.RegularExpressions.Regex.Match(RequestFilePath, "\d+/")
+        '        Dim mR As Text.RegularExpressions.Match =
+        '            Text.RegularExpressions.Regex.Match(RequestFilePath, "\d+/")
 
-                If mR.Success AndAlso
-                    mR.Index = 0 Then
+        '        If mR.Success AndAlso
+        '            mR.Index = 0 Then
 
-                    _HashCode = mR.Value.Substring(0, mR.Value.Length - 1)
-                Else
-                    _HashCode = Context.GetHashCode().ToString()
-                End If
+        '            _HashCode = mR.Value.Substring(0, mR.Value.Length - 1)
+        '        Else
+        '            _HashCode = Context.GetHashCode().ToString()
+        '        End If
 
-                Return _HashCode
-            End Get
-        End Property
+        '        Return _HashCode
+        '    End Get
+        'End Property
 
         Public Shared Sub ClearStaticCache()
             Dim RequestAsm As Reflection.Assembly, objRequest As Type
@@ -499,7 +499,7 @@ Namespace Xeora.Web.Shared
         Public Shared ReadOnly Property VariablePool() As Service.VariablePoolOperation
             Get
                 Return New Service.VariablePoolOperation(
-                            String.Format("{0}_{1}", Helpers.Context.Session.SessionID, Helpers.HashCode))
+                            String.Format("{0}_{1}", Helpers.Context.Session.SessionID, Helpers.Context.Request.HashCode))
             End Get
         End Property
 

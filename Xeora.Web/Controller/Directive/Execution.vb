@@ -141,13 +141,8 @@ Namespace Xeora.Web.Controller.Directive
                     If Not BindInvokeResult.InvokeResult Is Nothing AndAlso
                         TypeOf BindInvokeResult.InvokeResult Is ControlResult.RedirectOrder Then
 
-                        If Helpers.Context.Items.Contains("RedirectLocation") Then _
-                            Helpers.Context.Items.Remove("RedirectLocation")
-
-                        Helpers.Context.Items.Add(
-                            "RedirectLocation",
+                        Helpers.Context.Content.Item("RedirectLocation") =
                             CType(BindInvokeResult.InvokeResult, ControlResult.RedirectOrder).Location
-                        )
 
                         Me.DefineRenderedValue(String.Empty)
                     Else

@@ -42,7 +42,7 @@ Namespace Xeora.Web.Shared.Service
 
         Public Sub Transfer(ByVal FromSessionID As String)
             Me.TransferRegistrations(
-                String.Format("{0}_{1}", FromSessionID, Helpers.HashCode))
+                String.Format("{0}_{1}", FromSessionID, Helpers.Context.Request.HashCode))
         End Sub
 
         Private Function GetVariableFromPool(ByVal Key As String) As Object

@@ -136,8 +136,8 @@ Namespace Xeora.Web.Deployment
                 End Select
             End If
 
-            If [Shared].Helpers.Context.Application.Contents.Item(Me._IntegrityCheckID) Is Nothing Then _
-                [Shared].Helpers.Context.Application.Contents.Add(Me._IntegrityCheckID, True)
+            If [Shared].Helpers.Context.Application.Item(Me._IntegrityCheckID) Is Nothing Then _
+                [Shared].Helpers.Context.Application.Item(Me._IntegrityCheckID) = True
 
             Me._Synchronised = True
         End Sub
@@ -203,14 +203,11 @@ Namespace Xeora.Web.Deployment
         End Function
 
         Public Overrides Sub ProvideFileStream(ByRef OutputStream As IO.Stream, ByVal RequestedFilePath As String)
-            If Not String.IsNullOrEmpty(RequestedFilePath) AndAlso
-                (
-                    RequestedFilePath.Chars(0) = "/"c OrElse
-                    RequestedFilePath.Chars(0) = "\"c
-                ) Then
+            If String.IsNullOrEmpty(RequestedFilePath) Then OutputStream = Nothing : Exit Sub
 
+            RequestedFilePath = RequestedFilePath.Replace("/"c, "\"c)
+            If RequestedFilePath.Chars(0) = "\"c Then _
                 RequestedFilePath = RequestedFilePath.Substring(1)
-            End If
 
             Select Case Me.DeploymentType
                 Case [Shared].DomainInfo.DeploymentTypes.Development

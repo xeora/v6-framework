@@ -7,7 +7,7 @@ Namespace Xeora.Web.Shared
 
         Public Overloads Shared Function ResolveQueryItems() As URLQueryDictionary
             Return URLQueryDictionary.ResolveQueryItems(
-                Helpers.Context.Request.ServerVariables("QUERY_STRING"))
+                Helpers.Context.Request.Server("QUERY_STRING"))
         End Function
 
         Public Overloads Shared Function ResolveQueryItems(ByVal QueryString As String) As URLQueryDictionary
@@ -22,7 +22,8 @@ Namespace Xeora.Web.Shared
                     Key = SplittedQueryStringItem(0)
                     Value = String.Join("=", SplittedQueryStringItem, 1, SplittedQueryStringItem.Length - 1)
 
-                    URLQueryDictionary.Item(Key) = Value
+                    If Not String.IsNullOrEmpty(Key) AndAlso Not String.IsNullOrEmpty(Value) Then _
+                        URLQueryDictionary.Item(Key) = Value
                 Next
             End If
 
@@ -34,7 +35,8 @@ Namespace Xeora.Web.Shared
 
             If Not QueryStrings Is Nothing Then
                 For Each Item As Generic.KeyValuePair(Of String, String) In QueryStrings
-                    URLQueryDictionary.Item(Item.Key) = Item.Value
+                    If Not String.IsNullOrEmpty(Item.Key) AndAlso Not String.IsNullOrEmpty(Item.Value) Then _
+                        URLQueryDictionary.Item(Item.Key) = Item.Value
                 Next
             End If
 

@@ -187,17 +187,15 @@ Namespace Xeora.Web.Manager
                             System.Threading.Monitor.Enter(Me._ExecutableInstances.SyncRoot)
                             Try
                                 Me._ExecutableInstances.Item(ExamInterface) = System.Activator.CreateInstance(ExamInterface)
+
+                                Dim ExecuteObject As Object =
+                                    Me._ExecutableInstances.Item(ExamInterface)
+
+                                ExecuteObject.GetType().GetMethod("Initialize").Invoke(ExecuteObject, Nothing)
                             Catch ex As System.Exception
                                 Throw New System.Exception("Unable to create an instance of XeoraCube Executable!", ex)
                             Finally
-                                Try
-                                    Dim ExecuteObject As Object =
-                                        Me._ExecutableInstances.Item(ExamInterface)
-
-                                    ExecuteObject.GetType().GetMethod("FirstTouch").Invoke(ExecuteObject, Nothing)
-                                Finally
-                                    System.Threading.Monitor.Exit(Me._ExecutableInstances.SyncRoot)
-                                End Try
+                                System.Threading.Monitor.Exit(Me._ExecutableInstances.SyncRoot)
                             End Try
                         End If
                     End If
@@ -208,7 +206,7 @@ Namespace Xeora.Web.Manager
                 If Not ClassNames Is Nothing Then
                     AssemblyObject = Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", String.Join("+", ClassNames)), True, True)
                 Else
-                    AssemblyObject = Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", Me._ExecutableName), True, True)
+                    AssemblyObject = Me._ExecutableInstances.Item(ExamInterface).GetType() 'Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", Me._ExecutableName), True, True)
                 End If
 
                 AssemblyMethod = Me.GetAssemblyMethod(AssemblyObject, HttpMethodType, FunctionName, FunctionParams, ExecuterType)
@@ -217,15 +215,10 @@ Namespace Xeora.Web.Manager
                     Dim ExecutionID As String = System.Guid.NewGuid().ToString()
 
                     If Me._ExecutableInstances.ContainsKey(ExamInterface) Then
-                        System.Threading.Monitor.Enter(Me._ExecutableInstances.SyncRoot)
-                        Try
-                            Dim ExecuteObject As Object =
-                                Me._ExecutableInstances.Item(ExamInterface)
+                        Dim ExecuteObject As Object =
+                            Me._ExecutableInstances.Item(ExamInterface)
 
-                            ExecuteObject.GetType().GetMethod("BeforeExecute").Invoke(ExecuteObject, New Object() {ExecutionID, AssemblyMethod})
-                        Finally
-                            System.Threading.Monitor.Exit(Me._ExecutableInstances.SyncRoot)
-                        End Try
+                        ExecuteObject.GetType().GetMethod("PreExecute").Invoke(ExecuteObject, New Object() {ExecutionID, AssemblyMethod})
                     End If
 
                     If InstanceExecute Then
@@ -260,15 +253,10 @@ Namespace Xeora.Web.Manager
                     End If
 
                     If Me._ExecutableInstances.ContainsKey(ExamInterface) Then
-                        System.Threading.Monitor.Enter(Me._ExecutableInstances.SyncRoot)
-                        Try
-                            Dim ExecuteObject As Object =
-                                Me._ExecutableInstances.Item(ExamInterface)
+                        Dim ExecuteObject As Object =
+                            Me._ExecutableInstances.Item(ExamInterface)
 
-                            ExecuteObject.GetType().GetMethod("AfterExecute").Invoke(ExecuteObject, New Object() {ExecutionID, rObject})
-                        Finally
-                            System.Threading.Monitor.Exit(Me._ExecutableInstances.SyncRoot)
-                        End Try
+                        ExecuteObject.GetType().GetMethod("PostExecute").Invoke(ExecuteObject, New Object() {ExecutionID, rObject})
                     End If
                 Else
                     Dim sB As New System.Text.StringBuilder
@@ -582,10 +570,15 @@ Namespace Xeora.Web.Manager
                         Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", Me._ExecutableName), False, True)
 
                     If Me._ExecutableInstances.ContainsKey(ExamInterface) Then
-                        Dim ExecuteObject As Object =
-                            Me._ExecutableInstances.Item(ExamInterface)
+                        Try
+                            Dim ExecuteObject As Object =
+                                Me._ExecutableInstances.Item(ExamInterface)
 
-                        ExecuteObject.GetType().GetMethod("LastTouch").Invoke(ExecuteObject, Nothing)
+                            ExecuteObject.GetType().GetMethod("Finalize").Invoke(ExecuteObject, Nothing)
+                        Catch ex As System.Exception
+                            'Throw New System.Exception("XeoraCube Executable execution error while finalizing", ex)
+                            ' Just handle Exception and do not throw and exception
+                        End Try
 
                         System.Threading.Monitor.Enter(Me._ExecutableInstances.SyncRoot)
                         Try

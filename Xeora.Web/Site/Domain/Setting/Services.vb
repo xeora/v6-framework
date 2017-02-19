@@ -65,7 +65,7 @@ Namespace Xeora.Web.Site.Setting
                                 tServiceItem.MimeType = "application/octet-stream"
 
                         Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
-                            tServiceItem.MimeType = "text/xml"
+                            tServiceItem.MimeType = "text/xml; charset=utf-8"
 
                         Case Else
                             If Not String.IsNullOrEmpty(mimeType) Then _

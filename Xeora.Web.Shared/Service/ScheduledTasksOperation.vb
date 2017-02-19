@@ -4,16 +4,16 @@ Namespace Xeora.Web.Shared.Service
     Public NotInheritable Class ScheduledTasksOperation
         Private Shared _Cache As IScheduledTasks = Nothing
 
-        Public Function RegisterScheduleTask(ByVal ScheduleCallBack As IScheduledTasks.ScheduleTaskHandler, ByVal params As Object(), ByVal TaskExecutionTime As Date) As String
-            Return ScheduledTasksOperation._Cache.RegisterScheduleTask(ScheduleCallBack, params, TaskExecutionTime)
+        Public Function RegisterTask(ByVal CallBack As IScheduledTasks.TaskHandler, ByVal CallBackParams As Object(), ByVal ExecutionTime As DateTime) As String
+            Return ScheduledTasksOperation._Cache.RegisterTask(CallBack, CallBackParams, ExecutionTime)
         End Function
 
-        Public Function RegisterScheduleTask(ByVal ScheduleCallBack As IScheduledTasks.ScheduleTaskHandler, ByVal params As Object(), ByVal TaskExecutionTime As TimeSpan) As String
-            Return ScheduledTasksOperation._Cache.RegisterScheduleTask(ScheduleCallBack, params, TaskExecutionTime)
+        Public Function RegisterTask(ByVal CallBack As IScheduledTasks.TaskHandler, ByVal CallBackParams As Object(), ByVal ExecutionTime As TimeSpan) As String
+            Return ScheduledTasksOperation._Cache.RegisterTask(CallBack, CallBackParams, ExecutionTime)
         End Function
 
-        Public Sub UnRegisterScheduleTask(ByVal ScheduleID As String)
-            ScheduledTasksOperation._Cache.UnRegisterScheduleTask(ScheduleID)
+        Public Sub UnRegisterTask(ByVal ID As String)
+            ScheduledTasksOperation._Cache.UnRegisterTask(ID)
         End Sub
 
         Public Shared ReadOnly Property Instance() As IScheduledTasks

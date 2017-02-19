@@ -5,11 +5,11 @@ Namespace Xeora.Web.Site.Service
         Inherits MarshalByRefObject
         Implements [Shared].Service.IScheduledTasks
 
-        Private _ScheduledTasksID As String
-        Private _RemoteScheduledTasksService As System.Runtime.Remoting.Channels.Tcp.TcpServerChannel = Nothing
-        Private _IsScheduledTasksHost As Boolean
+        Private _TasksID As String
+        Private _RemoteTasksService As System.Runtime.Remoting.Channels.Tcp.TcpServerChannel = Nothing
+        Private _IsTasksHost As Boolean
 
-        Private _ScheduledTasks As New Hashtable
+        Private _Tasks As New Hashtable
 
         Private _CheckProgressSync As New Object()
         Private _CheckIsInProgress As Boolean
@@ -18,41 +18,41 @@ Namespace Xeora.Web.Site.Service
             If [Shared].Configurations.ScheduledTasksServicePort = -1 Then _
                 Throw New System.Exception("Scheduled Tasks Service is not configured! Please assign a port number in app.config file.")
 
-            Me._IsScheduledTasksHost = False
-            Me._ScheduledTasksID = String.Format("ST_{0}", [Shared].Configurations.WorkingPath.WorkingPathID)
+            Me._IsTasksHost = False
+            Me._TasksID = String.Format("ST_{0}", [Shared].Configurations.WorkingPath.WorkingPathID)
 
-            Me.CreateScheduledTasksHostForRemoteConnections()
+            Me.CreateTasksHostForRemoteConnections()
         End Sub
 
-        Private Sub CreateScheduledTasksHostForRemoteConnections()
+        Private Sub CreateTasksHostForRemoteConnections()
 RETRYREMOTEBIND:
             Dim RemoteScheduledTasksServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
             Dim RemoteScheduledTasks As [Shared].Service.IScheduledTasks =
-                Me.CreateConnectionToRemoteScheduledTasks(RemoteScheduledTasksServiceConnection)
-            Me.DestroyConnectionFromRemoteScheduledTasks(RemoteScheduledTasksServiceConnection)
+                Me.CreateConnectionToRemoteTasks(RemoteScheduledTasksServiceConnection)
+            Me.DestroyConnectionFromRemoteTasks(RemoteScheduledTasksServiceConnection)
 
             If RemoteScheduledTasks Is Nothing Then
-                Me._ScheduledTasks = Hashtable.Synchronized(New Hashtable())
+                Me._Tasks = Hashtable.Synchronized(New Hashtable())
 
                 Try
                     Dim serverProvider As New Runtime.Remoting.Channels.BinaryServerFormatterSinkProvider
                     serverProvider.TypeFilterLevel = Runtime.Serialization.Formatters.TypeFilterLevel.Full
 
-                    Me._RemoteScheduledTasksService =
+                    Me._RemoteTasksService =
                         New Runtime.Remoting.Channels.Tcp.TcpServerChannel(
-                            Me._ScheduledTasksID, [Shared].Configurations.ScheduledTasksServicePort, serverProvider)
+                            Me._TasksID, [Shared].Configurations.ScheduledTasksServicePort, serverProvider)
 
                     ' Register RemoteVariablePoolService to Remoting Service
-                    Runtime.Remoting.Channels.ChannelServices.RegisterChannel(Me._RemoteScheduledTasksService, True)
+                    Runtime.Remoting.Channels.ChannelServices.RegisterChannel(Me._RemoteTasksService, True)
 
                     ' Register VariablePool's Service Name
-                    Runtime.Remoting.RemotingServices.Marshal(Me, Me._ScheduledTasksID, GetType(ScheduledTasks))
+                    Runtime.Remoting.RemotingServices.Marshal(Me, Me._TasksID, GetType(ScheduledTasks))
                     'System.Runtime.Remoting.RemotingConfiguration.RegisterWellKnownServiceType( _
                     '    GetType(VariablePoolOperationClass), _
                     '    VariablePoolID, _
                     '    Runtime.Remoting.WellKnownObjectMode.Singleton _
                     ')
-                    Me._IsScheduledTasksHost = True
+                    Me._IsTasksHost = True
                 Catch ex As System.Exception
                     Try
                         EventLog.WriteEntry("XeoraCube", ex.ToString(), EventLogEntryType.Error)
@@ -67,32 +67,32 @@ RETRYREMOTEBIND:
             End If
         End Sub
 
-        Private Function CreateConnectionToRemoteScheduledTasks(ByRef RemoteScheduledTasksServiceConnection As Runtime.Remoting.Channels.Tcp.TcpClientChannel) As [Shared].Service.IScheduledTasks
-            Dim rRemoteScheduledTasks As [Shared].Service.IScheduledTasks = Nothing
+        Private Function CreateConnectionToRemoteTasks(ByRef RemoteTasksServiceConnection As Runtime.Remoting.Channels.Tcp.TcpClientChannel) As [Shared].Service.IScheduledTasks
+            Dim rRemoteTasks As [Shared].Service.IScheduledTasks = Nothing
 
-            Dim ScheduledTasksExists As Boolean = False
+            Dim TasksExists As Boolean = False
 
             Try
                 Dim clientProvider As New Runtime.Remoting.Channels.BinaryClientFormatterSinkProvider
 
-                RemoteScheduledTasksServiceConnection =
+                RemoteTasksServiceConnection =
                     New Runtime.Remoting.Channels.Tcp.TcpClientChannel(Guid.NewGuid().ToString(), clientProvider)
-                Runtime.Remoting.Channels.ChannelServices.RegisterChannel(RemoteScheduledTasksServiceConnection, True)
+                Runtime.Remoting.Channels.ChannelServices.RegisterChannel(RemoteTasksServiceConnection, True)
 
-                rRemoteScheduledTasks =
+                rRemoteTasks =
                     CType(
                         Activator.GetObject(
                             GetType([Shared].Service.IScheduledTasks),
-                            String.Format("tcp://{0}:{1}/{2}", Environment.MachineName, [Shared].Configurations.ScheduledTasksServicePort, Me._ScheduledTasksID)
+                            String.Format("tcp://{0}:{1}/{2}", Environment.MachineName, [Shared].Configurations.ScheduledTasksServicePort, Me._TasksID)
                         ),
                         [Shared].Service.IScheduledTasks
                     )
 
-                If Not rRemoteScheduledTasks Is Nothing Then
+                If Not rRemoteTasks Is Nothing Then
                     Dim PingError As Boolean = True
                     Dim PingThread As New Threading.Thread(Sub()
                                                                Try
-                                                                   rRemoteScheduledTasks.PingToRemoteEndPoint()
+                                                                   rRemoteTasks.PingToRemoteEndPoint()
 
                                                                    PingError = False
                                                                Catch ex As System.Exception
@@ -109,34 +109,34 @@ RETRYREMOTEBIND:
                     End If
                 End If
 
-                ScheduledTasksExists = True
+                TasksExists = True
             Catch ex As System.Exception
-                ScheduledTasksExists = False
+                TasksExists = False
             Finally
-                If Not ScheduledTasksExists Then
-                    rRemoteScheduledTasks = Nothing
+                If Not TasksExists Then
+                    rRemoteTasks = Nothing
 
-                    If Not RemoteScheduledTasksServiceConnection Is Nothing Then
-                        Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(RemoteScheduledTasksServiceConnection)
+                    If Not RemoteTasksServiceConnection Is Nothing Then
+                        Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(RemoteTasksServiceConnection)
 
-                        RemoteScheduledTasksServiceConnection = Nothing
+                        RemoteTasksServiceConnection = Nothing
                     End If
                 End If
             End Try
 
-            Return rRemoteScheduledTasks
+            Return rRemoteTasks
         End Function
 
-        Private Sub DestroyConnectionFromRemoteScheduledTasks(ByRef RemoteScheduledTasksServiceConnection As Runtime.Remoting.Channels.Tcp.TcpClientChannel)
+        Private Sub DestroyConnectionFromRemoteTasks(ByRef RemoteTasksServiceConnection As Runtime.Remoting.Channels.Tcp.TcpClientChannel)
             Try
-                If Not RemoteScheduledTasksServiceConnection Is Nothing Then _
-                    Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(RemoteScheduledTasksServiceConnection)
+                If Not RemoteTasksServiceConnection Is Nothing Then _
+                    Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(RemoteTasksServiceConnection)
             Catch ex As System.Exception
                 ' Just Handle Exceptions
             End Try
         End Sub
 
-        Private Sub CheckScheduledTasks(ByVal state As Object)
+        Private Sub CheckTasks(ByVal state As Object)
             SyncLock Me._CheckProgressSync
                 If Me._CheckIsInProgress Then Exit Sub
             End SyncLock
@@ -147,25 +147,24 @@ RETRYREMOTEBIND:
 
             Dim ExecutionTime As Long
             Do
-                ExecutionTime = Helper.Date.Format(
-                                    Date.Now, Helper.Date.DateFormats.DateWithTime)
+                ExecutionTime = Helper.DateTime.Format(DateTime.Now)
 
-                Threading.Monitor.Enter(Me._ScheduledTasks.SyncRoot)
+                Threading.Monitor.Enter(Me._Tasks.SyncRoot)
                 Try
-                    If Me._ScheduledTasks.ContainsKey(ExecutionTime) Then
+                    If Me._Tasks.ContainsKey(ExecutionTime) Then
                         ' We run scheduled tasks in a thread to avoid late timming for next queue taskinfos (If Exists)
                         Threading.ThreadPool.QueueUserWorkItem(
-                            New Threading.WaitCallback(AddressOf Me.ExecuteScheduledCallBacks),
-                            Me._ScheduledTasks.Item(ExecutionTime)
+                            New Threading.WaitCallback(AddressOf Me.ExecuteCallBacks),
+                            CType(Me._Tasks.Item(ExecutionTime), Generic.List(Of TaskInfo)).ToArray()
                         )
 
-                        Me._ScheduledTasks.Remove(ExecutionTime)
+                        Me._Tasks.Remove(ExecutionTime)
                     End If
                 Finally
-                    Threading.Monitor.Exit(Me._ScheduledTasks.SyncRoot)
+                    Threading.Monitor.Exit(Me._Tasks.SyncRoot)
                 End Try
 
-                If Me._ScheduledTasks.Count = 0 Then Exit Do
+                If Me._Tasks.Count = 0 Then Exit Do
 
                 Threading.Thread.Sleep(1000)
             Loop While True
@@ -175,116 +174,117 @@ RETRYREMOTEBIND:
             End SyncLock
         End Sub
 
-        Private Sub ExecuteScheduledCallBacks(ByVal TaskInfos As Object)
-            Dim sTasks As TaskInfos() = CType(TaskInfos, TaskInfos())
+        Private Sub ExecuteCallBacks(ByVal TaskInfos As Object)
+            Dim sTasks As TaskInfo() = CType(TaskInfos, TaskInfo())
 
-            For Each tI As TaskInfos In sTasks
-                tI.ScheduleCallBack.BeginInvoke(tI.ScheduleCallBackParams, New AsyncCallback(AddressOf Me.EndScheduleCallBack), tI)
+            For Each tI As TaskInfo In sTasks
+                tI.CallBack.BeginInvoke(tI.CallBackParams, New AsyncCallback(AddressOf Me.EndTaskCallBack), tI)
             Next
         End Sub
 
-        Private Sub EndScheduleCallBack(ByVal AsyncResult As IAsyncResult)
+        Private Sub EndTaskCallBack(ByVal AsyncResult As IAsyncResult)
             Try
-                CType(AsyncResult.AsyncState, TaskInfos).ScheduleCallBack.EndInvoke(AsyncResult)
+                CType(AsyncResult.AsyncState, TaskInfo).CallBack.EndInvoke(AsyncResult)
             Catch ex As System.Exception
                 Helper.EventLogging.WriteToLog(ex)
             End Try
         End Sub
 
-        Public Overloads Function RegisterScheduleTask(ByVal ScheduleCallBack As [Shared].Service.IScheduledTasks.ScheduleTaskHandler, ByVal params As Object(), ByVal TaskExecutionTime As Date) As String Implements [Shared].Service.IScheduledTasks.RegisterScheduleTask
-            Dim rScheduleID As String = String.Empty
+        Public Overloads Function RegisterTask(ByVal CallBack As [Shared].Service.IScheduledTasks.TaskHandler, ByVal CallBackParams As Object(), ByVal ExecutionTime As DateTime) As String Implements [Shared].Service.IScheduledTasks.RegisterTask
+            Dim rID As String = String.Empty
 
-            If Not Me._IsScheduledTasksHost Then
-                Dim RemoteScheduledTasksServiceConnection As Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                Dim RemoteScheduledTasks As [Shared].Service.IScheduledTasks =
-                    Me.CreateConnectionToRemoteScheduledTasks(RemoteScheduledTasksServiceConnection)
+            If Not Me._IsTasksHost Then
+                Dim RemoteTasksServiceConnection As Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
+                Dim RemoteTasks As [Shared].Service.IScheduledTasks =
+                    Me.CreateConnectionToRemoteTasks(RemoteTasksServiceConnection)
 
                 Try
-                    rScheduleID = RemoteScheduledTasks.RegisterScheduleTask(ScheduleCallBack, params, TaskExecutionTime)
+                    rID = RemoteTasks.RegisterTask(CallBack, CallBackParams, ExecutionTime)
                 Catch ex As System.Exception
-                    Me.CreateScheduledTasksHostForRemoteConnections()
+                    Me.CreateTasksHostForRemoteConnections()
 
-                    rScheduleID = Me.RegisterScheduleTask(ScheduleCallBack, params, TaskExecutionTime)
+                    rID = Me.RegisterTask(CallBack, CallBackParams, ExecutionTime)
                 End Try
 
-                Me.DestroyConnectionFromRemoteScheduledTasks(RemoteScheduledTasksServiceConnection)
+                Me.DestroyConnectionFromRemoteTasks(RemoteTasksServiceConnection)
             Else
-                Dim ExecutionTime As Long =
-                    Helper.Date.Format(TaskExecutionTime, Helper.Date.DateFormats.DateWithTime)
-                Dim TaskInfo As New TaskInfos(ScheduleCallBack, params, TaskExecutionTime)
+                Dim ExecutionTime_L As Long =
+                    Helper.DateTime.Format(ExecutionTime)
+                Dim TaskInfo As New TaskInfo(CallBack, CallBackParams, ExecutionTime)
 
-                Threading.Monitor.Enter(Me._ScheduledTasks.SyncRoot)
+                Threading.Monitor.Enter(Me._Tasks.SyncRoot)
                 Try
-                    If Me._ScheduledTasks.ContainsKey(ExecutionTime) Then
-                        Dim sTasks As TaskInfos() =
-                            CType(Me._ScheduledTasks.Item(ExecutionTime), TaskInfos())
+                    If Me._Tasks.ContainsKey(ExecutionTime_L) Then
+                        Dim sTasks As Generic.List(Of TaskInfo) =
+                            CType(Me._Tasks.Item(ExecutionTime_L), Generic.List(Of TaskInfo))
+                        sTasks.Add(TaskInfo)
 
-                        Array.Resize(sTasks, sTasks.Length + 1)
-                        sTasks.SetValue(TaskInfo, sTasks.Length - 1)
-
-                        Me._ScheduledTasks.Item(ExecutionTime) = sTasks
+                        Me._Tasks.Item(ExecutionTime_L) = sTasks
                     Else
-                        Me._ScheduledTasks.Add(ExecutionTime, New TaskInfos() {TaskInfo})
+                        Me._Tasks.Add(ExecutionTime_L, New Generic.List(Of TaskInfo)({TaskInfo}))
                     End If
                 Finally
-                    Threading.Monitor.Exit(Me._ScheduledTasks.SyncRoot)
+                    Threading.Monitor.Exit(Me._Tasks.SyncRoot)
                 End Try
 
                 Threading.ThreadPool.QueueUserWorkItem(
-                    New Threading.WaitCallback(AddressOf Me.CheckScheduledTasks))
+                    New Threading.WaitCallback(AddressOf Me.CheckTasks))
 
-                rScheduleID = TaskInfo.ScheduleID
+                rID = TaskInfo.ID
             End If
 
-            Return rScheduleID
+            Return rID
         End Function
 
-        Public Overloads Function RegisterScheduleTask(ByVal ScheduleCallBack As [Shared].Service.IScheduledTasks.ScheduleTaskHandler, ByVal params As Object(), ByVal TaskExecutionTime As System.TimeSpan) As String Implements [Shared].Service.IScheduledTasks.RegisterScheduleTask
-            Return Me.RegisterScheduleTask(ScheduleCallBack, params, Date.Now.Add(TaskExecutionTime))
+        Public Overloads Function RegisterTask(ByVal CallBack As [Shared].Service.IScheduledTasks.TaskHandler, ByVal CallBackParams As Object(), ByVal ExecutionTime As System.TimeSpan) As String Implements [Shared].Service.IScheduledTasks.RegisterTask
+            Return Me.RegisterTask(CallBack, CallBackParams, DateTime.Now.Add(ExecutionTime))
         End Function
 
-        Public Sub UnRegisterScheduleTask(ByVal ScheduleID As String) Implements [Shared].Service.IScheduledTasks.UnRegisterScheduleTask
-            If Not Me._IsScheduledTasksHost Then
-                Dim RemoteScheduledTasksServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
-                Dim RemoteScheduledTasks As [Shared].Service.IScheduledTasks =
-                    Me.CreateConnectionToRemoteScheduledTasks(RemoteScheduledTasksServiceConnection)
+        Public Sub UnRegisterTask(ByVal ID As String) Implements [Shared].Service.IScheduledTasks.UnRegisterTask
+            If Not Me._IsTasksHost Then
+                Dim RemoteTasksServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
+                Dim RemoteTasks As [Shared].Service.IScheduledTasks =
+                    Me.CreateConnectionToRemoteTasks(RemoteTasksServiceConnection)
 
                 Try
-                    RemoteScheduledTasks.UnRegisterScheduleTask(ScheduleID)
+                    RemoteTasks.UnRegisterTask(ID)
                 Catch ex As System.Exception
-                    Me.CreateScheduledTasksHostForRemoteConnections()
+                    Me.CreateTasksHostForRemoteConnections()
 
-                    Me.UnRegisterScheduleTask(ScheduleID)
+                    Me.UnRegisterTask(ID)
                 End Try
 
-                Me.DestroyConnectionFromRemoteScheduledTasks(RemoteScheduledTasksServiceConnection)
+                Me.DestroyConnectionFromRemoteTasks(RemoteTasksServiceConnection)
             Else
-                Threading.Monitor.Enter(Me._ScheduledTasks.SyncRoot)
+                Threading.Monitor.Enter(Me._Tasks.SyncRoot)
                 Try
-                    Dim dEnumerator As IDictionaryEnumerator = Me._ScheduledTasks.GetEnumerator()
-                    Dim sTaskList As Generic.List(Of TaskInfos) = Nothing, sTasks As TaskInfos()
+                    Dim dEnumerator As IDictionaryEnumerator = Me._Tasks.GetEnumerator()
+                    Dim sTasks As Generic.List(Of TaskInfo)
 
-                    Dim IsExists As Boolean = False
+                    Dim HasFound As Boolean = False
                     Do While dEnumerator.MoveNext()
-                        sTasks = CType(dEnumerator.Value, TaskInfos())
+                        sTasks = CType(dEnumerator.Value, Generic.List(Of TaskInfo))
 
-                        IsExists = False : sTaskList = New Generic.List(Of TaskInfos)
-                        For Each tI As TaskInfos In sTasks
-                            If String.Compare(tI.ScheduleID, ScheduleID) = 0 Then IsExists = True Else sTaskList.Add(tI)
+                        For tC As Integer = 0 To sTasks.Count - 1
+                            If String.Compare(sTasks(tC).ID, ID) = 0 Then
+                                sTasks.RemoveAt(tC)
+
+                                HasFound = True : Exit For
+                            End If
                         Next
 
-                        If IsExists Then
-                            If sTaskList.Count = 0 Then
-                                Me._ScheduledTasks.Remove(CType(dEnumerator.Key, Long))
+                        If HasFound Then
+                            If sTasks.Count = 0 Then
+                                Me._Tasks.Remove(CType(dEnumerator.Key, Long))
                             Else
-                                Me._ScheduledTasks.Item(CType(dEnumerator.Key, Long)) = sTaskList.ToArray()
+                                Me._Tasks.Item(CType(dEnumerator.Key, Long)) = sTasks
                             End If
 
                             Exit Do
                         End If
                     Loop
                 Finally
-                    Threading.Monitor.Exit(Me._ScheduledTasks.SyncRoot)
+                    Threading.Monitor.Exit(Me._Tasks.SyncRoot)
                 End Try
             End If
         End Sub
@@ -299,8 +299,8 @@ RETRYREMOTEBIND:
 
         Protected Overrides Sub Finalize()
             Try
-                If Not Me._RemoteScheduledTasksService Is Nothing Then _
-                    Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(Me._RemoteScheduledTasksService)
+                If Not Me._RemoteTasksService Is Nothing Then _
+                    Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(Me._RemoteTasksService)
             Catch ex As System.Exception
                 ' Just Handle Exceptions
             End Try
@@ -308,40 +308,40 @@ RETRYREMOTEBIND:
             MyBase.Finalize()
         End Sub
 
-        Private Class TaskInfos
-            Private _ScheduleID As Guid
-            Private _ScheduleCallBack As [Shared].Service.IScheduledTasks.ScheduleTaskHandler
-            Private _ScheduleCallBackParams As Object()
-            Private _TaskExecutionTime As Date
+        Private Class TaskInfo
+            Private _ID As Guid
+            Private _CallBack As [Shared].Service.IScheduledTasks.TaskHandler
+            Private _CallBackParams As Object()
+            Private _ExecutionTime As DateTime
 
-            Public Sub New(ByVal ScheduleCallBack As [Shared].Service.IScheduledTasks.ScheduleTaskHandler, ByVal ScheduleCallBackParams As Object(), ByVal TaskExecutionTime As Date)
-                Me._ScheduleID = Guid.NewGuid()
-                Me._ScheduleCallBack = ScheduleCallBack
-                Me._ScheduleCallBackParams = ScheduleCallBackParams
-                Me._TaskExecutionTime = TaskExecutionTime
+            Public Sub New(ByVal CallBack As [Shared].Service.IScheduledTasks.TaskHandler, ByVal CallBackParams As Object(), ByVal ExecutionTime As DateTime)
+                Me._ID = Guid.NewGuid()
+                Me._CallBack = CallBack
+                Me._CallBackParams = CallBackParams
+                Me._ExecutionTime = ExecutionTime
             End Sub
 
-            Public ReadOnly Property ScheduleID() As String
+            Public ReadOnly Property ID() As String
                 Get
-                    Return Me._ScheduleID.ToString()
+                    Return Me._ID.ToString()
                 End Get
             End Property
 
-            Public ReadOnly Property ScheduleCallBack() As [Shared].Service.IScheduledTasks.ScheduleTaskHandler
+            Public ReadOnly Property CallBack() As [Shared].Service.IScheduledTasks.TaskHandler
                 Get
-                    Return Me._ScheduleCallBack
+                    Return Me._CallBack
                 End Get
             End Property
 
-            Public ReadOnly Property ScheduleCallBackParams() As Object()
+            Public ReadOnly Property CallBackParams() As Object()
                 Get
-                    Return Me._ScheduleCallBackParams
+                    Return Me._CallBackParams
                 End Get
             End Property
 
-            Public ReadOnly Property TaskExecutionTime() As Date
+            Public ReadOnly Property ExecutionTime() As DateTime
                 Get
-                    Return Me._TaskExecutionTime
+                    Return Me._ExecutionTime
                 End Get
             End Property
         End Class

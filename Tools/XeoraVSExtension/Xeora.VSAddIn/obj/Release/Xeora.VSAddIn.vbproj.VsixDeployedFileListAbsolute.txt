@@ -18,3 +18,13 @@ C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tun
 C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.3\Resources\\XeoraPackage.png
 C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.3\\XeoraPackage.pkgdef
 C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.3\\Xeora.VSAddIn.Executable.pdb
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.4\\Xeora.VSAddIn.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.4\\Xeora.VSAddIn.pdb
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.4\\ICSharpCode.NRefactory.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.4\\Xeora.VSAddIn.Executable.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.4\\Xeora.Web.RegularExpressions.dll
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.4\\Xeora.VSAddIn.pkgdef
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.4\\extension.vsixmanifest
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.4\Resources\\XeoraPackage.png
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.4\\XeoraPackage.pkgdef
+C:\Users\Tuna Çelik\AppData\Local\Microsoft\VisualStudio\14.0Exp\Extensions\Tuna Celik\XeoraCube Visual Studio Editor Extension\3.1.4\\Xeora.VSAddIn.Executable.pdb

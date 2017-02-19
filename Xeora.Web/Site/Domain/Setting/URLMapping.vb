@@ -89,6 +89,7 @@ Namespace Xeora.Web.Site.Setting
                                         If xPathIter_servicetest.MoveNext() Then _
                                             If Not Boolean.TryParse(xPathIter.Current.GetAttribute("overridable", xPathIter.Current.BaseURI), [Overridable]) Then [Overridable] = False
 
+                                        ' TODO: mapped is not in use. The logic was creating the formatted URL from resolved request.
                                         Reverse_Mapped = xPathIter_in.Current.GetAttribute("mapped", xPathIter_in.Current.BaseURI)
                                         Reverse_MappedItems = New [Shared].URLMapping.ResolveInfos.MappedItem.MappedItemCollection
 

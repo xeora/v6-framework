@@ -76,7 +76,7 @@ Namespace Xeora.Web.Controller.Directive
                     Dim LocalAuthenticationNotAccepted As Boolean = False
 
                     For Each AuthKey As String In ServiceItem.AuthenticationKeys
-                        If Helpers.Context.Session.Contents.Item(AuthKey) Is Nothing Then
+                        If Helpers.Context.Session.Item(AuthKey) Is Nothing Then
                             LocalAuthenticationNotAccepted = True
 
                             Exit For

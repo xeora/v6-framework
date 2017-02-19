@@ -207,7 +207,7 @@ Namespace Xeora.Web.Manager
                         [Shared].Configurations.TemporaryRoot,
                         String.Format("{0}{2}{1}",
                             [Shared].Configurations.WorkingPath.WorkingPathID,
-                            [Shared].Helpers.Context.Items.Item("ApplicationID"),
+                            [Shared].Helpers.Context.Content.Item("ApplicationID"),
                             IO.Path.DirectorySeparatorChar
                         )
                     )

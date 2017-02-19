@@ -1,52 +1,26 @@
 ﻿Option Strict On
 
 Namespace Xeora.Web.Helper
-    Public Class [Date]
-        Public Enum DateFormats
-            OnlyDate
-            DateWithTime
-        End Enum
-
-        Public Overloads Shared Function Format(Optional ByVal DTF As DateFormats = DateFormats.DateWithTime) As Long
-            Return [Date].Format(Date.Now, DTF)
+    Public Class DateTime
+        Public Overloads Shared Function Format(Optional ByVal FormatJustDate As Boolean = False) As Long
+            Return DateTime.Format(System.DateTime.Now, FormatJustDate)
         End Function
 
-        Public Overloads Shared Function Format(ByVal Value As Date, Optional ByVal DTF As DateFormats = DateFormats.DateWithTime) As Long
-            Dim tDate As Date = Value
-            Dim tDay As String, tMonth As String, tYear As String, tHour As String, tMinute As String, tSecond As String, rString As String
+        Public Overloads Shared Function Format(ByVal vDateTime As System.DateTime, Optional ByVal FormatJustDate As Boolean = False) As Long
+            Dim tString As String =
+                String.Format("{0:0000}{1:00}{2:00}", vDateTime.Year, vDateTime.Month, vDateTime.Day)
 
-            tDay = tDate.Day.ToString()
-            If CType(tDay, Integer) < 10 Then tDay = "0" & tDay
+            If Not FormatJustDate Then _
+                tString = String.Format("{0}{1:00}{2:00}{3:00}", tString, vDateTime.Hour, vDateTime.Minute, vDateTime.Second)
 
-            tMonth = tDate.Month.ToString()
-            If CType(tMonth, Integer) < 10 Then tMonth = "0" & tMonth
-
-            tYear = tDate.Year.ToString()
-
-            tHour = tDate.Hour.ToString()
-            If CType(tHour, Integer) < 10 Then tHour = "0" & tHour
-
-            tMinute = tDate.Minute.ToString()
-            If CType(tMinute, Integer) < 10 Then tMinute = "0" & tMinute
-
-            tSecond = tDate.Second.ToString()
-            If CType(tSecond, Integer) < 10 Then tSecond = "0" & tSecond
-
-            rString = tYear & tMonth & tDay
-
-            Select Case DTF
-                Case DateFormats.DateWithTime
-                    rString &= tHour & tMinute & tSecond
-            End Select
-
-            Return CType(rString, Long)
+            Return Long.Parse(tString)
         End Function
 
-        Public Overloads Shared Function Format(ByVal Value As Long) As Date
-            Dim dtString As String = CType(Value, String)
+        Public Overloads Shared Function Format(ByVal vDateTime As Long) As System.DateTime
+            Dim dtString As String = CType(vDateTime, String)
 
             If (dtString.Length >= 5 AndAlso dtString.Length <= 8) OrElse
-                    (dtString.Length >= 11 AndAlso dtString.Length <= 14) Then
+                (dtString.Length >= 11 AndAlso dtString.Length <= 14) Then
 
                 If dtString.Length >= 5 AndAlso dtString.Length <= 8 Then
                     dtString = dtString.PadLeft(8, "0"c)
@@ -54,13 +28,15 @@ Namespace Xeora.Web.Helper
                     dtString = dtString.PadLeft(14, "0"c)
                 End If
             Else
-                Throw New ArgumentOutOfRangeException("Long value must have 8 or between 14 steps according to its type!")
+                If vDateTime > 0 Then _
+                    Throw New System.Exception("Long value must have 8 or between 14 steps according to its type!")
             End If
 
-            Dim rDate As Date
+            Dim rDate As Date = Date.MinValue
 
-            If dtString.Length = 14 Then
-                rDate = New Date(
+            If vDateTime > 0 Then
+                If dtString.Length = 14 Then
+                    rDate = New Date(
                                 Integer.Parse(dtString.Substring(0, 4)),
                                 Integer.Parse(dtString.Substring(4, 2)),
                                 Integer.Parse(dtString.Substring(6, 2)),
@@ -68,12 +44,13 @@ Namespace Xeora.Web.Helper
                                 Integer.Parse(dtString.Substring(10, 2)),
                                 Integer.Parse(dtString.Substring(12, 2))
                             )
-            Else
-                rDate = New Date(
+                Else
+                    rDate = New Date(
                                Integer.Parse(dtString.Substring(0, 4)),
                                Integer.Parse(dtString.Substring(4, 2)),
                                Integer.Parse(dtString.Substring(6, 2))
                            )
+                End If
             End If
 
             Return rDate

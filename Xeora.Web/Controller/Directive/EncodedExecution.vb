@@ -68,11 +68,11 @@ Namespace Xeora.Web.Controller.Directive
 
                                 If Not String.IsNullOrEmpty(ParentUpdateBlockID) Then
                                     Me.DefineRenderedValue(
-                                        String.Format("javascript:__XeoraJS.doRequest('{0}', '{1}');", ParentUpdateBlockID, Manager.Assembly.EncodeFunction(Helpers.HashCode, BlockContent.Trim()))
+                                        String.Format("javascript:__XeoraJS.doRequest('{0}', '{1}');", ParentUpdateBlockID, Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, BlockContent.Trim()))
                                     )
                                 Else
                                     Me.DefineRenderedValue(
-                                        String.Format("javascript:__XeoraJS.postForm('{0}');", Manager.Assembly.EncodeFunction(Helpers.HashCode, BlockContent.Trim()))
+                                        String.Format("javascript:__XeoraJS.postForm('{0}');", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, BlockContent.Trim()))
                                     )
                                 End If
                             Else

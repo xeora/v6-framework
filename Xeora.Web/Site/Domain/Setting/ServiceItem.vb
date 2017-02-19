@@ -16,7 +16,7 @@ Namespace Xeora.Web.Site.Setting
 
         Public Sub New(ByVal ID As String)
             Me._ID = ID
-            Me._MimeType = "text/html"
+            Me._MimeType = "text/html; charset=utf-8"
             Me._ServiceType = [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
             Me._ExecuteIn = String.Empty
             Me._Authentication = False

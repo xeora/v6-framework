@@ -82,19 +82,19 @@ Namespace Xeora.Web.Controller
                             Case "~"c ' Form Post Value
                                 ' File Post is not supporting on XML Http Requests
                                 Dim RequestFilesKeys As String() =
-                                    [Shared].Helpers.Context.Request.Files.AllKeys
+                                    Helpers.Context.Request.File.AllKeys
                                 Dim RequestFileObjects As New Generic.List(Of System.Web.HttpPostedFile)
 
                                 For kC As Integer = 0 To RequestFilesKeys.Length - 1
                                     If String.Compare(RequestFilesKeys(kC), Me.InsideValue.Substring(1), True) = 0 Then
                                         RequestFileObjects.Add(
-                                            [Shared].Helpers.Context.Request.Files.Item(kC))
+                                            Helpers.Context.Request.File.Item(kC))
                                     End If
                                 Next
                                 ' !--
 
                                 If RequestFileObjects.Count = 0 Then
-                                    If String.Compare([Shared].Helpers.Context.Request.HttpMethod, "POST", True) = 0 Then
+                                    If String.Compare(Helpers.Context.Request.Method, "POST", True) = 0 Then
                                         Dim ControlSIM As Hashtable =
                                             CType(Me.ContentArguments.Item("_sys_ControlSIM"), Hashtable)
 
@@ -136,7 +136,7 @@ Namespace Xeora.Web.Controller
 
                             Case "-"c ' Session Value
                                 Dim SessionResult As Object =
-                                    [Shared].Helpers.Context.Session.Contents.Item(Me.InsideValue.Substring(1))
+                                    Helpers.Context.Session.Item(Me.InsideValue.Substring(1))
 
                                 If SessionResult Is Nothing Then
                                     Me.DefineRenderedValue(String.Empty)
@@ -148,7 +148,7 @@ Namespace Xeora.Web.Controller
                             Case "+"c ' Cookies Value
                                 Try
                                     Dim CookieValue As String =
-                                        [Shared].Helpers.Context.Request.Cookies.Item(Me.InsideValue.Substring(1)).Value
+                                        Helpers.Context.Request.Cookie.Item(Me.InsideValue.Substring(1)).Value
 
                                     Me.DefineRenderedValue(CookieValue)
                                     Me._ObjectResult = CookieValue
@@ -237,11 +237,11 @@ Namespace Xeora.Web.Controller
                                 End If
 
                                 ' Search In Session
-                                If searchArgValue Is Nothing Then searchArgValue = Helpers.Context.Session.Contents.Item(searchArgName)
+                                If searchArgValue Is Nothing Then searchArgValue = Helpers.Context.Session.Item(searchArgName)
 
                                 ' Search In Form Post (NO FILE POST SUPPORT)
                                 If searchArgValue Is Nothing AndAlso
-                                    String.Compare([Shared].Helpers.Context.Request.HttpMethod, "POST", True) = 0 Then
+                                    String.Compare(Helpers.Context.Request.Method, "POST", True) = 0 Then
 
                                     Dim ControlSIM As Hashtable =
                                         CType(Me.ContentArguments.Item("_sys_ControlSIM"), Hashtable)
@@ -262,9 +262,9 @@ Namespace Xeora.Web.Controller
 
                                 ' Cookie
                                 If searchArgValue Is Nothing AndAlso
-                                    Not [Shared].Helpers.Context.Request.Cookies.Item(searchArgName) Is Nothing Then
+                                    Not Helpers.Context.Request.Cookie.Item(searchArgName) Is Nothing Then
 
-                                    searchArgValue = [Shared].Helpers.Context.Request.Cookies.Item(searchArgName).Value
+                                    searchArgValue = Helpers.Context.Request.Cookie.Item(searchArgName).Value
                                 End If
 
                                 If Not searchArgValue Is Nothing Then
@@ -283,7 +283,7 @@ Namespace Xeora.Web.Controller
 
                                     Select Case ArgumentQueryObjectName.Chars(0)
                                         Case "-"c
-                                            ArgumentQueryObject = [Shared].Helpers.Context.Session.Contents.Item(ArgumentQueryObjectName.Substring(1))
+                                            ArgumentQueryObject = Helpers.Context.Session.Item(ArgumentQueryObjectName.Substring(1))
 
                                         Case "#"c
                                             Dim searchContentInfo As ControllerBase = Me
@@ -327,20 +327,24 @@ Namespace Xeora.Web.Controller
                                             End If
 
                                         Case Else
-                                            If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ArgumentQueryObjectName)
+                                            ArgumentQueryObject = Helpers.VariablePool.Get(ArgumentQueryObjectName)
 
-                                            If TypeOf SenderController Is ControlBase AndAlso
-                                                TypeOf SenderController Is INamable Then
+                                            If TypeOf ArgumentQueryObject Is DataListOutputInfo Then
+                                                If TypeOf SenderController Is ControlBase AndAlso
+                                                    TypeOf SenderController Is INamable Then
 
-                                                If String.Compare(
-                                                    CType(SenderController, INamable).ControlID, ArgumentQueryObjectName, True) <> 0 Then
+                                                    If String.Compare(
+                                                        CType(SenderController, INamable).ControlID, ArgumentQueryObjectName, True) <> 0 Then
+
+                                                        If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ArgumentQueryObjectName)
+
+                                                        Exit Sub
+                                                    End If
+                                                Else
+                                                    If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ArgumentQueryObjectName)
 
                                                     Exit Sub
-                                                Else
-                                                    ArgumentQueryObject = [Shared].Helpers.VariablePool.Get(ArgumentQueryObjectName)
                                                 End If
-                                            Else
-                                                Exit Sub
                                             End If
 
                                     End Select

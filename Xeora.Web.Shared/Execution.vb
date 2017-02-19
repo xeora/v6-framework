@@ -104,10 +104,10 @@ Namespace Xeora.Web.Shared
             Public Property RequestHttpMethod() As String
                 Get
                     If String.IsNullOrEmpty(Me._RequestHttpMethod) Then
-                        Dim Context As System.Web.HttpContext = Helpers.Context
+                        Dim Context As [Shared].IHttpContext = Helpers.Context
 
                         If Not Context Is Nothing Then
-                            Me._RequestHttpMethod = Context.Request.HttpMethod
+                            Me._RequestHttpMethod = Context.Request.Method
                         Else
                             Me._RequestHttpMethod = "GET"
                         End If

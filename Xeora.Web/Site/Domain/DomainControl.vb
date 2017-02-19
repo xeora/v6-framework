@@ -47,7 +47,7 @@ Namespace Xeora.Web.Site
             End Try
         End Sub
 
-        Public Shared ReadOnly Property QuickAccess(ByVal RequestID As String) As [Shared].IDomainControl
+        Public Shared ReadOnly Property Instance(ByVal RequestID As String) As [Shared].IDomainControl
             Get
                 If String.IsNullOrEmpty(RequestID) OrElse
                     Not DomainControl._ReferenceTable.ContainsKey(RequestID) Then _
@@ -381,7 +381,7 @@ Namespace Xeora.Web.Site
                         Me._ServiceType = ServiceItem.ServiceType
                         If ServiceItem.Authentication Then
                             For Each AuthKey As String In ServiceItem.AuthenticationKeys
-                                If [Shared].Helpers.Context.Session.Contents.Item(AuthKey) Is Nothing Then
+                                If [Shared].Helpers.Context.Session.Item(AuthKey) Is Nothing Then
                                     Me._IsAuthenticationRequired = True
 
                                     Exit For
@@ -552,7 +552,7 @@ Namespace Xeora.Web.Site
                             Me._ServiceType = ServiceItem.ServiceType
                             If ServiceItem.Authentication Then
                                 For Each AuthKey As String In ServiceItem.AuthenticationKeys
-                                    If [Shared].Helpers.Context.Session.Contents.Item(AuthKey) Is Nothing Then
+                                    If [Shared].Helpers.Context.Session.Item(AuthKey) Is Nothing Then
                                         Me._IsAuthenticationRequired = True
 
                                         Exit For

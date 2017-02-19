@@ -2,79 +2,82 @@
 
 Namespace Xeora.Web.Shared
     Public Class MetaRecord
-        Public Shared _MetaRecords As Hashtable = Hashtable.Synchronized(New Hashtable)
-        Public Shared _CustomMetaRecords As Hashtable = Hashtable.Synchronized(New Hashtable)
+        Public Shared _Records As Hashtable = Hashtable.Synchronized(New Hashtable)
+        Public Shared _CustomRecords As Hashtable = Hashtable.Synchronized(New Hashtable)
 
-        Public Enum MetaTags As Byte
-            author = 1
-            cachecontrol = 2
-            contentlanguage = 3
-            contenttype = 4
-            copyright = 5
-            description = 6
-            expires = 7
-            keywords = 8
-            pragma = 9
-            refresh = 10
-            robots = 11
-            googlebot = 12
+        Public Enum Tags
+            author
+            cachecontrol
+            contentlanguage
+            contenttype
+            copyright
+            description
+            expires
+            keywords
+            pragma
+            refresh
+            robots
+            googlebot
         End Enum
 
-        Public Enum MetaTagSpace As Byte
-            name = 1
-            httpequiv = 2
-            [property] = 3
+        Public Enum TagSpaces
+            name
+            httpequiv
+            [property]
         End Enum
 
-        Public Shared Function GetMetaTagHtmlName(ByVal MetaTag As MetaTags) As String
+        Public Shared Function GetTagHtmlName(ByVal Tag As Tags) As String
             Dim rString As String = String.Empty
 
-            Select Case MetaTag
-                Case MetaTags.author
+            Select Case Tag
+                Case Tags.author
                     rString = "Author"
-                Case MetaTags.cachecontrol
+                Case Tags.cachecontrol
                     rString = "Cache-Control"
-                Case MetaTags.contentlanguage
+                Case Tags.contentlanguage
                     rString = "Content-Language"
-                Case MetaTags.contenttype
+                Case Tags.contenttype
                     rString = "Content-Type"
-                Case MetaTags.copyright
+                Case Tags.copyright
                     rString = "Copyright"
-                Case MetaTags.description
+                Case Tags.description
                     rString = "Description"
-                Case MetaTags.expires
+                Case Tags.expires
                     rString = "Expires"
-                Case MetaTags.googlebot
+                Case Tags.googlebot
                     rString = "Googlebot"
-                Case MetaTags.keywords
+                Case Tags.keywords
                     rString = "Keywords"
-                Case MetaTags.pragma
+                Case Tags.pragma
                     rString = "Pragma"
-                Case MetaTags.refresh
+                Case Tags.refresh
                     rString = "Refresh"
-                Case MetaTags.robots
+                Case Tags.robots
                     rString = "Robots"
             End Select
 
             Return rString
         End Function
 
-        Public Shared Sub AddCustomMetaRecord(ByVal MetaTagSpace As MetaTagSpace, ByVal Name As String, ByVal Value As String)
-            Threading.Monitor.Enter(MetaRecord._CustomMetaRecords.SyncRoot)
+        Public Overloads Shared Sub Add(ByVal TagSpace As TagSpaces, ByVal Name As String, ByVal Value As String)
+            If String.IsNullOrEmpty(Name) OrElse String.IsNullOrEmpty(Value) Then _
+                Throw New NullReferenceException("Name and Value can not be null!")
+
+            Threading.Monitor.Enter(MetaRecord._CustomRecords.SyncRoot)
             Try
-                Select Case MetaTagSpace
-                    Case MetaTagSpace.name
+                Select Case TagSpace
+                    Case TagSpaces.name
                         Name = String.Format("name::{0}", Name)
-                    Case MetaTagSpace.httpequiv
+                    Case TagSpaces.httpequiv
                         Name = String.Format("httpequiv::{0}", Name)
-                    Case MetaTagSpace.property
+                    Case TagSpaces.property
                         Name = String.Format("property::{0}", Name)
                 End Select
 
                 Dim cMRs As Generic.Dictionary(Of String, String)
 
-                If MetaRecord._CustomMetaRecords.ContainsKey(Helpers.CurrentRequestID) Then
-                    cMRs = CType(MetaRecord._CustomMetaRecords.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of String, String))
+                If MetaRecord._CustomRecords.ContainsKey(Helpers.CurrentRequestID) Then
+                    cMRs = CType(MetaRecord._CustomRecords.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of String, String))
                 Else
                     cMRs = New Generic.Dictionary(Of String, String)
                 End If
@@ -82,126 +85,132 @@ Namespace Xeora.Web.Shared
                 If cMRs.ContainsKey(Name) Then cMRs.Remove(Name)
                 cMRs.Add(Name, Value)
 
-                MetaRecord._CustomMetaRecords.Item(Helpers.CurrentRequestID) = cMRs
+                MetaRecord._CustomRecords.Item(Helpers.CurrentRequestID) = cMRs
             Finally
-                Threading.Monitor.Exit(MetaRecord._CustomMetaRecords.SyncRoot)
+                Threading.Monitor.Exit(MetaRecord._CustomRecords.SyncRoot)
             End Try
         End Sub
 
-        Public Shared Sub RemoveCustomMetaRecord(ByVal Name As String)
-            Threading.Monitor.Enter(MetaRecord._CustomMetaRecords.SyncRoot)
+        Public Overloads Shared Sub Add(ByVal Tag As Tags, ByVal Value As String)
+            If String.IsNullOrEmpty(Value) Then _
+                Throw New NullReferenceException("Value can not be null!")
+
+            Threading.Monitor.Enter(MetaRecord._Records.SyncRoot)
+            Try
+                Dim MetaTags As Generic.Dictionary(Of Tags, String)
+
+                If MetaRecord._Records.ContainsKey(Helpers.CurrentRequestID) Then
+                    MetaTags = CType(MetaRecord._Records.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of Tags, String))
+                Else
+                    MetaTags = New Generic.Dictionary(Of Tags, String)
+                End If
+
+                If MetaTags.ContainsKey(Tag) Then MetaTags.Remove(Tag)
+                MetaTags.Add(Tag, Value)
+
+                MetaRecord._Records.Item(Helpers.CurrentRequestID) = MetaTags
+            Finally
+                Threading.Monitor.Exit(MetaRecord._Records.SyncRoot)
+            End Try
+        End Sub
+
+        Public Overloads Shared Sub Remove(ByVal Name As String)
+            If String.IsNullOrEmpty(Name) Then _
+                Throw New NullReferenceException("Name can not be null!")
+
+            Threading.Monitor.Enter(MetaRecord._CustomRecords.SyncRoot)
             Try
                 Dim cMRs As Generic.Dictionary(Of String, String)
 
-                If MetaRecord._CustomMetaRecords.ContainsKey(Helpers.CurrentRequestID) Then
-                    cMRs = CType(MetaRecord._CustomMetaRecords.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of String, String))
+                If MetaRecord._CustomRecords.ContainsKey(Helpers.CurrentRequestID) Then
+                    cMRs = CType(MetaRecord._CustomRecords.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of String, String))
                 Else
                     cMRs = New Generic.Dictionary(Of String, String)
                 End If
 
                 If cMRs.ContainsKey(Name) Then cMRs.Remove(Name)
 
-                MetaRecord._CustomMetaRecords.Item(Helpers.CurrentRequestID) = cMRs
+                MetaRecord._CustomRecords.Item(Helpers.CurrentRequestID) = cMRs
             Finally
-                Threading.Monitor.Exit(MetaRecord._MetaRecords.SyncRoot)
+                Threading.Monitor.Exit(MetaRecord._CustomRecords.SyncRoot)
             End Try
         End Sub
 
-        Public Shared Sub AddMetaRecord(ByVal MetaTag As MetaTags, ByVal Value As String)
-            Threading.Monitor.Enter(MetaRecord._MetaRecords.SyncRoot)
+        Public Overloads Shared Sub Remove(ByVal Tag As Tags)
+            Threading.Monitor.Enter(MetaRecord._Records.SyncRoot)
             Try
-                Dim MetaTags As Generic.Dictionary(Of MetaTags, String)
+                Dim MetaTags As Generic.Dictionary(Of Tags, String)
 
-                If MetaRecord._MetaRecords.ContainsKey(Helpers.CurrentRequestID) Then
-                    MetaTags = CType(MetaRecord._MetaRecords.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of MetaTags, String))
+                If MetaRecord._Records.ContainsKey(Helpers.CurrentRequestID) Then
+                    MetaTags = CType(MetaRecord._Records.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of Tags, String))
                 Else
-                    MetaTags = New Generic.Dictionary(Of MetaTags, String)
+                    MetaTags = New Generic.Dictionary(Of Tags, String)
                 End If
 
-                If MetaTags.ContainsKey(MetaTag) Then MetaTags.Remove(MetaTag)
-                MetaTags.Add(MetaTag, Value)
+                If MetaTags.ContainsKey(Tag) Then MetaTags.Remove(Tag)
 
-                MetaRecord._MetaRecords.Item(Helpers.CurrentRequestID) = MetaTags
+                MetaRecord._Records.Item(Helpers.CurrentRequestID) = MetaTags
             Finally
-                Threading.Monitor.Exit(MetaRecord._MetaRecords.SyncRoot)
+                Threading.Monitor.Exit(MetaRecord._Records.SyncRoot)
             End Try
         End Sub
 
-        Public Shared Sub RemoveMetaRecord(ByVal MetaTag As MetaTags)
-            Threading.Monitor.Enter(MetaRecord._MetaRecords.SyncRoot)
-            Try
-                Dim MetaTags As Generic.Dictionary(Of MetaTags, String)
-
-                If MetaRecord._MetaRecords.ContainsKey(Helpers.CurrentRequestID) Then
-                    MetaTags = CType(MetaRecord._MetaRecords.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of MetaTags, String))
-                Else
-                    MetaTags = New Generic.Dictionary(Of MetaTags, String)
-                End If
-
-                If MetaTags.ContainsKey(MetaTag) Then MetaTags.Remove(MetaTag)
-
-                MetaRecord._MetaRecords.Item(Helpers.CurrentRequestID) = MetaTags
-            Finally
-                Threading.Monitor.Exit(MetaRecord._MetaRecords.SyncRoot)
-            End Try
-        End Sub
-
-        Public Shared ReadOnly Property RegisteredMetaRecords() As Generic.Dictionary(Of MetaTags, String)
+        Public Shared ReadOnly Property RegisteredRecords() As Generic.Dictionary(Of Tags, String)
             Get
-                Dim MetaTags As Generic.Dictionary(Of MetaTags, String)
+                Dim MetaTags As Generic.Dictionary(Of Tags, String)
 
-                If MetaRecord._MetaRecords.ContainsKey(Helpers.CurrentRequestID) Then
-                    MetaTags = CType(MetaRecord._MetaRecords.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of MetaTags, String))
+                If MetaRecord._Records.ContainsKey(Helpers.CurrentRequestID) Then
+                    MetaTags = CType(MetaRecord._Records.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of Tags, String))
                 Else
-                    MetaTags = New Generic.Dictionary(Of MetaTags, String)
+                    MetaTags = New Generic.Dictionary(Of Tags, String)
                 End If
 
                 Return MetaTags
             End Get
         End Property
 
-        Public Shared ReadOnly Property RegisteredCustomMetaRecords() As Generic.Dictionary(Of String, String)
+        Public Shared ReadOnly Property RegisteredCustomRecords() As Generic.Dictionary(Of String, String)
             Get
-                Dim CustomMetaTags As Generic.Dictionary(Of String, String)
+                Dim CustomTags As Generic.Dictionary(Of String, String)
 
-                If MetaRecord._CustomMetaRecords.ContainsKey(Helpers.CurrentRequestID) Then
-                    CustomMetaTags = CType(MetaRecord._CustomMetaRecords.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of String, String))
+                If MetaRecord._CustomRecords.ContainsKey(Helpers.CurrentRequestID) Then
+                    CustomTags = CType(MetaRecord._CustomRecords.Item(Helpers.CurrentRequestID), Generic.Dictionary(Of String, String))
                 Else
-                    CustomMetaTags = New Generic.Dictionary(Of String, String)
+                    CustomTags = New Generic.Dictionary(Of String, String)
                 End If
 
-                Return CustomMetaTags
+                Return CustomTags
             End Get
         End Property
 
-        Public Overloads Shared Function QueryMetaTagSpace(ByVal MetaTag As MetaTags) As MetaTagSpace
-            Dim rMTS As MetaTagSpace
+        Public Overloads Shared Function QueryTagSpace(ByVal Tag As Tags) As TagSpaces
+            Dim rMTS As TagSpaces
 
-            Select Case MetaTag
-                Case MetaTags.author, MetaTags.copyright, MetaTags.description, MetaTags.keywords, MetaTags.robots, MetaTags.googlebot
-                    rMTS = MetaTagSpace.name
+            Select Case Tag
+                Case Tags.author, Tags.copyright, Tags.description, Tags.keywords, Tags.robots, Tags.googlebot
+                    rMTS = TagSpaces.name
                 Case Else
-                    rMTS = MetaTagSpace.httpequiv
+                    rMTS = TagSpaces.httpequiv
             End Select
 
             Return rMTS
         End Function
 
-        Public Overloads Shared Function QueryMetaTagSpace(ByRef Name As String) As MetaTagSpace
-            Dim rMTS As MetaTagSpace
+        Public Overloads Shared Function QueryTagSpace(ByRef Name As String) As TagSpaces
+            Dim rMTS As TagSpaces
 
-            If Name Is Nothing Then Name = String.Empty
+            If String.IsNullOrEmpty(Name) Then Name = String.Empty
 
             If Name.IndexOf("name::") = 0 Then
-                rMTS = MetaTagSpace.name
+                rMTS = TagSpaces.name
 
                 Name = Name.Substring(6)
             ElseIf Name.IndexOf("httpequiv::") = 0 Then
-                rMTS = MetaTagSpace.httpequiv
+                rMTS = TagSpaces.httpequiv
 
                 Name = Name.Substring(11)
             ElseIf Name.IndexOf("property::") = 0 Then
-                rMTS = MetaTagSpace.property
+                rMTS = TagSpaces.property
 
                 Name = Name.Substring(10)
             End If

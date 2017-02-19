@@ -149,13 +149,8 @@ Namespace Xeora.Web.Controller.Directive
                         If Not MethodResultInfo Is Nothing AndAlso
                             TypeOf MethodResultInfo Is ControlResult.RedirectOrder Then
 
-                            If Helpers.Context.Items.Contains("RedirectLocation") Then _
-                                Helpers.Context.Items.Remove("RedirectLocation")
-
-                            Helpers.Context.Items.Add(
-                                "RedirectLocation",
+                            Helpers.Context.Content.Item("RedirectLocation") =
                                 CType(MethodResultInfo, ControlResult.RedirectOrder).Location
-                            )
 
                             Me.DefineRenderedValue(String.Empty)
                         Else

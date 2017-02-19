@@ -170,7 +170,12 @@ Namespace Xeora.Web.Site.Service
                         rRemoteVariablePool = Nothing
 
                         If Not RemoteVariablePoolServiceConnection Is Nothing Then
-                            Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(RemoteVariablePoolServiceConnection)
+                            Try
+                                Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(RemoteVariablePoolServiceConnection)
+                            Catch ex As System.Exception
+                                ' It can throw exception because of not registered connection
+                            End Try
+
 
                             RemoteVariablePoolServiceConnection = Nothing
                         End If
@@ -339,7 +344,7 @@ Namespace Xeora.Web.Site.Service
                 Dim ExpiresDateLong As Long, ExpiresDate As Date
                 Long.TryParse(
                     Text.Encoding.UTF8.GetString(bytes), ExpiresDateLong)
-                ExpiresDate = Helper.Date.Format(ExpiresDateLong)
+                ExpiresDate = Helper.DateTime.Format(ExpiresDateLong)
 
                 If Date.Compare(ExpiresDate, Date.Now) >= 0 Then rBoolean = False
             Else
@@ -356,7 +361,7 @@ Namespace Xeora.Web.Site.Service
                 ' "Expires: YYYYMMDDhhmmss" length is 23 + NewLineBytes
                 Dim bytes As Byte() =
                     Text.Encoding.UTF8.GetBytes(
-                        String.Format("Expires: {0}{1}", Helper.Date.Format(Date.Now.AddMinutes(Me._VariableTimeout), Helper.Date.DateFormats.DateWithTime), Environment.NewLine))
+                        String.Format("Expires: {0}{1}", Helper.DateTime.Format(Date.Now.AddMinutes(Me._VariableTimeout)), Environment.NewLine))
 
                 vpsFS.Seek(0, IO.SeekOrigin.Begin)
                 vpsFS.Write(bytes, 0, bytes.Length)
@@ -727,54 +732,48 @@ Namespace Xeora.Web.Site.Service
         End Sub
 
         Private Sub ConfirmRegistrations() 'Implements PGlobals.Execution.IVariablePool.ConfirmRegistrations
-            Select Case Me._VariablePoolTypeStatus
-                Case [Shared].Service.IVariablePool.VariablePoolTypeStatus.Host
-                    Threading.Monitor.Enter(Me._VariableCache.SyncRoot)
-                    Try
-                        For Each SessionKeyID As String In Me._VariableCache.Keys
-                            Dim SessionKeysObject As Object() =
-                                CType(Me._VariableCache.Item(SessionKeyID), Object())
+            If Me._VariablePoolTypeStatus <> [Shared].Service.IVariablePool.VariablePoolTypeStatus.Host Then Exit Sub
 
-                            If Not SessionKeysObject Is Nothing AndAlso
-                                SessionKeysObject.Length = 2 Then
+            Threading.Monitor.Enter(Me._VariableCache.SyncRoot)
+            Try
+                For Each SessionKeyID As String In Me._VariableCache.Keys
+                    Dim SessionKeysObject As Object() =
+                            CType(Me._VariableCache.Item(SessionKeyID), Object())
+                    If SessionKeysObject Is Nothing OrElse
+                            SessionKeysObject.Length <> 2 Then Continue For
 
-                                Dim SessionKeysDate As Date =
-                                    CType(SessionKeysObject(0), Date)
-                                SessionKeysDate = SessionKeysDate.AddMinutes(Me._VariableTimeout)
+                    Dim SessionKeysDate As Date =
+                            CType(SessionKeysObject(0), Date)
+                    SessionKeysDate = SessionKeysDate.AddMinutes(Me._VariableTimeout)
+                    If Date.Compare(SessionKeysDate, Date.Now) < 0 Then Continue For
 
-                                If Date.Compare(SessionKeysDate, Date.Now) >= 0 Then
-                                    Dim SessionKeysHash As Hashtable =
-                                        CType(SessionKeysObject(1), Hashtable)
+                    Dim SessionKeysHash As Hashtable =
+                            CType(SessionKeysObject(1), Hashtable)
+                    If SessionKeysHash Is Nothing Then Continue For
 
-                                    If Not SessionKeysHash Is Nothing Then
-                                        For Each varName As String In SessionKeysHash.Keys
-                                            Try
-                                                Me.WriteVariableValueToFile(SessionKeyID, varName, CType(SessionKeysHash.Item(varName), Byte()))
-                                            Catch ex As System.Exception
-                                                ' Write To File System Generally Occurs
-                                                ' However, this application is already correpted. That's why just log to see what's going on...
-                                                Try
-                                                    If Not EventLog.SourceExists("XeoraCube") Then EventLog.CreateEventSource("XeoraCube", "XeoraCube")
+                    For Each varName As String In SessionKeysHash.Keys
+                        Try
+                            Me.WriteVariableValueToFile(SessionKeyID, varName, CType(SessionKeysHash.Item(varName), Byte()))
+                        Catch ex As System.Exception
+                            ' Write To File System Generally Occurs
+                            ' However, this application is already correpted. That's why just log to see what's going on...
+                            Try
+                                If Not EventLog.SourceExists("XeoraCube") Then EventLog.CreateEventSource("XeoraCube", "XeoraCube")
 
-                                                    EventLog.WriteEntry("XeoraCube",
-                                                        " --- Variable Pool Registration Exception --- " & Environment.NewLine & Environment.NewLine &
-                                                        ex.ToString(),
-                                                        EventLogEntryType.Error
-                                                    )
-                                                Catch ex02 As System.Exception
-                                                    ' Just Handle Exception
-                                                End Try
-                                            End Try
-                                        Next
-                                    End If
-                                End If
-                            End If
-                        Next
-                    Finally
-                        Threading.Monitor.Exit(Me._VariableCache.SyncRoot)
-                    End Try
-
-            End Select
+                                EventLog.WriteEntry("XeoraCube",
+                                                " --- Variable Pool Registration Exception --- " & Environment.NewLine & Environment.NewLine &
+                                                ex.ToString(),
+                                                EventLogEntryType.Error
+                                            )
+                            Catch ex02 As System.Exception
+                                ' Just Handle Exception
+                            End Try
+                        End Try
+                    Next
+                Next
+            Finally
+                Threading.Monitor.Exit(Me._VariableCache.SyncRoot)
+            End Try
         End Sub
 
         Public Sub DoCleanUp() Implements [Shared].Service.IVariablePool.DoCleanUp

@@ -288,9 +288,34 @@ Namespace Xeora.VSAddIn
 
                     Dim NSFound As Boolean = False, TypeFound As Boolean = False, FuncFound As Boolean = False, TypeNames As String() = JoinedTypeName.Split("."c), WorkingTypeID As Integer = 0
                     Do While Not NodeList Is Nothing AndAlso NodeList.Count > 0
-                        If NSFound AndAlso TypeFound AndAlso Not FuncFound Then
-                            If TypeOf NodeList.Item(0) Is ICSharpCode.NRefactory.Ast.MethodDeclaration AndAlso
-                                String.Compare(CType(NodeList.Item(0), ICSharpCode.NRefactory.Ast.MethodDeclaration).Name, MethodName) = 0 AndAlso
+                        If NSFound AndAlso TypeFound AndAlso Not FuncFound AndAlso
+                            TypeOf NodeList.Item(0) Is ICSharpCode.NRefactory.Ast.MethodDeclaration Then
+
+                            ' Try to match with HttpMethod BoundMethod
+                            Dim AttributeObject As ICSharpCode.NRefactory.Ast.AttributedNode =
+                                CType(NodeList.Item(0), ICSharpCode.NRefactory.Ast.AttributedNode)
+
+                            If Not AttributeObject Is Nothing AndAlso AttributeObject.Attributes.Count > 0 AndAlso
+                                String.Compare(AttributeObject.Attributes.Item(0).Attributes.Item(0).Name, "HttpMethod") = 0 Then
+
+                                For Each Expression As ICSharpCode.NRefactory.Ast.Expression In AttributeObject.Attributes.Item(0).Attributes.Item(0).PositionalArguments
+                                    If TypeOf Expression Is ICSharpCode.NRefactory.Ast.PrimitiveExpression Then
+                                        Dim PrimitiveExp As ICSharpCode.NRefactory.Ast.PrimitiveExpression =
+                                            CType(Expression, ICSharpCode.NRefactory.Ast.PrimitiveExpression)
+
+                                        If String.Compare(CType(PrimitiveExp.Value, String), MethodName) = 0 AndAlso
+                                            CType(NodeList.Item(0), ICSharpCode.NRefactory.Ast.MethodDeclaration).Parameters.Count = ParameterLength Then
+
+                                            FuncFound = True : rInteger = NodeList.Item(0).StartLocation.Line
+
+                                            Exit Do
+                                        End If
+                                    End If
+                                Next
+                            End If
+                            ' ---
+
+                            If String.Compare(CType(NodeList.Item(0), ICSharpCode.NRefactory.Ast.MethodDeclaration).Name, MethodName) = 0 AndAlso
                                 CType(NodeList.Item(0), ICSharpCode.NRefactory.Ast.MethodDeclaration).Parameters.Count = ParameterLength Then
 
                                 FuncFound = True : rInteger = NodeList.Item(0).StartLocation.Line
@@ -373,6 +398,10 @@ Namespace Xeora.VSAddIn
                     Case "C"c
                         Dim ActiveDocDI As IO.DirectoryInfo =
                             New IO.DirectoryInfo(Me._Parent.DTE.ActiveDocument.Path)
+
+                        Do Until ActiveDocDI Is Nothing OrElse String.Compare(ActiveDocDI.Name, "Templates") = 0
+                            ActiveDocDI = ActiveDocDI.Parent
+                        Loop
 
                         For Each proj As Project In Me._Parent.DTE.Solution.Projects
                             Dim CacheList As New Generic.List(Of String), IsAddon As Boolean = False

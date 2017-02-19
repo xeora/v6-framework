@@ -130,15 +130,15 @@ Namespace Xeora.Web.Controller.Directive.Control
                     End If
 
                     If Not String.IsNullOrEmpty(Me.Attributes.Item("onclick")) Then
-                        Me.Attributes.Item("onclick") = String.Format("javascript:var eO=false;try{{{2}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.doRequest('{0}', '{1}')}};", String.Join(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onclick"))
+                        Me.Attributes.Item("onclick") = String.Format("javascript:var eO=false;try{{{2}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.doRequest('{0}', '{1}')}};", String.Join(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onclick"))
                     Else
-                        Me.Attributes.Item("onclick") = String.Format("javascript:__XeoraJS.doRequest('{0}', '{1}');", String.Join(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.HashCode, Me.BindInfo.ToString()))
+                        Me.Attributes.Item("onclick") = String.Format("javascript:__XeoraJS.doRequest('{0}', '{1}');", String.Join(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()))
                     End If
                 Else
                     If Not String.IsNullOrEmpty(Me.Attributes.Item("onclick")) Then
-                        Me.Attributes.Item("onclick") = String.Format("javascript:var eO=false;try{{{1}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.postForm('{0}')}};", Manager.Assembly.EncodeFunction(Helpers.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onclick"))
+                        Me.Attributes.Item("onclick") = String.Format("javascript:var eO=false;try{{{1}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.postForm('{0}')}};", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onclick"))
                     Else
-                        Me.Attributes.Item("onclick") = String.Format("javascript:__XeoraJS.postForm('{0}');", Manager.Assembly.EncodeFunction(Helpers.HashCode, Me.BindInfo.ToString()))
+                        Me.Attributes.Item("onclick") = String.Format("javascript:__XeoraJS.postForm('{0}');", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()))
                     End If
                 End If
             End If

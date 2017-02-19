@@ -3,48 +3,30 @@
 Namespace Xeora.Web.Shared
     <Serializable()>
     Public Class xSocketObject
-        Private _InputHeaders As Specialized.NameValueCollection
-        Private _InputStream As IO.Stream
-        Private _OutputHeaders As Specialized.NameValueCollection
-        Private _OuputStream As IO.Stream
-
+        Private _InputParameters As EndPoint
+        Private _OutputParameters As EndPoint
         Private _Parameters As ParameterCollection
         Private _FlushHandler As FlushHandler
 
         Public Delegate Sub FlushHandler()
 
         Public Sub New(ByRef InputHeaders As Specialized.NameValueCollection, ByRef InputStream As IO.Stream, ByRef OutputHeaders As Specialized.NameValueCollection, ByRef OutputStream As IO.Stream, ByVal Parameters As Generic.KeyValuePair(Of String, Object)(), ByVal FlushHandler As FlushHandler)
-            Me._InputHeaders = InputHeaders
-            Me._InputStream = InputStream
-            Me._OutputHeaders = OutputHeaders
-            Me._OuputStream = OutputStream
-
+            Me._InputParameters = New EndPoint(InputHeaders, InputStream)
+            Me._OutputParameters = New EndPoint(OutputHeaders, OutputStream)
             Me._Parameters = New ParameterCollection(Parameters)
 
             Me._FlushHandler = FlushHandler
         End Sub
 
-        Public ReadOnly Property InputHeaders() As Specialized.NameValueCollection
+        Public ReadOnly Property Input() As EndPoint
             Get
-                Return Me._InputHeaders
+                Return Me._InputParameters
             End Get
         End Property
 
-        Public ReadOnly Property InputStream() As IO.Stream
+        Public ReadOnly Property Output() As EndPoint
             Get
-                Return Me._InputStream
-            End Get
-        End Property
-
-        Public ReadOnly Property OutputHeaders() As Specialized.NameValueCollection
-            Get
-                Return Me._OutputHeaders
-            End Get
-        End Property
-
-        Public ReadOnly Property OutputStream() As IO.Stream
-            Get
-                Return Me._OuputStream
+                Return Me._OutputParameters
             End Get
         End Property
 
@@ -81,6 +63,29 @@ Namespace Xeora.Web.Shared
                         rValue = Me._Parameters.Item(key)
 
                     Return rValue
+                End Get
+            End Property
+        End Class
+
+        <Serializable()>
+        Public Class EndPoint
+            Private _Header As Specialized.NameValueCollection
+            Private _Stream As IO.Stream
+
+            Public Sub New(ByRef Header As Specialized.NameValueCollection, ByRef Stream As IO.Stream)
+                Me._Header = Header
+                Me._Stream = Stream
+            End Sub
+
+            Public ReadOnly Property Header() As Specialized.NameValueCollection
+                Get
+                    Return Me._Header
+                End Get
+            End Property
+
+            Public ReadOnly Property Stream() As IO.Stream
+                Get
+                    Return Me._Stream
                 End Get
             End Property
         End Class

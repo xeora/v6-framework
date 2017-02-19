@@ -53,9 +53,7 @@ Namespace Xeora.Web.Helper
             Return IO.Path.Combine(
                             LoggingPath,
                             String.Format(
-                                "{0}.log", [Date].Format(
-                                                [Date].DateFormats.OnlyDate
-                                            ).ToString()
+                                "{0}.log", DateTime.Format(True).ToString()
                                     )
                                 )
         End Function
@@ -73,13 +71,13 @@ Namespace Xeora.Web.Helper
             Return sB.ToString()
         End Function
 
-        Private Shared _QuickAccess As EventLogging = Nothing
-        Private Shared ReadOnly Property QuickAccess() As EventLogging
+        Private Shared _Instance As EventLogging = Nothing
+        Private Shared ReadOnly Property Instance() As EventLogging
             Get
-                If EventLogging._QuickAccess Is Nothing Then _
-                    EventLogging._QuickAccess = New EventLogging
+                If EventLogging._Instance Is Nothing Then _
+                    EventLogging._Instance = New EventLogging
 
-                Return EventLogging._QuickAccess
+                Return EventLogging._Instance
             End Get
         End Property
 
@@ -98,13 +96,13 @@ Namespace Xeora.Web.Helper
 
         Public Overloads Shared Sub WriteToLog(ByVal LogText As String, ByVal LoggingPathIdentifier As String)
             Dim logObj As New LoggingObject(
-                                    EventLogging.QuickAccess.PrepareLogOutput(LogText),
-                                    EventLogging.QuickAccess.LoggingPath
+                                    EventLogging.Instance.PrepareLogOutput(LogText),
+                                    EventLogging.Instance.LoggingPath
                                 )
 
             Try
-                EventLogging.QuickAccess.WriteToCache(logObj)
-            Catch ex As system.Exception
+                EventLogging.Instance.WriteToCache(logObj)
+            Catch ex As System.Exception
                 Try
                     If Not EventLog.SourceExists("XeoraCube") Then EventLog.CreateEventSource("XeoraCube", "XeoraCube")
 
@@ -116,22 +114,22 @@ Namespace Xeora.Web.Helper
         End Sub
 
         Public Shared Sub SetFlushTimerDuration(ByVal Minute As Integer)
-            EventLogging.QuickAccess._FlushTimer = Minute
+            EventLogging.Instance._FlushTimer = Minute
 
-            If Not EventLogging.QuickAccess._FlushTimerThread Is Nothing Then
-                EventLogging.QuickAccess._FlushTimerThread.Dispose()
-                EventLogging.QuickAccess._FlushTimerThread = Nothing
+            If Not EventLogging.Instance._FlushTimerThread Is Nothing Then
+                EventLogging.Instance._FlushTimerThread.Dispose()
+                EventLogging.Instance._FlushTimerThread = Nothing
 
-                EventLogging.QuickAccess._FlushTimerThread = New Threading.Timer(New System.Threading.TimerCallback(AddressOf EventLogging.QuickAccess.FlushInternal), Nothing, (EventLogging.QuickAccess._FlushTimer * 60000), 0)
+                EventLogging.Instance._FlushTimerThread = New Threading.Timer(New System.Threading.TimerCallback(AddressOf EventLogging.Instance.FlushInternal), Nothing, (EventLogging.Instance._FlushTimer * 60000), 0)
             End If
         End Sub
 
         Public Shared Sub SetFlushCacheLimit(ByVal CacheLimit As Integer)
-            EventLogging.QuickAccess._CacheLimit = CacheLimit
+            EventLogging.Instance._CacheLimit = CacheLimit
         End Sub
 
         Public Shared Sub Flush()
-            EventLogging.QuickAccess.FlushInternal(Nothing)
+            EventLogging.Instance.FlushInternal(Nothing)
         End Sub
 
         Private Class LoggingObject

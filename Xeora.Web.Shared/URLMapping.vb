@@ -78,7 +78,7 @@ Namespace Xeora.Web.Shared
                         objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
 
                         Dim workingDomainControl As IDomainControl =
-                            CType(objDomain.InvokeMember("QuickAccess", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
+                            CType(objDomain.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
 
                         rResolvedMapped = workingDomainControl.QueryURLResolver(RequestFilePath)
                     End If

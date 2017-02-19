@@ -22,7 +22,7 @@ Namespace Xeora.Web.Controller.Directive
                 Me.InsideValue.Split(":"c)
 
             Me.DefineRenderedValue(
-                String.Format("{0}/{1}", Helpers.HashCode, controlValueSplitted(1))
+                String.Format("{0}/{1}", Helpers.Context.Request.HashCode, controlValueSplitted(1))
             )
         End Sub
     End Class

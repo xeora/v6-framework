@@ -4,7 +4,7 @@ Namespace Xeora.Web.Handler
     Public NotInheritable Class RequestModule
         Implements System.Web.IHttpModule
 
-        Private Shared _QuickAccess As RequestModule = Nothing
+        Private Shared _Instance As RequestModule = Nothing
 
         Private Shared _pInitialized As Boolean = False
         Private Shared _pApplicationID As String = String.Empty
@@ -60,9 +60,9 @@ Namespace Xeora.Web.Handler
 
         Private Class ContextContainer
             Private _IsThreadContext As Boolean
-            Private _Context As System.Web.HttpContext
+            Private _Context As [Shared].IHttpContext
 
-            Public Sub New(ByVal IsThreadContext As Boolean, ByVal Context As System.Web.HttpContext)
+            Public Sub New(ByVal IsThreadContext As Boolean, ByRef Context As [Shared].IHttpContext)
                 Me._IsThreadContext = IsThreadContext
                 Me._Context = Context
             End Sub
@@ -73,7 +73,7 @@ Namespace Xeora.Web.Handler
                 End Get
             End Property
 
-            Public ReadOnly Property Context As System.Web.HttpContext
+            Public ReadOnly Property Context As [Shared].IHttpContext
                 Get
                     Return Me._Context
                 End Get
@@ -81,7 +81,7 @@ Namespace Xeora.Web.Handler
         End Class
 
         Public Sub New()
-            RequestModule._QuickAccess = Me
+            RequestModule._Instance = Me
         End Sub
 
         Public Sub Init(ByVal app As System.Web.HttpApplication) Implements System.Web.IHttpModule.Init
@@ -586,32 +586,32 @@ Namespace Xeora.Web.Handler
                         RequestModule.SessionIDManager.SaveSessionID(context, sessionID, redirected, Nothing)
                     End If
 
-                    If Not redirected Then
-                        If sessionData Is Nothing Then
-                            ' Identify the session as a new session state instance. Create a new SessionItem
-                            ' and add it to the local Hashtable.
-                            isNew = True
+                    If redirected Then Exit Try
 
-                            sessionData = New SessionItem(
-                                                New System.Web.SessionState.SessionStateItemCollection(),
-                                                System.Web.SessionState.SessionStateUtility.GetSessionStaticObjects(context),
-                                                Date.Now.AddMinutes(RequestModule._pTimeout)
-                                            )
+                    If sessionData Is Nothing Then
+                        ' Identify the session as a new session state instance. Create a new SessionItem
+                        ' and add it to the local Hashtable.
+                        isNew = True
 
-                            RequestModule._pSessionItems(sessionID) = sessionData
-                        End If
+                        sessionData = New SessionItem(
+                                            New System.Web.SessionState.SessionStateItemCollection(),
+                                            System.Web.SessionState.SessionStateUtility.GetSessionStaticObjects(context),
+                                            Date.Now.AddMinutes(RequestModule._pTimeout)
+                                        )
 
-                        ' Add the session data to the current HttpContext.
-                        System.Web.SessionState.SessionStateUtility.AddHttpSessionStateToContext(context,
-                                         New System.Web.SessionState.HttpSessionStateContainer(sessionID,
-                                                                                                  sessionData.Items,
-                                                                                                  sessionData.StaticObjects,
-                                                                                                  RequestModule._pTimeout,
-                                                                                                  isNew,
-                                                                                                  RequestModule._pCookieMode,
-                                                                                                  System.Web.SessionState.SessionStateMode.Custom,
-                                                                                                  False))
+                        RequestModule._pSessionItems(sessionID) = sessionData
                     End If
+
+                    ' Add the session data to the current HttpContext.
+                    System.Web.SessionState.SessionStateUtility.AddHttpSessionStateToContext(context,
+                                     New System.Web.SessionState.HttpSessionStateContainer(sessionID,
+                                                                                              sessionData.Items,
+                                                                                              sessionData.StaticObjects,
+                                                                                              RequestModule._pTimeout,
+                                                                                              isNew,
+                                                                                              RequestModule._pCookieMode,
+                                                                                              System.Web.SessionState.SessionStateMode.Custom,
+                                                                                              False))
                 Finally
                     Threading.Monitor.Exit(RequestModule._pSessionItems.SyncRoot)
                 End Try
@@ -634,7 +634,7 @@ Namespace Xeora.Web.Handler
                     RequestModule._HttpContextTable.Remove(RequestID)
 
                 If Not context Is Nothing Then _
-                    RequestModule._HttpContextTable.Add(RequestID, New ContextContainer(False, context))
+                    RequestModule._HttpContextTable.Add(RequestID, New ContextContainer(False, New Context.BuildInContext(context)))
             Finally
                 Threading.Monitor.Exit(RequestModule._HttpContextTable.SyncRoot)
             End Try
@@ -647,25 +647,11 @@ Namespace Xeora.Web.Handler
         Private Sub OnPostRequestHandlerExecute(ByVal source As Object, ByVal args As EventArgs)
             Dim context As System.Web.HttpContext = CType(source, System.Web.HttpApplication).Context
 
-            Dim RequestID As String =
-                CType(context.Items.Item("RequestID"), String)
             Dim IsTemplateRequest As Boolean =
                 CType(context.Items.Item("_sys_TemplateRequest"), Boolean)
 
             ' WAIT UNTIL CONFIRMATION FINISHES!
             'If IsTemplateRequest Then SolidDevelopment.Web.General.ConfirmVariables()
-
-            If Not RequestModule._HttpContextTable Is Nothing AndAlso
-                Not String.IsNullOrEmpty(RequestID) Then
-
-                Threading.Monitor.Enter(RequestModule._HttpContextTable.SyncRoot)
-                Try
-                    If RequestModule._HttpContextTable.ContainsKey(RequestID) Then _
-                        RequestModule._HttpContextTable.Remove(RequestID)
-                Finally
-                    Threading.Monitor.Exit(RequestModule._HttpContextTable.SyncRoot)
-                End Try
-            End If
         End Sub
 
         '
@@ -701,17 +687,34 @@ Namespace Xeora.Web.Handler
         ' Event handler for HttpApplication.ReleaseRequestState
         '
         Private Sub OnEndRequest(ByVal source As Object, ByVal args As EventArgs)
+            Dim context As System.Web.HttpContext = CType(source, System.Web.HttpApplication).Context
+
+            Dim RequestID As String =
+                CType(context.Items.Item("RequestID"), String)
+
             CType(source, System.Web.HttpApplication).CompleteRequest()
+
+            If Not RequestModule._HttpContextTable Is Nothing AndAlso
+                Not String.IsNullOrEmpty(RequestID) Then
+
+                Threading.Monitor.Enter(RequestModule._HttpContextTable.SyncRoot)
+                Try
+                    If RequestModule._HttpContextTable.ContainsKey(RequestID) Then _
+                        RequestModule._HttpContextTable.Remove(RequestID)
+                Finally
+                    Threading.Monitor.Exit(RequestModule._HttpContextTable.SyncRoot)
+                End Try
+            End If
         End Sub
 
         Public Shared Sub ReloadApplication(ByVal RequestID As String)
-            Dim Context As System.Web.HttpContext =
+            Dim Context As [Shared].IHttpContext =
                 RequestModule.Context(RequestID)
 
-            RequestModule._QuickAccess.Dispose()
+            RequestModule._Instance.Dispose()
 
             If Not Context Is Nothing Then _
-                Context.Response.Redirect(Context.Request.RawUrl, True)
+                Context.Response.Redirect(Context.Request.URL.Raw)
         End Sub
 
         Public Shared Sub ClearStaticCache()
@@ -730,7 +733,7 @@ Namespace Xeora.Web.Handler
             End Get
         End Property
 
-        Public Shared ReadOnly Property Context(ByVal RequestID As String) As System.Web.HttpContext
+        Public Shared ReadOnly Property Context(ByVal RequestID As String) As [Shared].IHttpContext
             Get
                 If String.IsNullOrEmpty(RequestID) OrElse
                     Not RequestModule._HttpContextTable.ContainsKey(RequestID) Then _
@@ -749,22 +752,25 @@ Namespace Xeora.Web.Handler
                 Threading.Monitor.Enter(RequestModule._HttpContextTable.SyncRoot)
                 Try
                     If RequestModule._HttpContextTable.ContainsKey(RequestID) Then
-                        rNewRequestID = Guid.NewGuid().ToString()
-
-                        Dim tContext As System.Web.HttpContext =
+                        Dim tContext As [Shared].IHttpContext =
                             CType(RequestModule._HttpContextTable.Item(RequestID), ContextContainer).Context
 
                         Dim NewContext As System.Web.HttpContext =
-                            New System.Web.HttpContext(tContext.Request, tContext.Response)
+                            New System.Web.HttpContext(tContext.UnderlyingContext.Request, tContext.UnderlyingContext.Response)
 
-                        For Each Key As Object In tContext.Items.Keys
-                            NewContext.Items.Add(Key, tContext.Items.Item(Key))
+                        For Each Key As Object In tContext.UnderlyingContext.Items.Keys
+                            NewContext.Items.Add(Key, tContext.UnderlyingContext.Items.Item(Key))
                         Next
-                        NewContext.Items.Item("RequestID") = rNewRequestID
+                        NewContext.Items.Item("RequestID") = Guid.NewGuid().ToString()
 
                         RequestModule.SessionIDManager.InitializeRequest(NewContext, False, Nothing)
 
-                        RequestModule._HttpContextTable.Add(rNewRequestID, New ContextContainer(True, NewContext))
+                        Dim NewBuildInContext As [Shared].IHttpContext =
+                            New Context.BuildInContext(NewContext)
+
+                        rNewRequestID = NewBuildInContext.XeoraRequestID
+
+                        RequestModule._HttpContextTable.Add(rNewRequestID, New ContextContainer(True, NewBuildInContext))
                     End If
                 Finally
                     Threading.Monitor.Exit(RequestModule._HttpContextTable.SyncRoot)
