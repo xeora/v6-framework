@@ -345,6 +345,13 @@ Namespace Xeora.Web.Controller
 
                                                     Exit Sub
                                                 End If
+                                            Else
+                                                ' DataListOutputInfo is not defined yet and let's put in a queue to render later
+                                                If ArgumentQueryObject Is Nothing Then
+                                                    If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ArgumentQueryObjectName)
+
+                                                    Exit Sub
+                                                End If
                                             End If
 
                                     End Select
