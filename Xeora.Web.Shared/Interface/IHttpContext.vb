@@ -10,7 +10,8 @@ Namespace Xeora.Web.Shared
         Public Sub New(ByVal RawURL As String)
             Dim ApplicationRootPath As String = Configurations.ApplicationRoot.BrowserImplementation
             ' Fix false path request
-            If String.Compare(
+            If String.Compare(ApplicationRootPath, "/") <> 0 AndAlso
+                String.Compare(
                 String.Format("{0}/", RawURL).Substring((RawURL.Length + 1) - ApplicationRootPath.Length), ApplicationRootPath) = 0 Then _
                 RawURL = String.Format("{0}/", RawURL)
 
