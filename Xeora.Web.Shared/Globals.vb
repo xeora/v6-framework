@@ -12,23 +12,18 @@ Namespace Xeora.Web.Shared
                 NoCacheCookiless
             End Enum
 
-            Private Shared _DefaultType As Hashtable = Hashtable.Synchronized(New Hashtable)
+            Private Shared _DefaultType As New Concurrent.ConcurrentDictionary(Of String, Types)
             Public Shared Property DefaultType() As Types
                 Get
-                    Dim rType As Types = Types.AllContent
+                    Dim rType As Types
 
-                    If PageCaching._DefaultType.ContainsKey(Helpers.CurrentRequestID) Then _
-                        rType = CType(PageCaching._DefaultType.Item(Helpers.CurrentRequestID), Types)
+                    If Not PageCaching._DefaultType.TryGetValue(Helpers.CurrentRequestID, rType) Then _
+                        rType = Types.AllContent
 
                     Return rType
                 End Get
                 Set(ByVal value As Types)
-                    Threading.Monitor.Enter(PageCaching._DefaultType.SyncRoot)
-                    Try
-                        PageCaching._DefaultType.Item(Helpers.CurrentRequestID) = value
-                    Finally
-                        Threading.Monitor.Exit(PageCaching._DefaultType.SyncRoot)
-                    End Try
+                    PageCaching._DefaultType.TryAdd(Helpers.CurrentRequestID, value)
                 End Set
             End Property
         End Class

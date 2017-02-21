@@ -755,19 +755,8 @@ Namespace Xeora.Web.Site.Service
                         Try
                             Me.WriteVariableValueToFile(SessionKeyID, varName, CType(SessionKeysHash.Item(varName), Byte()))
                         Catch ex As System.Exception
-                            ' Write To File System Generally Occurs
-                            ' However, this application is already correpted. That's why just log to see what's going on...
-                            Try
-                                If Not EventLog.SourceExists("XeoraCube") Then EventLog.CreateEventSource("XeoraCube", "XeoraCube")
-
-                                EventLog.WriteEntry("XeoraCube",
-                                                " --- Variable Pool Registration Exception --- " & Environment.NewLine & Environment.NewLine &
-                                                ex.ToString(),
-                                                EventLogEntryType.Error
-                                            )
-                            Catch ex02 As System.Exception
-                                ' Just Handle Exception
-                            End Try
+                            Helper.EventLogger.LogToSystemEvent(
+                                String.Format(" --- Variable Pool Registration Exception --- {0}{0}{1}", Environment.NewLine, ex.ToString()), EventLogEntryType.Error)
                         End Try
                     Next
                 Next

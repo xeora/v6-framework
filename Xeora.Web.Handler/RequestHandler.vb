@@ -64,7 +64,6 @@ Namespace Xeora.Web.Handler
             Public Sub Start()
                 Dim Context As [Shared].IHttpContext =
                     RequestModule.Context(Me._RequestID)
-
                 If Context Is Nothing Then Exit Sub
 
                 ' Prepare RequestDate and Compression Support
@@ -402,11 +401,10 @@ QUICKFINISH:
 
                     Dim CurrentContextCatch As [Shared].IHttpContext =
                         [Shared].Helpers.Context
-
                     If CurrentContextCatch Is Nothing Then CurrentContextCatch = Context
 
                     ' Prepare For Exception List
-                    Dim CompiledExceptions As New Text.StringBuilder
+                    Dim CompiledExceptions As New Text.StringBuilder()
 
                     CompiledExceptions.AppendLine("-- APPLICATION EXCEPTION --")
                     CompiledExceptions.Append(ex.ToString())
@@ -432,14 +430,14 @@ QUICKFINISH:
                         End Try
                     End If
                     ' !--
-                    LogResult.AppendLine("")
+                    LogResult.AppendLine()
                     LogResult.AppendLine("-- Request POST Variables --")
                     For Each KeyItem As String In CurrentContextCatch.Request.Form
                         LogResult.AppendLine(
                             String.Format(" {0} -> {1}", KeyItem, CurrentContextCatch.Request.Form.Item(KeyItem))
                         )
                     Next
-                    LogResult.AppendLine("")
+                    LogResult.AppendLine()
                     LogResult.AppendLine("-- Request URL & Query String --")
                     LogResult.AppendLine(
                         String.Format("{0}?{1}",
@@ -447,26 +445,24 @@ QUICKFINISH:
                             CurrentContextCatch.Request.Server.Item("QUERY_STRING")
                         )
                     )
-                    LogResult.AppendLine("")
+                    LogResult.AppendLine()
                     LogResult.AppendLine("-- Error Content --")
                     LogResult.Append(ex.ToString())
 
                     Try
-                        Helper.EventLogging.WriteToLog(LogResult.ToString())
+                        Helper.EventLogger.Log(LogResult.ToString())
                     Catch exLogging As System.Exception
-                        CompiledExceptions.AppendLine("-- TXT LOGGING EXCEPTION --")
+                        CompiledExceptions.AppendLine("-- LOGGING EXCEPTION --")
                         CompiledExceptions.Append(exLogging.ToString())
                         CompiledExceptions.AppendLine()
 
-                        Try
-                            If Not EventLog.SourceExists("XeoraCube") Then EventLog.CreateEventSource("XeoraCube", "XeoraCube")
+                        CompiledExceptions.AppendLine("-- ORIGINAL LOG CONTENT --")
+                        CompiledExceptions.Append(LogResult.ToString())
+                        CompiledExceptions.AppendLine()
 
-                            EventLog.WriteEntry("XeoraCube", exLogging.ToString(), EventLogEntryType.Error)
-                        Catch exLogging02 As System.Exception
-                            CompiledExceptions.AppendLine("-- SYSTEM EVENT LOGGING EXCEPTION --")
-                            CompiledExceptions.Append(exLogging02.ToString())
-                            CompiledExceptions.AppendLine()
-                        End Try
+                        Helper.EventLogger.LogToSystemEvent(
+                            String.Format(" --- Logging Exception --- {0}{0}{1}{0}{0} --- Original Log Content --- {2}",
+                                  Environment.NewLine, exLogging.ToString(), LogResult.ToString()), EventLogEntryType.Error)
                     End Try
 
                     If [Shared].Configurations.Debugging Then

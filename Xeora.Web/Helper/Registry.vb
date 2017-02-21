@@ -50,32 +50,32 @@ Namespace Xeora.Web.Helper
                 Case RegistryAreas.ClassesRoot
                     Try
                         Me._regSection = Win32.Registry.ClassesRoot
-                    Catch ex As system.Exception
-                        EventLogging.WriteToLog(ex)
+                    Catch ex As System.Exception
+                        EventLogger.Log(ex)
                     End Try
                 Case RegistryAreas.CurrentConfig
                     Try
                         Me._regSection = Win32.Registry.CurrentConfig
-                    Catch ex As system.Exception
-                        EventLogging.WriteToLog(ex)
+                    Catch ex As System.Exception
+                        EventLogger.Log(ex)
                     End Try
                 Case RegistryAreas.CurrentUser
                     Try
                         Me._regSection = Win32.Registry.CurrentUser
                     Catch ex As System.Exception
-                        EventLogging.WriteToLog(ex)
+                        EventLogger.Log(ex)
                     End Try
                 Case RegistryAreas.LocalMachine
                     Try
                         Me._regSection = Win32.Registry.LocalMachine
                     Catch ex As System.Exception
-                        EventLogging.WriteToLog(ex)
+                        EventLogger.Log(ex)
                     End Try
                 Case RegistryAreas.Users
                     Try
                         Me._regSection = Win32.Registry.Users
                     Catch ex As System.Exception
-                        EventLogging.WriteToLog(ex)
+                        EventLogger.Log(ex)
                     End Try
             End Select
         End Sub
@@ -84,7 +84,7 @@ Namespace Xeora.Web.Helper
             Try
                 Me._regSection.Close()
             Catch ex As System.Exception
-                EventLogging.WriteToLog(ex)
+                EventLogger.Log(ex)
             End Try
         End Sub
 
@@ -98,7 +98,7 @@ Namespace Xeora.Web.Helper
             Catch ex As System.Exception
                 rBoolean = False
 
-                EventLogging.WriteToLog(ex)
+                EventLogger.Log(ex)
             Finally
                 Me.CloseRegistryArea()
             End Try
@@ -117,7 +117,7 @@ Namespace Xeora.Web.Helper
                 Catch ex As System.Exception
                     rBoolean = False
 
-                    EventLogging.WriteToLog(ex)
+                    EventLogger.Log(ex)
                 Finally
                     Me.CloseRegistryArea()
                 End Try
@@ -139,7 +139,7 @@ Namespace Xeora.Web.Helper
                 Catch ex As System.Exception
                     rStringList = Nothing
 
-                    EventLogging.WriteToLog(ex)
+                    EventLogger.Log(ex)
                 Finally
                     Me.CloseRegistryArea()
                 End Try
@@ -159,7 +159,7 @@ Namespace Xeora.Web.Helper
                 Catch ex As System.Exception
                     rString = Nothing
 
-                    EventLogging.WriteToLog(ex)
+                    EventLogger.Log(ex)
                 Finally
                     Me.CloseRegistryArea()
                 End Try
@@ -175,7 +175,7 @@ Namespace Xeora.Web.Helper
 
                     Me._regSection.CreateSubKey(Me._AccessPath)
                 Catch ex As System.Exception
-                    EventLogging.WriteToLog(ex)
+                    EventLogger.Log(ex)
                 Finally
                     Me.CloseRegistryArea()
                 End Try
@@ -186,7 +186,7 @@ Namespace Xeora.Web.Helper
 
                 Me._regSection.OpenSubKey(Me._AccessPath, True).SetValue(Key, Value)
             Catch ex As System.Exception
-                EventLogging.WriteToLog(ex)
+                EventLogger.Log(ex)
             Finally
                 Me.CloseRegistryArea()
             End Try
@@ -199,7 +199,7 @@ Namespace Xeora.Web.Helper
 
                     Me._regSection.DeleteSubKey(Me._AccessPath)
                 Catch ex As System.Exception
-                    EventLogging.WriteToLog(ex)
+                    EventLogger.Log(ex)
                 Finally
                     Me.CloseRegistryArea()
                 End Try
@@ -213,7 +213,7 @@ Namespace Xeora.Web.Helper
 
                     Me._regSection.OpenSubKey(Me._AccessPath, True).DeleteValue(Key)
                 Catch ex As System.Exception
-                    EventLogging.WriteToLog(ex)
+                    EventLogger.Log(ex)
                 Finally
                     Me.CloseRegistryArea()
                 End Try

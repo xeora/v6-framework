@@ -8,7 +8,7 @@ Namespace Xeora.Web.Controller.Directive.Control
         Private _Content As String
 
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
-            MyBase.New(DraftStartIndex, DraftValue, ControlTypes.Textarea, ContentArguments)
+            MyBase.New(DraftStartIndex, DraftValue, ContentArguments)
 
             Me._Content = String.Empty
         End Sub
@@ -105,10 +105,10 @@ Namespace Xeora.Web.Controller.Directive.Control
             Next
             ' !--
 
-            If Me.SecurityInfo.Disabled.IsSet AndAlso
-                Me.SecurityInfo.Disabled.Type = SecurityInfos.DisabledClass.DisabledTypes.Dynamic Then
+            If Me.Security.Disabled.IsSet AndAlso
+                Me.Security.Disabled.Type = SecurityInfo.DisabledClass.DisabledTypes.Dynamic Then
 
-                Me.DefineRenderedValue(Me.SecurityInfo.Disabled.Value)
+                Me.DefineRenderedValue(Me.Security.Disabled.Value)
             Else
                 Me.DefineRenderedValue(
                     String.Format(

@@ -11,7 +11,7 @@ Namespace Xeora.Web.Controller.Directive.Control
         Private _DefaultButtonID As String
 
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
-            MyBase.New(DraftStartIndex, DraftValue, ControlTypes.Password, ContentArguments)
+            MyBase.New(DraftStartIndex, DraftValue, ContentArguments)
 
             Me._DefaultButtonID = String.Empty
             Me._Text = String.Empty
@@ -110,7 +110,7 @@ Namespace Xeora.Web.Controller.Directive.Control
 
             If Not String.IsNullOrEmpty(Me.DefaultButtonID) Then
                 Dim DefaultButton As ControlBase =
-                    ControlBase.MakeControl(0, String.Format("$C:{0}$", Me.DefaultButtonID), Me.ContentArguments, AddressOf Me.RequestControlMapNavigator)
+                    ControlBase.MakeControl(0, String.Format("$C:{0}$", Me.DefaultButtonID), Me.ContentArguments, AddressOf Me.RequestControlResolve)
 
                 If Not DefaultButton Is Nothing AndAlso
                     (TypeOf DefaultButton Is Button OrElse TypeOf DefaultButton Is ImageButton OrElse TypeOf DefaultButton Is LinkButton) Then
@@ -196,10 +196,10 @@ Namespace Xeora.Web.Controller.Directive.Control
             Next
             ' !--
 
-            If Me.SecurityInfo.Disabled.IsSet AndAlso
-                Me.SecurityInfo.Disabled.Type = SecurityInfos.DisabledClass.DisabledTypes.Dynamic Then
+            If Me.Security.Disabled.IsSet AndAlso
+                Me.Security.Disabled.Type = SecurityInfo.DisabledClass.DisabledTypes.Dynamic Then
 
-                Me.DefineRenderedValue(Me.SecurityInfo.Disabled.Value)
+                Me.DefineRenderedValue(Me.Security.Disabled.Value)
             Else
                 Me.DefineRenderedValue(
                     String.Format(

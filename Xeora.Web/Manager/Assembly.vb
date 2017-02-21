@@ -250,7 +250,7 @@ Namespace Xeora.Web.Manager
             If Not rBindInvokeResult.InvokeResult Is Nothing AndAlso
                 TypeOf rBindInvokeResult.InvokeResult Is System.Exception Then
 
-                Helper.EventLogging.WriteToLog(
+                Helper.EventLogger.Log(
                     CType(rBindInvokeResult.InvokeResult, System.Exception))
             End If
 QUICKEXIT:

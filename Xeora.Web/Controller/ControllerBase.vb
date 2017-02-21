@@ -227,7 +227,7 @@ Namespace Xeora.Web.Controller
                 Catch ex As Exception.ReloadRequiredException
                     Throw
                 Catch ex As System.Exception
-                    Helper.EventLogging.WriteToLog(ex)
+                    Helper.EventLogger.Log(ex)
 
                     If [Shared].Configurations.Debugging Then
                         Dim ExceptionString As String = Nothing

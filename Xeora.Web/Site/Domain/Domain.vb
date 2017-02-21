@@ -8,7 +8,7 @@ Namespace Xeora.Web.Site
         Private _Renderer As Renderer = Nothing
 
         Private _Deployment As Deployment.DomainDeployment = Nothing
-        Private _ControlMapXPathNavigator As Xml.XPath.XPathNavigator
+        Private _ControlsXPathNavigator As Xml.XPath.XPathNavigator
 
 #Region " Constructors "
 
@@ -146,9 +146,9 @@ Namespace Xeora.Web.Site
         End Function
 
         Private _xPathStream As IO.StringReader = Nothing
-        Private ReadOnly Property ControlMapXPathNavigator() As Xml.XPath.XPathNavigator
+        Private ReadOnly Property ControlsXPathNavigator() As Xml.XPath.XPathNavigator
             Get
-                If Me._ControlMapXPathNavigator Is Nothing Then
+                If Me._ControlsXPathNavigator Is Nothing Then
                     Dim xPathDoc As Xml.XPath.XPathDocument = Nothing
                     Dim ControlMapContent As String =
                         Me._Deployment.ProvideControlMapContent()
@@ -158,10 +158,10 @@ Namespace Xeora.Web.Site
                     Me._xPathStream = New IO.StringReader(ControlMapContent)
                     xPathDoc = New Xml.XPath.XPathDocument(Me._xPathStream)
 
-                    Me._ControlMapXPathNavigator = xPathDoc.CreateNavigator()
+                    Me._ControlsXPathNavigator = xPathDoc.CreateNavigator()
                 End If
 
-                Return Me._ControlMapXPathNavigator
+                Return Me._ControlsXPathNavigator
             End Get
         End Property
 
@@ -281,7 +281,7 @@ Namespace Xeora.Web.Site
 
                                             Select Case Controller.DirectiveControllerBase.CaptureDirectiveType(String.Format("${0}:", IIf(String.IsNullOrEmpty(MatchDirectiveType01), MatchedID01, MatchDirectiveType01)))
                                                 Case Controller.DirectiveControllerBase.DirectiveTypes.Control
-                                                    WorkingDirective = Controller.Directive.ControlBase.MakeControl(lMatchItem01.Index, PointedOriginalValue, Nothing, AddressOf Me.OnControlMapNavigatorRequest)
+                                                    WorkingDirective = Controller.Directive.ControlBase.MakeControl(lMatchItem01.Index, PointedOriginalValue, Nothing, AddressOf Me.OnControlResolveRequest)
                                                 Case Controller.DirectiveControllerBase.DirectiveTypes.InLineStatement
                                                     WorkingDirective = New Controller.Directive.InLineStatement(lMatchItem01.Index, PointedOriginalValue, Nothing)
                                                 Case Controller.DirectiveControllerBase.DirectiveTypes.UpdateBlock
@@ -305,7 +305,7 @@ Namespace Xeora.Web.Site
                                                     AddHandler CType(WorkingDirective, Controller.Directive.IInstanceRequires).InstanceRequested, AddressOf Me.OnInstanceRequest
 
                                                 If TypeOf WorkingDirective Is Controller.Directive.Control.IControl Then _
-                                                    AddHandler CType(WorkingDirective, Controller.Directive.Control.IControl).ControlMapNavigatorRequested, AddressOf Me.OnControlMapNavigatorRequest
+                                                    AddHandler CType(WorkingDirective, Controller.Directive.Control.IControl).ControlResolveRequested, AddressOf Me.OnControlResolveRequest
 
                                                 ContainerController.Children.Add(WorkingDirective)
                                             End If
@@ -332,7 +332,7 @@ Namespace Xeora.Web.Site
 
                                     Select Case Controller.DirectiveControllerBase.CaptureDirectiveType(lMatchItem01.Value)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Control
-                                            WorkingDirective = Controller.Directive.ControlBase.MakeControl(lMatchItem01.Index, lMatchItem01.Value, Nothing, AddressOf Me.OnControlMapNavigatorRequest)
+                                            WorkingDirective = Controller.Directive.ControlBase.MakeControl(lMatchItem01.Index, lMatchItem01.Value, Nothing, AddressOf Me.OnControlResolveRequest)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Template
                                             WorkingDirective = New Controller.Directive.Template(lMatchItem01.Index, lMatchItem01.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Translation
@@ -362,7 +362,7 @@ Namespace Xeora.Web.Site
                                             AddHandler CType(WorkingDirective, Controller.Directive.IInstanceRequires).InstanceRequested, AddressOf Me.OnInstanceRequest
 
                                         If TypeOf WorkingDirective Is Controller.Directive.Control.IControl Then _
-                                            AddHandler CType(WorkingDirective, Controller.Directive.Control.IControl).ControlMapNavigatorRequested, AddressOf Me.OnControlMapNavigatorRequest
+                                            AddHandler CType(WorkingDirective, Controller.Directive.Control.IControl).ControlResolveRequested, AddressOf Me.OnControlResolveRequest
 
                                         ContainerController.Children.Add(WorkingDirective)
                                     End If
@@ -382,10 +382,135 @@ Namespace Xeora.Web.Site
                 DomainDeployment = CType(WorkingInstance, Domain)._Deployment
             End Sub
 
-            Private Sub OnControlMapNavigatorRequest(ByRef WorkingInstance As [Shared].IDomain, ByRef ControlMapXPathNavigator As Xml.XPath.XPathNavigator)
+            Private Shared _ControlsCache As New Concurrent.ConcurrentDictionary(Of String, Generic.Dictionary(Of String, Object))
+            Private Sub OnControlResolveRequest(ByVal ControlID As String, ByRef WorkingInstance As [Shared].IDomain, ByRef ResultDictionary As Generic.Dictionary(Of String, Object))
+                ResultDictionary = Nothing
+
+                If String.IsNullOrEmpty(ControlID) Then Exit Sub
+
                 If WorkingInstance Is Nothing Then _
                     WorkingInstance = Me._Instance
-                ControlMapXPathNavigator = CType(WorkingInstance, Domain).ControlMapXPathNavigator
+
+                Do
+                    Dim CurrentDomainIDAccessTreeString As String =
+                        String.Join(Of String)("-", WorkingInstance.IDAccessTree)
+                    Dim CacheSearchKey As String =
+                        String.Format("{0}_{1}", CurrentDomainIDAccessTreeString, ControlID)
+
+                    If Renderer._ControlsCache.TryGetValue(CacheSearchKey, ResultDictionary) Then Exit Do
+
+                    Dim ControlsXPathNavigator As Xml.XPath.XPathNavigator =
+                        CType(WorkingInstance, Domain).ControlsXPathNavigator
+
+                    If Not ControlsXPathNavigator Is Nothing Then
+                        Dim XPathControlNav As Xml.XPath.XPathNavigator =
+                            ControlsXPathNavigator.SelectSingleNode(String.Format("/Controls/Control[@id='{0}']", ControlID))
+
+                        If Not XPathControlNav Is Nothing AndAlso
+                            XPathControlNav.MoveToFirstChild() Then
+
+                            ResultDictionary = New Generic.Dictionary(Of String, Object)
+
+                            Dim CompareCulture As New Globalization.CultureInfo("en-US")
+
+                            Do
+                                Select Case XPathControlNav.Name.ToLower(CompareCulture)
+                                    Case "type"
+                                        ResultDictionary.Add("type", Controller.Directive.ControlBase.CaptureControlType(XPathControlNav.Value))
+
+                                    Case "bind"
+                                        ResultDictionary.Add("bind", [Shared].Execution.BindInfo.Make(XPathControlNav.Value))
+
+                                    Case "attributes"
+                                        Dim ChildReader As Xml.XPath.XPathNavigator =
+                                        XPathControlNav.Clone()
+
+                                        If ChildReader.MoveToFirstChild() Then
+                                            Dim AttributesCol As New Controller.Directive.Control.AttributeInfo.AttributeInfoCollection()
+                                            Do
+                                                AttributesCol.Add(
+                                                ChildReader.GetAttribute("key", ChildReader.BaseURI).ToLower(),
+                                                ChildReader.Value
+                                            )
+                                            Loop While ChildReader.MoveToNext()
+                                            ResultDictionary.Add("attributes", AttributesCol)
+                                        End If
+
+                                    Case "security"
+                                        Dim ChildReader As Xml.XPath.XPathNavigator =
+                                        XPathControlNav.Clone()
+
+                                        If ChildReader.MoveToFirstChild() Then
+                                            Dim SecurityInfo As New Controller.Directive.ControlBase.SecurityInfo()
+                                            Do
+                                                Select Case ChildReader.Name.ToLower(CompareCulture)
+                                                    Case "registeredgroup"
+                                                        SecurityInfo.RegisteredGroup = ChildReader.Value
+
+                                                    Case "friendlyname"
+                                                        SecurityInfo.FriendlyName = ChildReader.Value
+
+                                                    Case "bind"
+                                                        SecurityInfo.BindInfo = [Shared].Execution.BindInfo.Make(ChildReader.Value)
+
+                                                    Case "disabled"
+                                                        SecurityInfo.Disabled.IsSet = True
+                                                        If Not [Enum].TryParse(Of Controller.Directive.ControlBase.SecurityInfo.DisabledClass.DisabledTypes)(
+                                                            ChildReader.GetAttribute("type", ChildReader.NamespaceURI),
+                                                            SecurityInfo.Disabled.Type
+                                                        ) Then SecurityInfo.Disabled.Type = Controller.Directive.ControlBase.SecurityInfo.DisabledClass.DisabledTypes.Inherited
+                                                        SecurityInfo.Disabled.Value = ChildReader.Value
+
+                                                End Select
+                                            Loop While ChildReader.MoveToNext()
+                                            ResultDictionary.Add("security", SecurityInfo)
+                                        End If
+
+                                    Case "blockidstoupdate"
+                                        Dim UpdateLocalBlock As Boolean
+                                        If Not Boolean.TryParse(
+                                                XPathControlNav.GetAttribute("localupdate", XPathControlNav.BaseURI),
+                                                UpdateLocalBlock
+                                            ) Then UpdateLocalBlock = True
+                                        ResultDictionary.Add("blockidstoupdate.localupdate", UpdateLocalBlock)
+
+                                        Dim ChildReader As Xml.XPath.XPathNavigator =
+                                        XPathControlNav.Clone()
+
+                                        If ChildReader.MoveToFirstChild() Then
+                                            Dim BlockIDsToUpdate As New Generic.List(Of String)
+                                            Do
+                                                BlockIDsToUpdate.Add(ChildReader.Value)
+                                            Loop While ChildReader.MoveToNext()
+                                            ResultDictionary.Add("blockidstoupdate", BlockIDsToUpdate)
+                                        End If
+
+                                    Case "defaultbuttonid"
+                                        ResultDictionary.Add("defaultbuttonid", XPathControlNav.Value)
+
+                                    Case "text"
+                                        ResultDictionary.Add("text", XPathControlNav.Value)
+
+                                    Case "url"
+                                        ResultDictionary.Add("url", XPathControlNav.Value)
+
+                                    Case "content"
+                                        ResultDictionary.Add("content", XPathControlNav.Value)
+
+                                    Case "source"
+                                        ResultDictionary.Add("source", XPathControlNav.Value)
+
+                                End Select
+                            Loop While XPathControlNav.MoveToNext()
+
+                            Renderer._ControlsCache.TryAdd(CacheSearchKey, ResultDictionary)
+
+                            Exit Do
+                        Else
+                            WorkingInstance = WorkingInstance.Parent
+                        End If
+                    End If
+                Loop Until WorkingInstance Is Nothing
             End Sub
 
             Private Sub OnInstanceRequest(ByRef Instance As [Shared].IDomain)

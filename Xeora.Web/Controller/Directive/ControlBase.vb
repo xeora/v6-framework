@@ -12,12 +12,14 @@ Namespace Xeora.Web.Controller.Directive
         Implements IParsingRequires
         Implements IControl
 
+        Private _IsBuilt As Boolean
+
         Private _Leveling As Integer
         Private _LevelingExecutionOnly As Boolean
         Private _BoundControlID As String
 
         Private _ControlID As String
-        Private _SecurityInfo As SecurityInfos
+        Private _Security As SecurityInfo
         Private _ControlType As ControlTypes
         Private _BindInfo As [Shared].Execution.BindInfo
         Private _Attributes As AttributeInfo.AttributeInfoCollection
@@ -29,9 +31,9 @@ Namespace Xeora.Web.Controller.Directive
             RaiseEvent ParseRequested(DraftValue, ContainerController)
         End Sub
 
-        Public Event ControlMapNavigatorRequested(ByRef WorkingInstance As [Shared].IDomain, ByRef ControlMapXPathNavigator As XPathNavigator) Implements IControl.ControlMapNavigatorRequested
-        Protected Sub RequestControlMapNavigator(ByRef WorkingInstance As [Shared].IDomain, ByRef ControlMapXPathNavigator As XPathNavigator)
-            RaiseEvent ControlMapNavigatorRequested(WorkingInstance, ControlMapXPathNavigator)
+        Public Event ControlResolveRequested(ByVal ControlID As String, ByRef WorkingInstance As [Shared].IDomain, ByRef ResultDictionary As Generic.Dictionary(Of String, Object)) Implements IControl.ControlResolveRequested
+        Protected Sub RequestControlResolve(ByVal ControlID As String, ByRef WorkingInstance As [Shared].IDomain, ByRef ResultDictionary As Generic.Dictionary(Of String, Object))
+            RaiseEvent ControlResolveRequested(ControlID, WorkingInstance, ResultDictionary)
         End Sub
 
         Public Enum ControlTypes
@@ -51,18 +53,91 @@ Namespace Xeora.Web.Controller.Directive
             Unknown
         End Enum
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ControlType As ControlTypes, ByVal ContentArguments As ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.Control, ContentArguments)
 
+            Me._IsBuilt = False
+        End Sub
+
+        Public Sub Build()
+            If Me._IsBuilt Then Exit Sub
+
+            Me._IsBuilt = True
             Me._ControlID = Me.CaptureControlID()
             Me._Leveling = Me.CaptureLeveling(Me._LevelingExecutionOnly)
             Me._BoundControlID = Me.CaptureBoundControlID()
-            Me._SecurityInfo = New SecurityInfos()
-            Me._ControlType = Me.CaptureControlType()
+            Me._Security = New SecurityInfo()
+            Me._ControlType = ControlTypes.Unknown
             Me._BindInfo = Nothing
             Me._Attributes = New AttributeInfo.AttributeInfoCollection
             Me._BlockIDsToUpdate = New Generic.List(Of String)
             Me._UpdateLocalBlock = True
+
+            Dim WorkingInstance As [Shared].IDomain = Nothing
+            Dim XPathNavigator As XPathNavigator = Nothing
+
+            Do
+                Dim ResultDictionary As Generic.Dictionary(Of String, Object) = Nothing
+
+                RaiseEvent ControlResolveRequested(Me._ControlID, WorkingInstance, ResultDictionary)
+
+                If Not ResultDictionary Is Nothing Then
+                    For Each Key As String In ResultDictionary.Keys
+                        Select Case Key
+                            Case "type"
+                                Me._ControlType = CType(ResultDictionary.Item(Key), ControlTypes)
+
+                            Case "bind"
+                                Me._BindInfo = CType(ResultDictionary.Item(Key), [Shared].Execution.BindInfo)
+
+                            Case "attributes"
+                                If Not ResultDictionary.Item(Key) Is Nothing Then
+                                    Me._Attributes.AddRange(
+                                        CType(ResultDictionary.Item(Key), AttributeInfo.AttributeInfoCollection).ToArray())
+                                End If
+
+                            Case "security"
+                                If Not ResultDictionary.Item(Key) Is Nothing Then _
+                                    Me._Security = CType(ResultDictionary.Item(Key), SecurityInfo)
+
+                            Case "blockidstoupdate.localupdate"
+                                If Not ResultDictionary.Item(Key) Is Nothing Then _
+                                    Me._UpdateLocalBlock = CType(ResultDictionary.Item(Key), Boolean)
+
+                            Case "blockidstoupdate"
+                                If Not ResultDictionary.Item(Key) Is Nothing Then _
+                                    Me._BlockIDsToUpdate = CType(ResultDictionary.Item(Key), Generic.List(Of String))
+
+                            Case "defaultbuttonid"
+                                If TypeOf Me Is IHasDefaultButton Then _
+                                    CType(Me, IHasDefaultButton).DefaultButtonID = CType(ResultDictionary.Item(Key), String)
+
+                            Case "text"
+                                If TypeOf Me Is IHasText Then _
+                                        CType(Me, IHasText).Text = CType(ResultDictionary.Item(Key), String)
+
+                            Case "url"
+                                If TypeOf Me Is IHasURL Then _
+                                        CType(Me, IHasURL).URL = CType(ResultDictionary.Item(Key), String)
+
+                            Case "content"
+                                If TypeOf Me Is IHasContent Then _
+                                        CType(Me, IHasContent).Content = CType(ResultDictionary.Item(Key), String)
+
+                            Case "source"
+                                If TypeOf Me Is IHasSource Then _
+                                        CType(Me, IHasSource).Source = CType(ResultDictionary.Item(Key), String)
+
+                        End Select
+                    Next
+
+                    Exit Do
+                Else
+                    If WorkingInstance Is Nothing Then Exit Do
+
+                    WorkingInstance = WorkingInstance.Parent
+                End If
+            Loop Until WorkingInstance Is Nothing
         End Sub
 
         Public ReadOnly Property Level As Integer Implements ILevelable.Level
@@ -89,14 +164,14 @@ Namespace Xeora.Web.Controller.Directive
             End Get
         End Property
 
-        Public Property SecurityInfo() As SecurityInfos Implements IControl.SecurityInfo
+        Public Property Security() As SecurityInfo Implements IControl.SecurityInfo
             Get
-                Return Me._SecurityInfo
+                Return Me._Security
             End Get
-            Set(ByVal value As SecurityInfos)
-                Me._SecurityInfo = value
+            Set(ByVal value As SecurityInfo)
+                Me._Security = value
 
-                If Me._SecurityInfo Is Nothing Then Me._SecurityInfo = New SecurityInfos
+                If Me._Security Is Nothing Then Me._Security = New SecurityInfo()
             End Set
         End Property
 
@@ -140,7 +215,7 @@ Namespace Xeora.Web.Controller.Directive
             If Control Is Nothing Then Exit Sub
 
             With CType(Control, ControlBase)
-                ._SecurityInfo = Me._SecurityInfo
+                ._Security = Me._Security
                 ._Attributes.AddRange(Me._Attributes.ToArray())
                 ._BlockIDsToUpdate.AddRange(Me._BlockIDsToUpdate.ToArray())
                 ._UpdateLocalBlock = Me._UpdateLocalBlock
@@ -157,13 +232,13 @@ Namespace Xeora.Web.Controller.Directive
             Return rControlType
         End Function
 
-        Public Shared Function MakeControl(ByVal DraftIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection, ByVal ControlMapNavigatorRequested As IControl.ControlMapNavigatorRequestedEventHandler) As ControlBase
+        Public Shared Function MakeControl(ByVal DraftIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection, ByVal ControlResolveRequested As IControl.ControlResolveRequestedEventHandler) As ControlBase
             Dim rControl As ControlBase = Nothing
 
             ' Dummy Control just to check the Control Type
             Dim Control As New Unknown(DraftIndex, DraftValue, ContentArguments)
-            AddHandler Control.ControlMapNavigatorRequested, ControlMapNavigatorRequested
-            Control.SyncronizeWithDefinition()
+            AddHandler Control.ControlResolveRequested, ControlResolveRequested
+            Control.Build()
 
             Select Case Control.Type
                 Case ControlTypes.Button
@@ -190,166 +265,12 @@ Namespace Xeora.Web.Controller.Directive
                     rControl = New VariableBlock(DraftIndex, DraftValue, ContentArguments)
             End Select
             If Not rControl Is Nothing Then
-                AddHandler rControl.ControlMapNavigatorRequested, ControlMapNavigatorRequested
-                rControl.SyncronizeWithDefinition()
+                AddHandler rControl.ControlResolveRequested, ControlResolveRequested
+                rControl.Build()
             End If
 
             Return rControl
         End Function
-
-        Private Function CaptureControlType() As ControlTypes
-            Dim rControlType As ControlTypes = ControlTypes.Unknown
-
-            Dim WorkingInstance As [Shared].IDomain = Nothing
-            Dim XPathNavigator As XPathNavigator = Nothing
-
-            Do
-                RaiseEvent ControlMapNavigatorRequested(WorkingInstance, XPathNavigator)
-
-                If Not XPathNavigator Is Nothing Then
-                    Dim XPathControlNav As XPathNavigator
-
-                    XPathControlNav = XPathNavigator.SelectSingleNode(String.Format("/Controls/Control[@id='{0}']", Me.ControlID))
-
-                    If Not XPathControlNav Is Nothing AndAlso
-                        XPathControlNav.MoveToFirstChild() Then
-
-                        Dim CompareCulture As New Globalization.CultureInfo("en-US")
-
-                        Do
-                            Select Case XPathControlNav.Name.ToLower(CompareCulture)
-                                Case "type"
-                                    Me._ControlType = ControlBase.CaptureControlType(XPathControlNav.Value)
-
-                                    Exit Do
-                            End Select
-                        Loop While XPathControlNav.MoveToNext()
-                    Else
-                        WorkingInstance = WorkingInstance.Parent
-                        XPathNavigator = Nothing
-                    End If
-                End If
-            Loop Until WorkingInstance Is Nothing
-
-            Return rControlType
-        End Function
-
-        Protected Sub SyncronizeWithDefinition()
-            Dim WorkingInstance As [Shared].IDomain = Nothing
-            Dim XPathNavigator As XPathNavigator = Nothing
-
-            Do
-                RaiseEvent ControlMapNavigatorRequested(WorkingInstance, XPathNavigator)
-
-                If Not XPathNavigator Is Nothing Then
-                    Dim XPathControlNav As XPathNavigator
-
-                    XPathControlNav = XPathNavigator.SelectSingleNode(String.Format("/Controls/Control[@id='{0}']", Me.ControlID))
-
-                    If Not XPathControlNav Is Nothing AndAlso
-                        XPathControlNav.MoveToFirstChild() Then
-
-                        Dim CompareCulture As New Globalization.CultureInfo("en-US")
-
-                        Do
-                            Select Case XPathControlNav.Name.ToLower(CompareCulture)
-                                Case "type"
-                                    Me._ControlType = ControlBase.CaptureControlType(XPathControlNav.Value)
-
-                                Case "bind"
-                                    Me._BindInfo = [Shared].Execution.BindInfo.Make(XPathControlNav.Value)
-
-                                Case "attributes"
-                                    Dim ChildReader As XPathNavigator =
-                                        XPathControlNav.Clone()
-
-                                    If ChildReader.MoveToFirstChild() Then
-                                        Do
-                                            Me._Attributes.Add(
-                                                ChildReader.GetAttribute("key", ChildReader.BaseURI).ToLower(),
-                                                ChildReader.Value
-                                            )
-                                        Loop While ChildReader.MoveToNext()
-                                    End If
-
-                                Case "security"
-                                    Dim ChildReader As XPathNavigator =
-                                        XPathControlNav.Clone()
-
-                                    If ChildReader.MoveToFirstChild() Then
-                                        Dim RegisteredGroup As String = String.Empty, FriendlyName As String = String.Empty,
-                                            SecurityBind As [Shared].Execution.BindInfo = Nothing, DisabledValue As String = String.Empty,
-                                            DisabledType As String = "Inherited", DisabledSet As Boolean = False
-
-                                        Do
-                                            Select Case ChildReader.Name.ToLower(CompareCulture)
-                                                Case "registeredgroup"
-                                                    Me._SecurityInfo.RegisteredGroup = ChildReader.Value
-
-                                                Case "friendlyname"
-                                                    Me._SecurityInfo.FriendlyName = ChildReader.Value
-
-                                                Case "bind"
-                                                    Me._SecurityInfo.BindInfo = [Shared].Execution.BindInfo.Make(ChildReader.Value)
-
-                                                Case "disabled"
-                                                    Me._SecurityInfo.Disabled.IsSet = True
-                                                    If Not [Enum].TryParse(Of SecurityInfos.DisabledClass.DisabledTypes)(
-                                                            ChildReader.GetAttribute("type", ChildReader.NamespaceURI),
-                                                            Me._SecurityInfo.Disabled.Type
-                                                        ) Then Me._SecurityInfo.Disabled.Type = SecurityInfos.DisabledClass.DisabledTypes.Inherited
-                                                    Me._SecurityInfo.Disabled.Value = ChildReader.Value
-
-                                            End Select
-                                        Loop While ChildReader.MoveToNext()
-                                    End If
-
-                                Case "blockidstoupdate"
-                                    If Not Boolean.TryParse(
-                                                XPathControlNav.GetAttribute("localupdate", XPathControlNav.BaseURI),
-                                                Me._UpdateLocalBlock
-                                            ) Then Me._UpdateLocalBlock = True
-
-                                    Dim ChildReader As XPathNavigator =
-                                        XPathControlNav.Clone()
-
-                                    If ChildReader.MoveToFirstChild() Then
-                                        Do
-                                            Me._BlockIDsToUpdate.Add(ChildReader.Value)
-                                        Loop While ChildReader.MoveToNext()
-                                    End If
-
-                                Case "defaultbuttonid"
-                                    If TypeOf Me Is IHasDefaultButton Then _
-                                        CType(Me, IHasDefaultButton).DefaultButtonID = XPathControlNav.Value
-
-                                Case "text"
-                                    If TypeOf Me Is IHasText Then _
-                                        CType(Me, IHasText).Text = XPathControlNav.Value
-
-                                Case "url"
-                                    If TypeOf Me Is IHasURL Then _
-                                        CType(Me, IHasURL).URL = XPathControlNav.Value
-
-                                Case "content"
-                                    If TypeOf Me Is IHasContent Then _
-                                        CType(Me, IHasContent).Content = XPathControlNav.Value
-
-                                Case "source"
-                                    If TypeOf Me Is IHasSource Then _
-                                        CType(Me, IHasSource).Source = XPathControlNav.Value
-
-                            End Select
-                        Loop While XPathControlNav.MoveToNext()
-
-                        Exit Do
-                    Else
-                        WorkingInstance = WorkingInstance.Parent
-                        XPathNavigator = Nothing
-                    End If
-                End If
-            Loop Until WorkingInstance Is Nothing
-        End Sub
 
         Protected Sub RenderBindInfoParams()
             If Not Me.BindInfo Is Nothing AndAlso
@@ -373,7 +294,7 @@ Namespace Xeora.Web.Controller.Directive
             End If
         End Sub
 
-        Public Class SecurityInfos
+        Public Class SecurityInfo
             Private _SecuritySet As Boolean
             Private _RegisteredGroup As String
             Private _FriendlyName As String

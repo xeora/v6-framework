@@ -3,43 +3,33 @@ Option Strict On
 Namespace Xeora.Web.Shared
 
     Public Class Helpers
-        Private Shared _SiteTitles As Hashtable = Hashtable.Synchronized(New Hashtable)
+        Private Shared _SiteTitles As New Concurrent.ConcurrentDictionary(Of String, String)
         Public Shared Property SiteTitle() As String
             Get
                 Dim rString As String = Nothing
 
-                If Helpers._SiteTitles.ContainsKey(Helpers.CurrentRequestID) Then _
-                    rString = CType(Helpers._SiteTitles.Item(Helpers.CurrentRequestID), String)
+                If Not Helpers._SiteTitles.TryGetValue(Helpers.CurrentRequestID, rString) Then _
+                    rString = Nothing
 
                 Return rString
             End Get
             Set(ByVal value As String)
-                Threading.Monitor.Enter(Helpers._SiteTitles.SyncRoot)
-                Try
-                    Helpers._SiteTitles.Item(Helpers.CurrentRequestID) = value
-                Finally
-                    Threading.Monitor.Exit(Helpers._SiteTitles.SyncRoot)
-                End Try
+                Helpers._SiteTitles.TryAdd(Helpers.CurrentRequestID, value)
             End Set
         End Property
 
-        Private Shared _Favicons As Hashtable = Hashtable.Synchronized(New Hashtable)
+        Private Shared _Favicons As New Concurrent.ConcurrentDictionary(Of String, String)
         Public Shared Property SiteIconURL() As String
             Get
                 Dim rString As String = Nothing
 
-                If Helpers._Favicons.ContainsKey(Helpers.CurrentRequestID) Then _
-                    rString = CType(Helpers._Favicons.Item(Helpers.CurrentRequestID), String)
+                If Helpers._Favicons.TryGetValue(Helpers.CurrentRequestID, rString) Then _
+                    rString = Nothing
 
                 Return rString
             End Get
             Set(ByVal value As String)
-                Threading.Monitor.Enter(Helpers._Favicons.SyncRoot)
-                Try
-                    Helpers._Favicons.Item(Helpers.CurrentRequestID) = value
-                Finally
-                    Threading.Monitor.Exit(Helpers._Favicons.SyncRoot)
-                End Try
+                Helpers._Favicons.TryAdd(Helpers.CurrentRequestID, value)
             End Set
         End Property
 

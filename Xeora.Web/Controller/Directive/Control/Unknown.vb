@@ -5,7 +5,7 @@ Namespace Xeora.Web.Controller.Directive.Control
         Inherits ControlBase
 
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
-            MyBase.New(DraftStartIndex, DraftValue, ControlTypes.Unknown, ContentArguments)
+            MyBase.New(DraftStartIndex, DraftValue, ContentArguments)
         End Sub
 
         Public Overrides Sub Render(ByRef SenderController As ControllerBase)

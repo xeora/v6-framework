@@ -54,11 +54,7 @@ RETRYREMOTEBIND:
                     ')
                     Me._IsTasksHost = True
                 Catch ex As System.Exception
-                    Try
-                        EventLog.WriteEntry("XeoraCube", ex.ToString(), EventLogEntryType.Error)
-                    Catch exSub As System.Exception
-                        ' Just Handle Request
-                    End Try
+                    Helper.EventLogger.Log(ex.ToString())
 
                     Threading.Thread.Sleep(1000)
 
@@ -139,9 +135,7 @@ RETRYREMOTEBIND:
         Private Sub CheckTasks(ByVal state As Object)
             SyncLock Me._CheckProgressSync
                 If Me._CheckIsInProgress Then Exit Sub
-            End SyncLock
 
-            SyncLock Me._CheckProgressSync
                 Me._CheckIsInProgress = True
             End SyncLock
 
@@ -186,7 +180,7 @@ RETRYREMOTEBIND:
             Try
                 CType(AsyncResult.AsyncState, TaskInfo).CallBack.EndInvoke(AsyncResult)
             Catch ex As System.Exception
-                Helper.EventLogging.WriteToLog(ex)
+                Helper.EventLogger.Log(ex)
             End Try
         End Sub
 
@@ -256,6 +250,8 @@ RETRYREMOTEBIND:
 
                 Me.DestroyConnectionFromRemoteTasks(RemoteTasksServiceConnection)
             Else
+                Dim RemovedKey As Long
+
                 Threading.Monitor.Enter(Me._Tasks.SyncRoot)
                 Try
                     Dim dEnumerator As IDictionaryEnumerator = Me._Tasks.GetEnumerator()
@@ -275,7 +271,7 @@ RETRYREMOTEBIND:
 
                         If HasFound Then
                             If sTasks.Count = 0 Then
-                                Me._Tasks.Remove(CType(dEnumerator.Key, Long))
+                                RemovedKey = CType(dEnumerator.Key, Long)
                             Else
                                 Me._Tasks.Item(CType(dEnumerator.Key, Long)) = sTasks
                             End If
@@ -283,6 +279,9 @@ RETRYREMOTEBIND:
                             Exit Do
                         End If
                     Loop
+
+                    If Me._Tasks.ContainsKey(RemovedKey) Then _
+                        Me._Tasks.Remove(RemovedKey)
                 Finally
                     Threading.Monitor.Exit(Me._Tasks.SyncRoot)
                 End Try

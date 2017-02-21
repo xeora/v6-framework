@@ -476,16 +476,10 @@ Namespace Xeora.Web.Handler
             If Not args.ExceptionObject Is Nothing AndAlso
                 TypeOf args.ExceptionObject Is System.Exception Then
 
-                Try
-                    EventLog.WriteEntry("XeoraCube",
-                        " --- RequestModule Exception --- " & Environment.NewLine & Environment.NewLine &
-                        CType(
-                            args.ExceptionObject, System.Exception).ToString(),
-                            EventLogEntryType.Error
-                    )
-                Catch ex As System.Exception
-                    ' Just Handle Exception
-                End Try
+                Helper.EventLogger.LogToSystemEvent(
+                    String.Format(" --- RequestModule Exception --- {0}{0}{1}", Environment.NewLine, CType(args.ExceptionObject, System.Exception).ToString()),
+                    EventLogEntryType.Error
+                )
             End If
         End Sub
 

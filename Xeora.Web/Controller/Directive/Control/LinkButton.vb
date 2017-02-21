@@ -11,7 +11,7 @@ Namespace Xeora.Web.Controller.Directive.Control
         Private _URL As String
 
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
-            MyBase.New(DraftStartIndex, DraftValue, ControlTypes.LinkButton, ContentArguments)
+            MyBase.New(DraftStartIndex, DraftValue, ContentArguments)
 
             Me._Text = String.Empty
             Me._URL = String.Empty
@@ -132,10 +132,10 @@ Namespace Xeora.Web.Controller.Directive.Control
             If Not Me.BindInfo Is Nothing Then
                 Me.URL = "#_action0"
 
-                If Me.SecurityInfo.Disabled.IsSet AndAlso
-                    Me.SecurityInfo.Disabled.Type = SecurityInfos.DisabledClass.DisabledTypes.Dynamic Then
+                If Me.Security.Disabled.IsSet AndAlso
+                    Me.Security.Disabled.Type = SecurityInfo.DisabledClass.DisabledTypes.Dynamic Then
 
-                    Me.Text = Me.SecurityInfo.Disabled.Value
+                    Me.Text = Me.Security.Disabled.Value
                 End If
             Else
                 If Me.URL Is Nothing OrElse
@@ -201,10 +201,10 @@ Namespace Xeora.Web.Controller.Directive.Control
             Next
             ' !--
 
-            If Me.SecurityInfo.Disabled.IsSet AndAlso
-                Me.SecurityInfo.Disabled.Type = SecurityInfos.DisabledClass.DisabledTypes.Dynamic Then
+            If Me.Security.Disabled.IsSet AndAlso
+                Me.Security.Disabled.Type = SecurityInfo.DisabledClass.DisabledTypes.Dynamic Then
 
-                Me.DefineRenderedValue(Me.SecurityInfo.Disabled.Value)
+                Me.DefineRenderedValue(Me.Security.Disabled.Value)
             Else
                 Me.DefineRenderedValue(
                     String.Format(

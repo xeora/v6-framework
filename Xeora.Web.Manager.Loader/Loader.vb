@@ -186,10 +186,10 @@ Namespace Xeora.Web.Manager
                         If Not Me._ExecutableInstances.ContainsKey(ExamInterface) Then
                             System.Threading.Monitor.Enter(Me._ExecutableInstances.SyncRoot)
                             Try
-                                Me._ExecutableInstances.Item(ExamInterface) = System.Activator.CreateInstance(ExamInterface)
+                                Dim ExecuteObject As Object = System.Activator.CreateInstance(ExamInterface)
 
-                                Dim ExecuteObject As Object =
-                                    Me._ExecutableInstances.Item(ExamInterface)
+                                If Not ExecuteObject Is Nothing Then _
+                                    Me._ExecutableInstances.Item(ExamInterface) = ExecuteObject
 
                                 ExecuteObject.GetType().GetMethod("Initialize").Invoke(ExecuteObject, Nothing)
                             Catch ex As System.Exception
@@ -266,8 +266,11 @@ Namespace Xeora.Web.Manager
                     sB.AppendFormat("ExecutableName: {0}", Me._ExecutableName) : sB.AppendLine()
                     sB.AppendFormat("ClassName: {0}", String.Join(".", ClassNames)) : sB.AppendLine()
                     sB.AppendFormat("FunctionName: {0}", FunctionName) : sB.AppendLine()
-                    sB.AppendFormat("FunctionParamsLength: {0}",
-                        Microsoft.VisualBasic.IIf(FunctionParams Is Nothing, "0", FunctionParams.Length)) : sB.AppendLine()
+                    sB.AppendFormat("FunctionParamsLength: {0}", FunctionParams.Length)
+                    For Each Param As Object In FunctionParams
+                        sB.AppendFormat(", {0}", Param.GetType().ToString())
+                    Next
+                    sB.AppendLine()
 
                     Throw New System.Reflection.TargetException(sB.ToString())
                 End If
@@ -278,22 +281,29 @@ Namespace Xeora.Web.Manager
             Return rObject
         End Function
 
+        Private _SortedAssemblyMethods As New System.Collections.Concurrent.ConcurrentDictionary(Of Integer, System.Reflection.MethodInfo())
         Private Function GetAssemblyMethod(ByRef AssemblyObject As System.Type, ByVal HttpMethodType As String, ByVal FunctionName As String, ByRef FunctionParams As Object(), ByVal ExecuterType As String) As System.Reflection.MethodInfo
             Dim rAssemblyMethod As System.Reflection.MethodInfo = Nothing
 
             ' Sort and Filter Searching Function
-            Dim AOMIs As System.Reflection.MethodInfo() = AssemblyObject.GetMethods()
-            System.Array.Sort(AOMIs, New MethodInfoNameComparer(Nothing))
+            Dim AssemblyObjectMethods As System.Reflection.MethodInfo() = Nothing
+
+            If Not Me._SortedAssemblyMethods.TryGetValue(AssemblyObject.GetHashCode(), AssemblyObjectMethods) Then
+                AssemblyObjectMethods = AssemblyObject.GetMethods()
+                System.Array.Sort(AssemblyObjectMethods, New MethodInfoNameComparer(Nothing))
+
+                Me._SortedAssemblyMethods.TryAdd(AssemblyObject.GetHashCode(), AssemblyObjectMethods)
+            End If
 
             Dim mIF As New MethodInfoFinder(HttpMethodType, FunctionName)
             Dim MIFIdx As Integer =
                 System.Array.FindIndex(
-                    AOMIs,
+                    AssemblyObjectMethods,
                     New System.Predicate(Of System.Reflection.MethodInfo)(AddressOf mIF.MethodInfoFinder)
                 )
             Dim MILIdx As Integer =
                 System.Array.FindLastIndex(
-                    AOMIs,
+                    AssemblyObjectMethods,
                     New System.Predicate(Of System.Reflection.MethodInfo)(AddressOf mIF.MethodInfoFinder)
                 )
 
@@ -306,8 +316,8 @@ Namespace Xeora.Web.Manager
                         ),
                         System.Reflection.MethodInfo()
                     )
-                System.Array.Copy(AOMIs, MIFIdx, MethodInfos, 0, MethodInfos.Length)
-                System.Array.Sort(MethodInfos, New MethodInfoParameterLengthComparer)
+                System.Array.Copy(AssemblyObjectMethods, MIFIdx, MethodInfos, 0, MethodInfos.Length)
+                System.Array.Sort(MethodInfos, New MethodInfoParameterLengthComparer())
 
                 Dim FunctionParams_ReBuild As Object()
 
@@ -323,7 +333,7 @@ Namespace Xeora.Web.Manager
 
                     Select Case ExecuterType
                         Case "Control"
-                            If Not IsXeoraControl Then Continue For
+                            If Not MethodInfos(mC).ReturnType Is GetType(Object) AndAlso Not IsXeoraControl Then Continue For
                         Case "Other"
                             If IsXeoraControl Then
                                 Select Case MethodInfos(mC).ReturnType.Name

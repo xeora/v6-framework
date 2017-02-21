@@ -9,7 +9,7 @@ Namespace Xeora.Web.Controller.Directive.Control
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
-            MyBase.New(DraftStartIndex, DraftValue, ControlTypes.DataList, ContentArguments)
+            MyBase.New(DraftStartIndex, DraftValue, ContentArguments)
         End Sub
 
         Public Overrides Sub Render(ByRef SenderController As ControllerBase)
@@ -241,7 +241,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                                                 Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
                                             End If
 
-                                            Helper.EventLogging.WriteToLog(
+                                            Helper.EventLogger.Log(
                                                 String.Format("DirectDataAccess [{0}] failed! DatabaseCommand must not be null!", Me.ControlID))
                                         Else
                                             Throw New NullReferenceException(
@@ -345,7 +345,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                                                     Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
                                                 End If
 
-                                                Helper.EventLogging.WriteToLog(ex)
+                                                Helper.EventLogger.Log(ex)
                                             Else
                                                 Throw New Exception.DirectDataAccessException(ex)
                                             End If
