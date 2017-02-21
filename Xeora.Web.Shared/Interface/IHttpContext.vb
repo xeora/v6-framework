@@ -8,23 +8,26 @@ Namespace Xeora.Web.Shared
         Private _QueryString As String
 
         Public Sub New(ByVal RawURL As String)
+            Dim ApplicationRootPath As String = Configurations.ApplicationRoot.BrowserImplementation
+            ' Fix false path request
+            If String.Compare(
+                String.Format("{0}/", RawURL).Substring((RawURL.Length + 1) - ApplicationRootPath.Length), ApplicationRootPath) = 0 Then _
+                RawURL = String.Format("{0}/", RawURL)
+
             Me._Raw = RawURL
 
             Dim DoubleDashIndex As Integer =
                 RawURL.IndexOf("//")
-
             If DoubleDashIndex > -1 Then RawURL = RawURL.Remove(0, DoubleDashIndex + 2)
 
             Dim FirstSingleDashIndex As Integer =
                 RawURL.IndexOf("/"c)
-
             If FirstSingleDashIndex > -1 Then RawURL = RawURL.Remove(0, FirstSingleDashIndex)
 
             Me._Relative = RawURL
 
             Dim FirstQuestionMarkIndex As Integer =
                 RawURL.IndexOf("?"c)
-
             If FirstQuestionMarkIndex > -1 Then
                 Me._RelativePath = RawURL.Substring(0, FirstQuestionMarkIndex)
                 Me._QueryString = RawURL.Substring(FirstQuestionMarkIndex + 1)

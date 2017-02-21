@@ -88,48 +88,45 @@ Namespace Xeora.Web.Shared
 
                             If rqMatch.Success Then
                                 rServicePathInfo = mItem.ResolveInfo.ServicePathInfo
-                                ByPass = True
 
-                                Exit For
+                                Return rServicePathInfo
                             End If
                         Next
                     End If
                 End SyncLock
 
-                If Not ByPass Then
-                    ' RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(Configurations.ApplicationRoot.BrowserImplementation) + Configurations.ApplicationRoot.BrowserImplementation.Length)
+                ' RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(Configurations.ApplicationRoot.BrowserImplementation) + Configurations.ApplicationRoot.BrowserImplementation.Length)
 
-                    ' Take Care Application Path and HashCode if it is exists work with application browser path
-                    ' this comes /APPPATH/path?somekey=withquery
-                    ' or this /APPPATH/432432/path?somekey=withquery
-                    ' or this /Standart_tr-TR/somefile.png
-                    ' take care of it!
-                    Dim CurrentDomainContentPath As String =
-                        Helpers.GetDomainContentsPath()
+                ' Take Care Application Path and HashCode if it is exists work with application browser path
+                ' this comes /APPPATH(/path?somekey=withquery)?
+                ' or this /APPPATH/432432/(path?somekey=withquery)?
+                ' or this /Standart_tr-TR/somefile.png
+                ' take care of it!
+                Dim CurrentDomainContentPath As String =
+                    Helpers.GetDomainContentsPath()
 
-                    ' first test if it is domain content path
-                    If RequestFilePath.IndexOf(CurrentDomainContentPath) = 0 Then
-                        ' This is a DomainContents Request
-                        ' So no Template and also no default template usage
-                        UseDefaultTemplate = False
+                ' first test if it is domain content path
+                If RequestFilePath.IndexOf(CurrentDomainContentPath) = 0 Then
+                    ' This is a DomainContents Request
+                    ' So no Template and also no default template usage
+                    UseDefaultTemplate = False
+                Else
+                    Dim ApplicationRootPath As String = Configurations.ApplicationRoot.BrowserImplementation
+                    Dim mR As Text.RegularExpressions.Match =
+                        Text.RegularExpressions.Regex.Match(RequestFilePath, String.Format("{0}(\d+/)?", ApplicationRootPath))
+                    If mR.Success AndAlso mR.Index = 0 Then _
+                        RequestFilePath = RequestFilePath.Remove(0, mR.Length)
+
+                    ' Check if there is any query string exists! if so, template will be till there. 
+                    If RequestFilePath.IndexOf("?"c) > -1 Then _
+                        RequestFilePath = RequestFilePath.Substring(0, RequestFilePath.IndexOf("?"c))
+
+                    If String.IsNullOrEmpty(RequestFilePath) Then
+                        UseDefaultTemplate = True
                     Else
-                        Dim ApplicationRootPath As String = Configurations.ApplicationRoot.BrowserImplementation
-                        Dim mR As Text.RegularExpressions.Match =
-                            Text.RegularExpressions.Regex.Match(RequestFilePath, String.Format("{0}(\d+/)?", ApplicationRootPath))
-                        If mR.Success AndAlso mR.Index = 0 Then _
-                            RequestFilePath = RequestFilePath.Remove(0, mR.Length)
+                        rServicePathInfo = ServicePathInfo.Parse(RequestFilePath)
 
-                        ' Check if there is any query string exists! if so, template will be till there. 
-                        If RequestFilePath.IndexOf("?"c) > -1 Then _
-                            RequestFilePath = RequestFilePath.Substring(0, RequestFilePath.IndexOf("?"c))
-
-                        If String.IsNullOrEmpty(RequestFilePath) Then
-                            UseDefaultTemplate = True
-                        Else
-                            rServicePathInfo = ServicePathInfo.Parse(RequestFilePath)
-
-                            If String.IsNullOrEmpty(rServicePathInfo.ServiceID) Then UseDefaultTemplate = True
-                        End If
+                        If String.IsNullOrEmpty(rServicePathInfo.ServiceID) Then UseDefaultTemplate = True
                     End If
                 End If
             End If

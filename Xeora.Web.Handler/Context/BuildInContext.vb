@@ -31,6 +31,7 @@ Namespace Xeora.Web.Context
                 New IHttpContext.IHttpRequest.RewritePathRaisedEventHandler(Sub(ByVal RawURL As String)
                                                                                 Me._UnderlyingContext.RewritePath(RawURL)
                                                                             End Sub)
+            CType(Me._Request, HttpRequest).Build()
             Me._Response = New HttpResponse(HttpContext.Response)
         End Sub
 
@@ -235,7 +236,13 @@ Namespace Xeora.Web.Context
             Public Sub New(ByRef HttpRequest As System.Web.HttpRequest, ByVal XeoraRequestID As String)
                 Me._XeoraRequestID = XeoraRequestID
                 Me._Request = HttpRequest
-                Me._URL = New URL(HttpRequest.RawUrl)
+            End Sub
+
+            Public Sub Build()
+                Me._URL = New URL(Me._Request.RawUrl)
+
+                If String.Compare(Me._URL.Raw, Me._Request.RawUrl) <> 0 Then _
+                    Me.RewritePath(Me._URL.Raw)
             End Sub
 
             Public ReadOnly Property Cookie As HttpCookieCollection Implements IHttpContext.IHttpRequest.Cookie

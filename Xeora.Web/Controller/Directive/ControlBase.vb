@@ -88,7 +88,8 @@ Namespace Xeora.Web.Controller.Directive
                                 Me._ControlType = CType(ResultDictionary.Item(Key), ControlTypes)
 
                             Case "bind"
-                                Me._BindInfo = CType(ResultDictionary.Item(Key), [Shared].Execution.BindInfo)
+                                If Not ResultDictionary.Item(Key) Is Nothing Then _
+                                    CType(ResultDictionary.Item(Key), [Shared].Execution.BindInfo).Clone(Me._BindInfo)
 
                             Case "attributes"
                                 If Not ResultDictionary.Item(Key) Is Nothing Then
@@ -98,7 +99,7 @@ Namespace Xeora.Web.Controller.Directive
 
                             Case "security"
                                 If Not ResultDictionary.Item(Key) Is Nothing Then _
-                                    Me._Security = CType(ResultDictionary.Item(Key), SecurityInfo)
+                                    CType(ResultDictionary.Item(Key), SecurityInfo).Clone(Me._Security)
 
                             Case "blockidstoupdate.localupdate"
                                 If Not ResultDictionary.Item(Key) Is Nothing Then _
@@ -106,7 +107,7 @@ Namespace Xeora.Web.Controller.Directive
 
                             Case "blockidstoupdate"
                                 If Not ResultDictionary.Item(Key) Is Nothing Then _
-                                    Me._BlockIDsToUpdate = CType(ResultDictionary.Item(Key), Generic.List(Of String))
+                                    Me._BlockIDsToUpdate.AddRange(CType(ResultDictionary.Item(Key), Generic.List(Of String)))
 
                             Case "defaultbuttonid"
                                 If TypeOf Me Is IHasDefaultButton Then _
@@ -360,6 +361,21 @@ Namespace Xeora.Web.Controller.Directive
                     Return Me._Disabled
                 End Get
             End Property
+
+            Public Sub Clone(ByRef Security As SecurityInfo)
+                Security = New SecurityInfo()
+
+                With Security
+                    ._SecuritySet = Me._SecuritySet
+                    ._RegisteredGroup = Me._RegisteredGroup
+                    ._FriendlyName = Me._FriendlyName
+
+                    If Not Me._BindInfo Is Nothing Then _
+                        Me._BindInfo.Clone(._BindInfo)
+
+                    ._Disabled = Me._Disabled
+                End With
+            End Sub
 
             Public Class DisabledClass
                 Private _DisabledSet As Boolean

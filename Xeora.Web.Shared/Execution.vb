@@ -261,6 +261,14 @@ Namespace Xeora.Web.Shared
                 Return rString
             End Function
 
+            Public Sub Clone(ByRef BindInfo As BindInfo)
+                BindInfo = New BindInfo(Me._ExecutableName, Me._ClassNames, Me._ProcedureName, Nothing)
+                If Not Me._ProcedureParams Is Nothing Then
+                    BindInfo._ProcedureParams = CType(Array.CreateInstance(GetType(ProcedureParameter), Me._ProcedureParams.Length), ProcedureParameter())
+                    Array.Copy(Me._ProcedureParams, BindInfo._ProcedureParams, Me._ProcedureParams.Length)
+                End If
+            End Sub
+
             <Serializable()>
             Public Class ProcedureParameter
                 Private _Key As String
