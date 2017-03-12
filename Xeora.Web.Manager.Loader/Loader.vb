@@ -271,6 +271,8 @@ Namespace Xeora.Web.Manager
                         sB.AppendFormat(", {0}", Param.GetType().ToString())
                     Next
                     sB.AppendLine()
+                    sB.AppendFormat("HttpMethod: {0}", HttpMethodType)
+                    sB.AppendLine()
 
                     Throw New System.Reflection.TargetException(sB.ToString())
                 End If

@@ -8,8 +8,6 @@ Namespace Xeora.Web.Controller.Directive.Control
         ReadOnly Property Type() As ControlBase.ControlTypes
         Property BindInfo() As [Shared].Execution.BindInfo
         ReadOnly Property Attributes() As AttributeInfo.AttributeInfoCollection
-        ReadOnly Property BlockIDsToUpdate() As Generic.List(Of String)
-        Property UpdateLocalBlock() As Boolean
         Sub Clone(ByRef Control As IControl)
 
         Event ControlResolveRequested(ByVal ControlID As String, ByRef WorkingInstance As [Shared].IDomain, ByRef ResultDictionary As Generic.Dictionary(Of String, Object))

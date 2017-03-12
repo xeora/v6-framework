@@ -629,9 +629,9 @@ RESEARCHPOINT:
                             ProjectItem.ProjectItems.AddFolder("Executables")
 
                             Dim SubProjectItem As ProjectItem =
-                            ProjectItem.ProjectItems.AddFolder("Contents").ProjectItems.AddFolder(ProjectSettings.LanguageID)
+                                ProjectItem.ProjectItems.AddFolder("Contents").ProjectItems.AddFolder(ProjectSettings.LanguageID)
                             Dim StyleFileLocation As String =
-                            IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Contents", ProjectSettings.LanguageID, "styles.css")
+                                IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Contents", ProjectSettings.LanguageID, "styles.css")
                             SW = IO.File.CreateText(StyleFileLocation)
                             SW.WriteLine("/* Default CSS Stylesheet for a New Xeora Web Application project */")
                             SW.Close()
@@ -640,7 +640,7 @@ RESEARCHPOINT:
 
                             SubProjectItem = ProjectItem.ProjectItems.AddFolder("Languages")
                             Dim TranslationFileLocation As String =
-                            IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Languages", String.Format("{0}.xml", ProjectSettings.LanguageID))
+                                IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Languages", String.Format("{0}.xml", ProjectSettings.LanguageID))
                             SW = IO.File.CreateText(TranslationFileLocation)
                             SW.WriteLine("<?xml version=""1.0"" encoding=""utf-8""?>")
                             SW.WriteLine(String.Format("<language name=""{0}"" code=""{1}"">", ProjectSettings.LanguageName, ProjectSettings.LanguageID))
@@ -657,7 +657,7 @@ RESEARCHPOINT:
 
                             SubProjectItem = ProjectItem.ProjectItems.AddFolder("Templates")
                             Dim ControlsXMLFileLocation As String =
-                            IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Templates", "Controls.xml")
+                                IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Templates", "Controls.xml")
                             SW = IO.File.CreateText(ControlsXMLFileLocation)
                             SW.WriteLine("<?xml version=""1.0"" encoding=""utf-8""?>")
                             SW.WriteLine("<Controls />")
@@ -665,7 +665,7 @@ RESEARCHPOINT:
                             SubProjectItem.ProjectItems.AddFromFile(ControlsXMLFileLocation)
 
                             Dim ConfigurationFileLocation As String =
-                            IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Templates", "Configuration.xml")
+                                IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Templates", "Configuration.xml")
                             SW = IO.File.CreateText(ConfigurationFileLocation)
                             SW.WriteLine("<?xml version=""1.0"" encoding=""utf-8""?>")
                             SW.WriteLine("<Settings>")
@@ -684,7 +684,7 @@ RESEARCHPOINT:
                             SubProjectItem.ProjectItems.AddFromFile(ConfigurationFileLocation)
 
                             Dim DefaultTemplateFileLocation As String =
-                            IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Templates", "main.xchtml")
+                                IO.Path.Combine(WorkingFolder, "Domains", ProjectSettings.DomainID, "Templates", "main.xchtml")
                             SW = IO.File.CreateText(DefaultTemplateFileLocation)
                             SW.WriteLine("$S:HelloXeora:{!NOCACHE")
                             SW.WriteLine("  return ""Hello, Xeora Framework is ready!"";")

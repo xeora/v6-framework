@@ -3,11 +3,14 @@ Imports Microsoft.VisualStudio.Language.Intellisense
 Imports Microsoft.VisualStudio.Text
 Imports Microsoft.VisualStudio.Text.Operations
 Imports Microsoft.VisualStudio.Utilities
+Imports Microsoft.VisualStudio.Editor
+Imports Microsoft.VisualStudio.TextManager.Interop
+Imports EnvDTE
 
 Namespace Xeora.VSAddIn.IDE.Editor.Completion
+    '    <Order(Before:="HTML Completion Source Provider")>
     <Export(GetType(ICompletionSourceProvider))>
     <Name("XeoraTemplate")>
-    <Order(Before:="HTML Completion Source Provider")>
     <ContentType(EditorExtension.TemplateContentType)>
     Public NotInheritable Class TemplateSourceProvider
         Implements ICompletionSourceProvider

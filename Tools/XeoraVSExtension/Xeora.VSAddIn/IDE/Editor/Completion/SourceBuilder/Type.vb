@@ -1,8 +1,13 @@
 ﻿Imports Microsoft.VisualStudio.Language
+Imports My.Resources
 
 Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
     Public Class [Type]
         Inherits BuilderBase
+
+        Public Sub New(ByVal Directive As [Enum])
+            MyBase.New(Directive)
+        End Sub
 
         Public Overrides Function Build() As Intellisense.Completion()
             Dim CompList As New Generic.List(Of Intellisense.Completion)()

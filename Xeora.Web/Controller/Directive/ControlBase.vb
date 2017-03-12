@@ -23,8 +23,6 @@ Namespace Xeora.Web.Controller.Directive
         Private _ControlType As ControlTypes
         Private _BindInfo As [Shared].Execution.BindInfo
         Private _Attributes As AttributeInfo.AttributeInfoCollection
-        Private _BlockIDsToUpdate As Generic.List(Of String)
-        Private _UpdateLocalBlock As Boolean
 
         Public Event ParseRequested(DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
         Protected Sub RequestParse(ByVal DraftValue As String, ByRef ContainerController As ControllerBase)
@@ -70,8 +68,6 @@ Namespace Xeora.Web.Controller.Directive
             Me._ControlType = ControlTypes.Unknown
             Me._BindInfo = Nothing
             Me._Attributes = New AttributeInfo.AttributeInfoCollection
-            Me._BlockIDsToUpdate = New Generic.List(Of String)
-            Me._UpdateLocalBlock = True
 
             Dim WorkingInstance As [Shared].IDomain = Nothing
             Dim XPathNavigator As XPathNavigator = Nothing
@@ -102,12 +98,12 @@ Namespace Xeora.Web.Controller.Directive
                                     CType(ResultDictionary.Item(Key), SecurityInfo).Clone(Me._Security)
 
                             Case "blockidstoupdate.localupdate"
-                                If Not ResultDictionary.Item(Key) Is Nothing Then _
-                                    Me._UpdateLocalBlock = CType(ResultDictionary.Item(Key), Boolean)
+                                If TypeOf Me Is IUpdateBlocks AndAlso Not ResultDictionary.Item(Key) Is Nothing Then _
+                                    CType(Me, IUpdateBlocks).UpdateLocalBlock = CType(ResultDictionary.Item(Key), Boolean)
 
                             Case "blockidstoupdate"
-                                If Not ResultDictionary.Item(Key) Is Nothing Then _
-                                    Me._BlockIDsToUpdate.AddRange(CType(ResultDictionary.Item(Key), Generic.List(Of String)))
+                                If TypeOf Me Is IUpdateBlocks AndAlso Not ResultDictionary.Item(Key) Is Nothing Then _
+                                    CType(Me, IUpdateBlocks).BlockIDsToUpdate.AddRange(CType(ResultDictionary.Item(Key), Generic.List(Of String)))
 
                             Case "defaultbuttonid"
                                 If TypeOf Me Is IHasDefaultButton Then _
@@ -197,29 +193,12 @@ Namespace Xeora.Web.Controller.Directive
             End Get
         End Property
 
-        Public Property UpdateLocalBlock() As Boolean Implements IControl.UpdateLocalBlock
-            Get
-                Return Me._UpdateLocalBlock
-            End Get
-            Set(ByVal Value As Boolean)
-                Me._UpdateLocalBlock = Value
-            End Set
-        End Property
-
-        Public ReadOnly Property BlockIDsToUpdate() As Generic.List(Of String) Implements IControl.BlockIDsToUpdate
-            Get
-                Return Me._BlockIDsToUpdate
-            End Get
-        End Property
-
         Public Overridable Sub Clone(ByRef Control As IControl) Implements IControl.Clone
             If Control Is Nothing Then Exit Sub
 
             With CType(Control, ControlBase)
                 ._Security = Me._Security
                 ._Attributes.AddRange(Me._Attributes.ToArray())
-                ._BlockIDsToUpdate.AddRange(Me._BlockIDsToUpdate.ToArray())
-                ._UpdateLocalBlock = Me._UpdateLocalBlock
                 ._BindInfo = Me._BindInfo
             End With
         End Sub

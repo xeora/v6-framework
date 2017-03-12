@@ -66,6 +66,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="ClassDiagram1.cd" />
     <None Include="Key.snk" />
     <None Include="packages.config" />
     <None Include="source.extension.vsixmanifest">
@@ -85,6 +86,7 @@
       <DependentUpon>IconResource.resx</DependentUpon>
     </Compile>
     <Compile Include="IDE\Editor\Completion\SourceBuilder\ControlTag.vb" />
+    <Compile Include="IDE\Editor\Completion\SourceBuilder\MiddleOperator.vb" />
     <Compile Include="IDE\Editor\Completion\SourceBuilder\Type.vb" />
     <Compile Include="IDE\Editor\Completion\SourceBuilder\Template.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -100,7 +102,101 @@
     <Compile Include="IDE\Editor\Completion\ControlsSource.vb" />
     <Compile Include="IDE\Editor\Completion\ControlsSourceProvider.vb" />
     <Compile Include="IDE\Editor\EditorExtension.vb" />
+    <Content Include="ItemTemplates\ClassVB\MyClassLib.vb">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Compile Include="PackageControl.vb" />
+    <Compile Include="Tools\Creators\TranslationSettings.Designer.vb">
+      <DependentUpon>TranslationSettings.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\TranslationSettings.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\LanguageSettings.Designer.vb">
+      <DependentUpon>LanguageSettings.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\LanguageSettings.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\Translation.Designer.vb">
+      <DependentUpon>Translation.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\Translation.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\Executable.Designer.vb">
+      <DependentUpon>Executable.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\Executable.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\Control.Designer.vb">
+      <DependentUpon>Control.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\Control.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlAttributes.Designer.vb">
+      <DependentUpon>ControlAttributes.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlAttributes.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\Textbox.Designer.vb">
+      <DependentUpon>Textbox.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\Textbox.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\RadioButton.Designer.vb">
+      <DependentUpon>RadioButton.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\RadioButton.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\Password.Designer.vb">
+      <DependentUpon>Password.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\Password.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\LinkButton.Designer.vb">
+      <DependentUpon>LinkButton.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\LinkButton.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\ImageButton.Designer.vb">
+      <DependentUpon>ImageButton.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\ImageButton.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\Checkbox.Designer.vb">
+      <DependentUpon>Checkbox.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\Checkbox.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\Button.Designer.vb">
+      <DependentUpon>Button.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\Button.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\TextArea.Designer.vb">
+      <DependentUpon>TextArea.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\ControlOptions\TextArea.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Tools\Creators\IntelliListbox.Designer.vb">
+      <DependentUpon>IntelliListbox.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\Creators\IntelliListbox.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Tools\DownloadProgress.Designer.vb">
       <DependentUpon>DownloadProgress.vb</DependentUpon>
     </Compile>
@@ -132,6 +228,76 @@
     <Compile Include="IDE\Editor\Highlighter\SyntaxProvider.vb" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\operator.png" />
+    <None Include="Resources\middleoperator.png" />
+    <Content Include="ItemTemplates\ClassCSharp\MyClassLib.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="ItemTemplates\ClassCSharp\MyTemplate.vstemplate">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="ItemTemplates\ClassCSharp\__TemplateIcon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="ItemTemplates\ClassVB\MyTemplate.vstemplate">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="ItemTemplates\ClassVB\__TemplateIcon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="ProjectTemplates\CSharpx64\MyTemplate.vstemplate">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\CSharpx64\XeoraExecutableCSharpx64.csproj">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\CSharpx64\__TemplateIcon.ico">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\CSharpx86\MyTemplate.vstemplate">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\CSharpx86\XeoraExecutableCSharpx86.csproj">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\CSharpx86\__TemplateIcon.ico">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\VBx64\MyTemplate.vstemplate">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\VBx64\XeoraExecutableVBx64.vbproj">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\VBx64\__TemplateIcon.ico">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\VBx86\MyTemplate.vstemplate">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\VBx86\XeoraExecutableVB.vbproj">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ProjectTemplates\VBx86\__TemplateIcon.ico">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\XeoraPackage.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -329,6 +495,51 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Template.Designer.vb</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\TranslationSettings.resx">
+      <DependentUpon>TranslationSettings.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\LanguageSettings.resx">
+      <DependentUpon>LanguageSettings.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\Translation.resx">
+      <DependentUpon>Translation.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\Executable.resx">
+      <DependentUpon>Executable.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\Control.resx">
+      <DependentUpon>Control.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\ControlAttributes.resx">
+      <DependentUpon>ControlAttributes.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\ControlOptions\Textbox.resx">
+      <DependentUpon>Textbox.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\ControlOptions\RadioButton.resx">
+      <DependentUpon>RadioButton.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\ControlOptions\Password.resx">
+      <DependentUpon>Password.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\ControlOptions\LinkButton.resx">
+      <DependentUpon>LinkButton.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\ControlOptions\ImageButton.resx">
+      <DependentUpon>ImageButton.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\ControlOptions\Checkbox.resx">
+      <DependentUpon>Checkbox.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\ControlOptions\Button.resx">
+      <DependentUpon>Button.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\ControlOptions\TextArea.resx">
+      <DependentUpon>TextArea.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Tools\Creators\IntelliListbox.resx">
+      <DependentUpon>IntelliListbox.vb</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Tools\DownloadProgress.resx">
       <DependentUpon>DownloadProgress.vb</DependentUpon>
     </EmbeddedResource>
@@ -356,7 +567,47 @@
     <Import Include="System.Collections" />
     <Import Include="System.Windows.Forms" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Service Include="{94E38DFF-614B-4CBD-B67C-F211BB35CE8B}" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="EnvDTE1">
+      <Guid>{80CC9F66-E7D8-4DDD-85B6-D9E6CD0E93E2}</Guid>
+      <VersionMajor>8</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="stdole1">
+      <Guid>{00020430-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>2</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="VSLangProj">
+      <Guid>{49A1950E-3E35-4595-8CB9-920C64C44D67}</Guid>
+      <VersionMajor>7</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="VSLangProj80">
+      <Guid>{307953C0-7973-490A-A4A7-25999E023BE8}</Guid>
+      <VersionMajor>8</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

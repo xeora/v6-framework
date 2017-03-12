@@ -129,9 +129,9 @@
             Me.Label3.Font = New System.Drawing.Font("Microsoft Sans Serif", 11.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(162, Byte))
             Me.Label3.Location = New System.Drawing.Point(11, 53)
             Me.Label3.Name = "Label3"
-            Me.Label3.Size = New System.Drawing.Size(46, 36)
+            Me.Label3.Size = New System.Drawing.Size(90, 36)
             Me.Label3.TabIndex = 3
-            Me.Label3.Text = "ID"
+            Me.Label3.Text = "Code"
             '
             'tbLanguageName
             '

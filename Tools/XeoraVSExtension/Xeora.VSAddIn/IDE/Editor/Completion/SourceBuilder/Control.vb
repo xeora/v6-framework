@@ -1,5 +1,6 @@
 ﻿Imports Microsoft.VisualStudio.Language
 Imports Microsoft.VisualStudio.Text
+Imports My.Resources
 
 Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
     Public Class Control
@@ -8,13 +9,11 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
         Private _Session As Intellisense.ICompletionSession
         Private _TextBuffer As ITextBuffer
 
-        Public Sub New(ByRef Session As Intellisense.ICompletionSession, ByRef TextBuffer As ITextBuffer)
+        Public Sub New(ByVal Directive As [Enum], ByRef Session As Intellisense.ICompletionSession, ByRef TextBuffer As ITextBuffer)
+            MyBase.New(Directive)
+
             Me._Session = Session
             Me._TextBuffer = TextBuffer
-        End Sub
-
-        Public Sub New()
-            Me.New(Nothing, Nothing)
         End Sub
 
         Public Property WorkingControlID As String
@@ -62,7 +61,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
 
         Public Overrides Function Builders() As Intellisense.Completion()
             Return New Intellisense.Completion() {
-                        New Intellisense.Completion("Create New Control", String.Empty, String.Empty, Nothing, Nothing)
+                        New Intellisense.Completion("Create New Control", "__CREATE.CONTROL__", String.Empty, Nothing, Nothing)
                     }
         End Function
 
@@ -116,12 +115,15 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                                         Image = IconResource.variableblock
                                 End Select
 
-                                Container.Add(
-                                    New Intellisense.Completion(
-                                        ControlID, String.Format("{0}:", ControlID), String.Empty,
-                                        Me.ProvideImageSource(Image), Nothing
+                                If Not OnlyButtons Then
+                                    Container.Add(
+                                        New Intellisense.Completion(
+                                            ControlID, String.Format("{0}:", ControlID), String.Empty,
+                                            Me.ProvideImageSource(Image), Nothing
+                                        )
                                     )
-                                )
+                                End If
+
                             Case Else
                                 Select Case ControlType
                                     Case Globals.ControlTypes.Textbox
@@ -162,6 +164,7 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                                             )
                                     End Select
                                 End If
+
                         End Select
                     End If
                 Loop

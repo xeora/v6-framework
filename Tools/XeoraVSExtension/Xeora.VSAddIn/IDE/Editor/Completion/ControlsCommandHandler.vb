@@ -4,15 +4,16 @@ Imports Microsoft.VisualStudio.Language.Intellisense
 Imports Microsoft.VisualStudio.OLE.Interop
 Imports Microsoft.VisualStudio.Text
 Imports Microsoft.VisualStudio.Text.Editor
+Imports Microsoft.VisualStudio.TextManager.Interop
 
 Namespace Xeora.VSAddIn.IDE.Editor.Completion
     Public Class ControlsCommandHandler
         Implements IOleCommandTarget
 
-        Private _CurrentSession As ICompletionSession
-
-        Private _Broker As ICompletionBroker
+        Private _NextCommandHandler As IOleCommandTarget
         Private _TextView As IWpfTextView
+        Private _Provider As ControlsCommandHandlerProvider
+        Private _CurrentSession As ICompletionSession
 
         Public Enum Directives
             Tag
@@ -21,47 +22,57 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
             Control
             Type
 
+            [Operator]
             Special
             Translation
             TemplateWithVariablePool
+            ServerExecutable
 
             None
         End Enum
 
-        Public Sub New(ByVal broker As ICompletionBroker, ByVal textView As IWpfTextView)
+        Public Sub New(ByVal textViewAdapter As IVsTextView, ByVal textView As IWpfTextView, ByVal provider As ControlsCommandHandlerProvider)
             Me._CurrentSession = Nothing
 
-            Me._Broker = broker
             Me._TextView = textView
+            Me._Provider = provider
 
-            ControlsCommandHandler.CurrentDirective = Directives.None
-            ControlsCommandHandler.CurrentDirectiveID = String.Empty
+            textViewAdapter.AddCommandFilter(Me, Me._NextCommandHandler)
+
+            ResetTrackingChars()
         End Sub
 
-        Public Property NextCommandHandler As IOleCommandTarget
-
-        Public Shared Property CurrentDirective As Directives
-        Public Shared Property CurrentDirectiveID As String
         Private _HandleFollowingAction As Action
+        Private _CurrentTrackingChars As Char()
 
-        Private Function StartSession(ByVal Directive As Directives) As Boolean
+        Private Sub ResetTrackingChars()
+            Me._CurrentTrackingChars = New Char() {"<"c, "$"c, ":"c, "?"c, "."c}
+        End Sub
+
+        Private Function StartSession(ByVal Directive As Directives, ByVal ParamArray Properties As Generic.KeyValuePair(Of Object, Object)()) As Boolean
             If Not Me._CurrentSession Is Nothing OrElse (Not Me._CurrentSession Is Nothing AndAlso Me._CurrentSession.IsStarted) Then Return False
 
-            Me._Broker.DismissAllSessions(Me._TextView)
+            Me._Provider.CompletionBroker.DismissAllSessions(Me._TextView)
 
             Dim snapshot As ITextSnapshot =
                 Me._TextView.Caret.Position.BufferPosition.Snapshot
 
-            ControlsCommandHandler.CurrentDirective = Directive
-
             Me._CurrentSession =
-                Me._Broker.CreateCompletionSession(
+                Me._Provider.CompletionBroker.CreateCompletionSession(
                     Me._TextView,
                     snapshot.CreateTrackingPoint(Me._TextView.Caret.Position.BufferPosition, PointTrackingMode.Positive),
                     True
                 )
             AddHandler Me._CurrentSession.Dismissed, AddressOf Me.OnSessionDismissed
             AddHandler Me._CurrentSession.Committed, AddressOf Me.OnSessionCommitted
+
+            Me._CurrentSession.Properties.AddProperty("Directive", Directive)
+
+            If Not Properties Is Nothing Then
+                For Each [Property] As Generic.KeyValuePair(Of Object, Object) In Properties
+                    Me._CurrentSession.Properties.AddProperty([Property].Key, [Property].Value)
+                Next
+            End If
 
             Me._CurrentSession.Start()
 
@@ -71,7 +82,11 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
         Private Function Complete() As Boolean
             If Me._CurrentSession Is Nothing OrElse (Not Me._CurrentSession Is Nothing AndAlso Me._CurrentSession.IsDismissed) Then Return False
 
-            Me._CurrentSession.Commit()
+            If Me._CurrentSession.SelectedCompletionSet.SelectionStatus.IsSelected Then
+                Me._CurrentSession.Commit()
+            Else
+                Return Me.Cancel()
+            End If
 
             Return True
         End Function
@@ -101,8 +116,8 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
         End Function
 
         Public Function Exec(ByRef pguidCmdGroup As Guid, ByVal nCmdID As UInteger, ByVal nCmdexecopt As UInteger, ByVal pvaIn As IntPtr, ByVal pvaOut As IntPtr) As Integer Implements IOleCommandTarget.Exec
-            If Not PackageControl.IDEControl.CheckIsXeoraCubeProject() Then Return Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-            If Not PackageControl.IDEControl.CheckIsXeoraTemplateFile() Then Return Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+            If Not PackageControl.IDEControl.CheckIsXeoraCubeProject() Then Return Me._NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+            If Not PackageControl.IDEControl.CheckIsXeoraTemplateFile() Then Return Me._NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
 
             Dim TextDocument As ITextDocument = Nothing
             If Me._TextView.TextBuffer.Properties.TryGetProperty(Of ITextDocument)(GetType(ITextDocument), TextDocument) Then
@@ -110,102 +125,108 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
                     IO.Path.GetFileName(TextDocument.FilePath)
 
                 If String.Compare(WorkingFileName, "Controls.xml", True) <> 0 Then _
-                    Return Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+                    Return Me._NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
             Else
-                Return Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+                Return Me._NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
             End If
-
-            Dim Handled As Boolean = False
-            Dim rExecResult As Integer = VSConstants.S_OK
-
-            Dim TrackingChars As Char() = New Char() {">"c, "?"c, "."c, "$"c, ":"c}
-            Dim ch As Char = Me.GetTypedChar(pvaIn)
 
             Select Case CType(nCmdID, VSConstants.VSStd2KCmdID)
                 Case VSConstants.VSStd2KCmdID.AUTOCOMPLETE, VSConstants.VSStd2KCmdID.COMPLETEWORD
-                    Me.HandleFollowingCompletion(Char.MinValue)
+                    Dim Directive As Directives
+                    Dim StatementText As String =
+                        Me.ExtractXeoraStatement(Char.MinValue, Directive)
 
-                    Handled = True
+                    If Directive <> Directives.None Then
+                        Me.HandleFollowingCompletion()
+
+                        Return VSConstants.S_OK
+                    End If
+
                 Case VSConstants.VSStd2KCmdID.RETURN, VSConstants.VSStd2KCmdID.TAB
-                    Me._HandleFollowingAction = New Action(Sub() Me.HandleFollowingCompletion(Char.MinValue))
+                    If Not Me._CurrentSession Is Nothing AndAlso
+                        Not Me._CurrentSession.IsDismissed Then
 
-                    Handled = Me.Complete()
+                        Me._HandleFollowingAction = New Action(Sub() Me.HandleFollowingCompletion())
 
-                    If Not Handled Then Me._HandleFollowingAction = Nothing
+                        If Not Me.Complete() Then Me._HandleFollowingAction = Nothing
+
+                        Return VSConstants.S_OK
+                    End If
+
                 Case CType(103, VSConstants.VSStd2KCmdID) 'VSConstants.VSStd2KCmdID.CANCEL
-                    Handled = Me.Cancel()
-                Case Else
-                    If ch <> Char.MinValue Then
-                        If Not Me._CurrentSession Is Nothing AndAlso Not Me._CurrentSession.IsDismissed Then
-                            If Array.IndexOf(TrackingChars, ch) > -1 Then
-                                Me._HandleFollowingAction = New Action(Sub() Me.HandleFollowingCompletion(CType(IIf(ch = ":"c, ch, Char.MinValue), Char)))
+                    Me.Cancel()
 
-                                Handled = Me.Complete()
+                Case VSConstants.VSStd2KCmdID.TYPECHAR
+                    Dim TypedChar As Char = Me.GetTypedChar(pvaIn)
 
-                                If Not Handled Then Me._HandleFollowingAction = Nothing
-                            ElseIf Char.IsWhiteSpace(ch) Then
-                                Me._HandleFollowingAction = New Action(Sub() Me.HandleFollowingCompletion(Char.MinValue))
+                    If Not Me._CurrentSession Is Nothing AndAlso
+                        Not Me._CurrentSession.IsDismissed Then
 
-                                Handled = Me.Complete()
+                        If TypedChar <> Char.MinValue Then
+                            If Array.IndexOf(Me._CurrentTrackingChars, TypedChar) > -1 Then
+                                Me.Cancel()
 
-                                If Not Handled Then Me._HandleFollowingAction = Nothing
+                                Me.Print(TypedChar)
+
+                                Me.HandleFollowingCompletion()
+
+                                Return VSConstants.S_OK
+                            Else
+                                Me.Filter()
                             End If
+                        End If
+                    Else
+                        If Array.IndexOf(Me._CurrentTrackingChars, TypedChar) > -1 Then
+                            Me.Print(TypedChar)
+
+                            Select Case TypedChar
+                                Case "$"c
+                                    Me.StartSession(Directives.Special)
+
+                                    Return VSConstants.S_OK
+
+                                Case "<"c
+                                    Me.StartSession(Directives.Tag)
+
+                                    Return VSConstants.S_OK
+
+                                Case Else
+                                    HandleFollowingCompletion()
+
+                                    Return VSConstants.S_OK
+
+                                    'Case Else
+                                    '    Dim StatementText As String =
+                                    '        Me.ExtractXeoraStatement(Char.MinValue)
+
+                                    '    If Not String.IsNullOrEmpty(StatementText) Then
+                                    '        Me._NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
+
+                                    '        Me.HandleFollowingCompletion()
+
+                                    '        Return VSConstants.S_OK
+                                    '    End If
+
+                            End Select
+
                         End If
                     End If
             End Select
 
-            If Not Handled Then
-                Select Case CType(nCmdID, VSConstants.VSStd2KCmdID)
-                    Case VSConstants.VSStd2KCmdID.TYPECHAR
-                        If ch <> Char.MinValue Then
-                            Select Case ch
-                                Case "<"c, "$"c
-                                    Dim edit As ITextEdit =
-                                        Me._TextView.TextBuffer.CreateEdit()
-
-                                    If Not Me._TextView.Selection.IsEmpty Then
-                                        edit.Replace(Me._TextView.Selection.SelectedSpans.Item(0), ch)
-                                    Else
-                                        edit.Insert(Me._TextView.Caret.Position.BufferPosition, ch)
-                                    End If
-                                    edit.Apply()
-
-                                    If ch = "<"c Then StartSession(Directives.Tag)
-                                    If ch = "$"c Then StartSession(Directives.Special)
-                                Case ">"c, "?"c, "."c, "$"c, ":"c
-                                    rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-
-                                    HandleFollowingCompletion(Char.MinValue)
-                                Case Else
-                                    rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-
-                                    Me.Filter()
-                            End Select
-                        End If
-                    Case VSConstants.VSStd2KCmdID.BACKSPACE
-                        rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-
-                        Me.Filter()
-                    Case Else
-                        rExecResult = Me.NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
-                End Select
-            End If
-
-            Return rExecResult
+            Return Me._NextCommandHandler.Exec(pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut)
         End Function
 
         Public Function QueryStatus(ByRef pguidCmdGroup As Guid, ByVal cCmds As UInteger, ByVal prgCmds() As OLECMD, ByVal pCmdText As IntPtr) As Integer Implements IOleCommandTarget.QueryStatus
-            If pguidCmdGroup = VSConstants.VSStd2K Then
-                Select Case CType(prgCmds(0).cmdID, VSConstants.VSStd2KCmdID)
-                    Case VSConstants.VSStd2KCmdID.AUTOCOMPLETE, VSConstants.VSStd2KCmdID.COMPLETEWORD
-                        prgCmds(0).cmdf = CType(OLECMDF.OLECMDF_ENABLED, UInteger) Or CType(OLECMDF.OLECMDF_SUPPORTED, UInteger)
-
-                        Return VSConstants.S_OK
-                End Select
-            End If
-
-            Return Me.NextCommandHandler.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText)
+            Return Me._NextCommandHandler.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText)
         End Function
+
+        Private Sub Print(ByVal text As String)
+            Dim edit As ITextEdit =
+                Me._TextView.TextBuffer.CreateEdit()
+
+            edit.Insert(Me._TextView.Caret.Position.BufferPosition, text)
+            edit.Apply()
+        End Sub
 
         Private Function ExtractXeoraStatement(ByVal SearchChar As Char, ByRef DirectiveType As Directives) As String
             DirectiveType = Directives.None
@@ -213,14 +234,11 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
             Dim PageContent As String =
                 Me._TextView.TextSnapshot.GetText()
 
-            Dim caret As ITextCaret =
-                Me._TextView.Caret
             Dim CurrentPosition As SnapshotPoint =
-                caret.Position.BufferPosition
+                Me._TextView.Caret.Position.BufferPosition
 
-            If SearchChar = Char.MinValue Then _
-                SearchChar = "$"c
-            Dim StatementText As String = String.Empty
+            If SearchChar = Char.MinValue Then SearchChar = "$"c
+
             Dim TagIndex As Integer = PageContent.LastIndexOf(SearchChar, CurrentPosition - 1)
             If TagIndex = -1 Then
                 SearchChar = "<"c
@@ -228,44 +246,41 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
             End If
 
             If TagIndex > -1 Then
-                StatementText = PageContent.Substring(TagIndex, CurrentPosition - TagIndex)
+                Dim StatementText As String =
+                    PageContent.Substring(TagIndex, CurrentPosition - TagIndex)
 
                 If SearchChar = "$"c Then
                     If StatementText.IndexOf("$"c) <> 0 OrElse
-                        (StatementText.IndexOf("$"c) = 0 AndAlso StatementText.Length = 1) Then StatementText = String.Empty
+                        (StatementText.IndexOf("$"c) = 0 AndAlso StatementText.Length = 1) Then Return String.Empty
                 End If
 
                 If Not String.IsNullOrEmpty(StatementText) Then
-                    ' Control if Statement has whitespace!
+                    If StatementText.Contains(Environment.NewLine) Then Return String.Empty
+
                     For cC As Integer = 0 To StatementText.Length - 1
-                        If Char.IsWhiteSpace(StatementText.Chars(cC)) Then
-                            Return String.Empty
-                        End If
+                        If Char.IsWhiteSpace(StatementText.Chars(cC)) Then Return String.Empty
                     Next
 
                     If SearchChar = "$"c Then
                         If SearchChar = Char.MinValue Then _
                             SearchChar = StatementText.Chars(StatementText.Length - 1)
 
-                        'Dim MainPattern As New Xeora.Web.RegularExpressions.MainCapturePattern()
-
-                        'Dim StatementMatch As System.Text.RegularExpressions.Match =
-                        '    MainPattern.Match(PageContent, TagIndex)
-
-                        'If StatementMatch.Success AndAlso StatementMatch.Index = 0 Then
-                        'StatementText = StatementMatch.Value
-
                         Dim ColonIndex As Integer = StatementText.IndexOf(":"c)
 
-                            If ColonIndex > -1 Then
-                                Select Case StatementText.Substring(1, ColonIndex - 1)
-                                    Case "P"
-                                        DirectiveType = Directives.TemplateWithVariablePool
-                                    Case "L"
-                                        DirectiveType = Directives.Translation
-                                End Select
-                            End If
-                        'End If
+                        If ColonIndex > -1 Then
+                            Select Case StatementText.Substring(1, ColonIndex - 1)
+                                Case "P"
+                                    DirectiveType = Directives.TemplateWithVariablePool
+                                Case "L"
+                                    DirectiveType = Directives.Translation
+                                Case "F"
+                                    DirectiveType = Directives.ServerExecutable
+                            End Select
+                        Else
+                            ' "^", "~", "-", "+", "=", "#", "*"
+                            If StatementText.IndexOf("_VariableName_") > -1 Then _
+                                DirectiveType = Directives.Operator
+                        End If
                     Else
                         Dim Patterns As String() = New String() {"\<Bind\>", "\<DefaultButtonID\>", "\<Type\>"}
                         For p As Integer = 0 To Patterns.Length - 1
@@ -290,60 +305,75 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
                             End If
                         Next
                     End If
+
+                    Return StatementText
                 End If
             End If
 
-            Return StatementText
+            Return String.Empty
         End Function
 
-        Private Sub HandleFollowingCompletion(ByVal SearchChar As Char)
+        Private Sub HandleFollowingCompletion()
             Me._HandleFollowingAction = Nothing
 
             Dim Directive As Directives
             Dim StatementText As String =
-                Me.ExtractXeoraStatement(SearchChar, Directive)
+                Me.ExtractXeoraStatement(Char.MinValue, Directive)
 
             Select Case Directive
                 Case Directives.Bind
-                    ControlsCommandHandler.CurrentDirectiveID = StatementText
+                    Me._CurrentTrackingChars = New Char() {"?"c, "."c}
+                    Me.StartSession(Directives.Bind, New Generic.KeyValuePair(Of Object, Object)("Executable_CurrentStatement", StatementText))
 
-                    Me.StartSession(Directives.Bind)
                 Case Directives.Control
                     If String.IsNullOrEmpty(StatementText) Then _
                         Me.StartSession(Directives.Control)
+
                 Case Directives.Type
                     If String.IsNullOrEmpty(StatementText) Then _
                         Me.StartSession(Directives.Type)
 
-                    ' Xeora Tag Requests
+                Case Directives.Operator
+                    Me.Print("$")
+
+                    ' _VariableName_ = 14
+                    Me._TextView.Caret.MoveTo(Me._TextView.Caret.Position.BufferPosition - 15)
+                    Me._TextView.Selection.Select(New SnapshotSpan(Me._TextView.Caret.Position.BufferPosition, 14), False)
+
                 Case Directives.Special
                     Dim TestStatementText As String =
                         Me.ExtractXeoraStatement("<"c, Directive)
 
                     If Directive = Directives.None Then _
                         Me.StartSession(Directives.Special)
+
                 Case Directives.TemplateWithVariablePool
                     Dim TestStatementText As String =
                         Me.ExtractXeoraStatement("<"c, Directive)
 
                     If Directive = Directives.None Then _
                         Me.StartSession(Directives.TemplateWithVariablePool)
+
                 Case Directives.Translation
                     Dim TestStatementText As String =
                         Me.ExtractXeoraStatement("<"c, Directive)
 
                     If Directive = Directives.None Then _
                         Me.StartSession(Directives.Translation)
-                Case Else
-                    ControlsCommandHandler.CurrentDirective = Directives.None
-                    ControlsCommandHandler.CurrentDirectiveID = String.Empty
+
+                Case Directives.ServerExecutable
+                    StatementText = StatementText.Substring(StatementText.IndexOf(":"c) + 1)
+
+                    Me._CurrentTrackingChars = New Char() {"$"c, "?"c, "."c}
+                    Me.StartSession(Directives.ServerExecutable, New Generic.KeyValuePair(Of Object, Object)("Executable_CurrentStatement", StatementText))
+
             End Select
         End Sub
 
         Private Sub OnSessionCommitted(sender As Object, e As EventArgs)
             RemoveHandler Me._CurrentSession.Committed, AddressOf OnSessionCommitted
 
-            If ControlsCommandHandler.CurrentDirective = Directives.Tag Then
+            If Me._CurrentSession.Properties.GetProperty(Of Directives)("Directive") = Directives.Tag Then
                 Dim PageContent As String =
                     Me._TextView.TextSnapshot.GetText()
                 Dim CurrentPosition As SnapshotPoint =
@@ -367,10 +397,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
 
             Me._CurrentSession = Nothing
 
-            If Not Me._HandleFollowingAction Is Nothing Then Me._HandleFollowingAction.Invoke()
+            ResetTrackingChars()
 
-            ControlsCommandHandler.CurrentDirective = Directives.None
-            ControlsCommandHandler.CurrentDirectiveID = String.Empty
+            If Not Me._HandleFollowingAction Is Nothing Then Me._HandleFollowingAction.Invoke()
         End Sub
     End Class
 End Namespace

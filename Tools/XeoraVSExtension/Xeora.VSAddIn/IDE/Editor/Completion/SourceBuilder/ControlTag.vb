@@ -1,5 +1,6 @@
 ﻿Imports Microsoft.VisualStudio.Language
 Imports Microsoft.VisualStudio.Text
+Imports My.Resources
 
 Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
     Public Class ControlTag
@@ -10,7 +11,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
 
         Public Property RequestFromControl As Boolean
 
-        Public Sub New(ByRef Session As Intellisense.ICompletionSession, ByRef TextBuffer As ITextBuffer)
+        Public Sub New(ByVal Directive As [Enum], ByRef Session As Intellisense.ICompletionSession, ByRef TextBuffer As ITextBuffer)
+            MyBase.New(Directive)
+
             Me._Session = Session
             Me._TextBuffer = TextBuffer
         End Sub
@@ -69,7 +72,10 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
             If StartIndex > -1 AndAlso EndIndex > -1 AndAlso StartIndex < EndIndex Then
                 Dim ControlContent As String =
                     PageContentText.Substring(StartIndex, (EndIndex + "</Control>".Length) - StartIndex)
-                ControlContent = ControlContent.Remove(CurrentPosition - StartIndex - 1, 1)
+
+                Dim Start As Integer = CurrentPosition - StartIndex - 1
+                Dim CustomID As String = String.Format("_{0}", Guid.NewGuid().ToString().Replace("-"c, String.Empty))
+                ControlContent = ControlContent.Remove(Start, 1).Insert(Start, String.Format("<{0} />", CustomID))
 
                 Dim XmlReader As Xml.XmlReader =
                     Xml.XmlReader.Create(New IO.StringReader(ControlContent))
@@ -78,12 +84,19 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                     Globals.ControlTypes.Unknown
                 Dim UsedTags As New Generic.List(Of String)
 
+                Dim ParentTagName As String = String.Empty
+                Dim TagStack As New Generic.Stack(Of String)
+
                 Dim Depth As Integer = 0
                 Do While XmlReader.Read()
                     Select Case XmlReader.NodeType
                         Case Xml.XmlNodeType.Element
+                            If String.Compare(XmlReader.Name, CustomID) = 0 Then ParentTagName = TagStack.Peek()
+                            TagStack.Push(XmlReader.Name)
+
                             If Depth = 1 Then
-                                UsedTags.Add(XmlReader.Name)
+                                If String.Compare(XmlReader.Name, CustomID) <> 0 Then _
+                                    UsedTags.Add(XmlReader.Name)
 
                                 Select Case XmlReader.Name
                                     Case "Type"
@@ -92,8 +105,12 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                             End If
 
                             Depth += 1
+
                         Case Xml.XmlNodeType.EndElement
+                            TagStack.Pop()
+
                             Depth -= 1
+
                     End Select
                 Loop
 
@@ -102,52 +119,44 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                 rAvailableTags.Add("Type")
 
                 If ControlType <> Globals.ControlTypes.Unknown Then
-                    Dim Image As Drawing.Bitmap = Nothing
+                    If String.Compare(ParentTagName, "Control") = 0 Then
+                        rAvailableTags.Add("Bind")
 
-                    rAvailableTags.Add("Bind")
+                        Select Case ControlType
+                            Case Globals.ControlTypes.Textbox,
+                                 Globals.ControlTypes.Password
 
-                    Select Case ControlType
-                        Case Globals.ControlTypes.Textbox
-                            rAvailableTags.Add("DefaultButtonID")
-                            rAvailableTags.Add("Text")
-                            rAvailableTags.Add("BlockIDsToUpdate")
-                            rAvailableTags.Add("Attributes")
-                        Case Globals.ControlTypes.Password
-                            rAvailableTags.Add("DefaultButtonID")
-                            rAvailableTags.Add("Text")
-                            rAvailableTags.Add("BlockIDsToUpdate")
-                            rAvailableTags.Add("Attributes")
-                        Case Globals.ControlTypes.Checkbox
-                            rAvailableTags.Add("Text")
-                            rAvailableTags.Add("BlockIDsToUpdate")
-                            rAvailableTags.Add("Attributes")
-                        Case Globals.ControlTypes.Button
-                            rAvailableTags.Add("Text")
-                            rAvailableTags.Add("BlockIDsToUpdate")
-                            rAvailableTags.Add("Attributes")
-                        Case Globals.ControlTypes.RadioButton
-                            rAvailableTags.Add("Text")
-                            rAvailableTags.Add("BlockIDsToUpdate")
-                            rAvailableTags.Add("Attributes")
-                        Case Globals.ControlTypes.Textarea
-                            rAvailableTags.Add("Content")
-                            rAvailableTags.Add("Attributes")
-                        Case Globals.ControlTypes.ImageButton
-                            rAvailableTags.Add("Source")
-                            rAvailableTags.Add("BlockIDsToUpdate")
-                            rAvailableTags.Add("Attributes")
-                        Case Globals.ControlTypes.LinkButton
-                            rAvailableTags.Add("Text")
-                            rAvailableTags.Add("Url")
-                            rAvailableTags.Add("BlockIDsToUpdate")
-                            rAvailableTags.Add("Attributes")
-                        Case Globals.ControlTypes.DataList
-                            rAvailableTags.Add("Attributes")
-                        Case Globals.ControlTypes.ConditionalStatement
-                            rAvailableTags.Add("Attributes")
-                        Case Globals.ControlTypes.VariableBlock
-                            rAvailableTags.Add("Attributes")
-                    End Select
+                                rAvailableTags.Add("DefaultButtonID")
+                                rAvailableTags.Add("Text")
+                                rAvailableTags.Add("BlockIDsToUpdate")
+
+                            Case Globals.ControlTypes.Checkbox,
+                                 Globals.ControlTypes.Button,
+                                 Globals.ControlTypes.RadioButton
+
+                                rAvailableTags.Add("Text")
+                                rAvailableTags.Add("BlockIDsToUpdate")
+
+                            Case Globals.ControlTypes.Textarea
+                                rAvailableTags.Add("Content")
+
+                            Case Globals.ControlTypes.ImageButton
+                                rAvailableTags.Add("Source")
+                                rAvailableTags.Add("BlockIDsToUpdate")
+
+                            Case Globals.ControlTypes.LinkButton
+                                rAvailableTags.Add("Text")
+                                rAvailableTags.Add("Url")
+                                rAvailableTags.Add("BlockIDsToUpdate")
+
+                        End Select
+
+                        rAvailableTags.Add("Attributes")
+                    ElseIf String.Compare(ParentTagName, "Attributes") = 0 OrElse
+                            String.Compare(ParentTagName, "BlockIDsToUpdate") = 0 Then
+
+                        rAvailableTags.Add("Item")
+                    End If
 
                     For Each UsedTag As String In UsedTags
                         If rAvailableTags.IndexOf(UsedTag) > -1 Then _

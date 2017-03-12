@@ -429,9 +429,9 @@ Namespace Xeora.Web.Site
                                             Dim AttributesCol As New Controller.Directive.Control.AttributeInfo.AttributeInfoCollection()
                                             Do
                                                 AttributesCol.Add(
-                                                ChildReader.GetAttribute("key", ChildReader.BaseURI).ToLower(),
-                                                ChildReader.Value
-                                            )
+                                                    ChildReader.GetAttribute("key", ChildReader.BaseURI).ToLower(),
+                                                    ChildReader.Value
+                                                )
                                             Loop While ChildReader.MoveToNext()
                                             ResultDictionary.Add("attributes", AttributesCol)
                                         End If

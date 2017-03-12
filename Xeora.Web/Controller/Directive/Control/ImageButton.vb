@@ -5,13 +5,18 @@ Namespace Xeora.Web.Controller.Directive.Control
     Public Class ImageButton
         Inherits ControlBase
         Implements IHasSource
+        Implements IUpdateBlocks
 
         Private _Source As String
+        Private _BlockIDsToUpdate As Generic.List(Of String)
+        Private _UpdateLocalBlock As Boolean
 
         Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, ContentArguments)
 
             Me._Source = String.Empty
+            Me._BlockIDsToUpdate = New Generic.List(Of String)
+            Me._UpdateLocalBlock = True
         End Sub
 
         Public Property Source() As String Implements IHasSource.Source
@@ -24,12 +29,29 @@ Namespace Xeora.Web.Controller.Directive.Control
             End Set
         End Property
 
+        Public Property UpdateLocalBlock() As Boolean Implements IUpdateBlocks.UpdateLocalBlock
+            Get
+                Return Me._UpdateLocalBlock
+            End Get
+            Set(ByVal Value As Boolean)
+                Me._UpdateLocalBlock = Value
+            End Set
+        End Property
+
+        Public ReadOnly Property BlockIDsToUpdate() As Generic.List(Of String) Implements IUpdateBlocks.BlockIDsToUpdate
+            Get
+                Return Me._BlockIDsToUpdate
+            End Get
+        End Property
+
         Public Overrides Sub Clone(ByRef Control As IControl)
             Control = New ImageButton(Me.DraftStartIndex, Me.DraftValue, Me.ContentArguments)
             MyBase.Clone(Control)
 
             With CType(Control, ImageButton)
                 ._Source = Me._Source
+                ._BlockIDsToUpdate.AddRange(Me._BlockIDsToUpdate.ToArray())
+                ._UpdateLocalBlock = Me._UpdateLocalBlock
             End With
         End Sub
 

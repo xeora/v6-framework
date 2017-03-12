@@ -1,13 +1,24 @@
 ﻿Imports Microsoft.VisualStudio.Language
+Imports My.Resources
 
 Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
     Public Class [Class]
         Inherits BuilderBase
 
         Private _SelectionExists As Boolean = False
+        Private _IsClientExecutable As Boolean
 
         Public Property WorkingExecutableInfo As String
-        Public Property IsClientExecutable As Boolean
+
+        Public Sub New(ByVal Directive As [Enum])
+            MyBase.New(Directive)
+
+            If TypeOf Directive Is TemplateCommandHandler.Directives Then
+                Me._IsClientExecutable = (CType(Directive, TemplateCommandHandler.Directives) = TemplateCommandHandler.Directives.ClientExecutable)
+            Else
+                Me._IsClientExecutable = (CType(Directive, ControlsCommandHandler.Directives) = ControlsCommandHandler.Directives.Bind)
+            End If
+        End Sub
 
         Public Overrides Function Build() As Intellisense.Completion()
             Dim CompList As New Generic.List(Of Intellisense.Completion)()
@@ -26,8 +37,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
             If ExecutableInfo_s.Length > 1 AndAlso Not Me._SelectionExists Then _
                 Return Nothing
 
+            ' TODO: Class/Method Creation Form
             Return New Intellisense.Completion() {
-                    New Intellisense.Completion("Create New Class/Method", String.Empty, String.Empty, Nothing, Nothing)
+                    New Intellisense.Completion("Create New Class/Method", "__CREATE.CLASS__", String.Empty, Nothing, Nothing)
                 }
         End Function
 
@@ -95,11 +107,11 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                             For Each mI As VSAddIn.Executable.Cache.CacheInfo.ClassInfo.MethodInfo In WorkingClassInfo.Methods
                                 If mI.Params.Length > 0 Then
                                     Container.Add(
-                                        New Intellisense.Completion(mI.ID, String.Format("{0},{1}{2}", mI.ID, String.Join("|", mI.Params), IIf(Me.IsClientExecutable, String.Empty, "$")), String.Empty, Me.ProvideImageSource(IconResource.methodPublic), Nothing)
+                                        New Intellisense.Completion(mI.ID, String.Format("{0},{1}{2}", mI.ID, String.Join("|", mI.Params), IIf(Me._IsClientExecutable, String.Empty, "$")), String.Empty, Me.ProvideImageSource(IconResource.methodPublic), Nothing)
                                     )
                                 Else
                                     Container.Add(
-                                        New Intellisense.Completion(mI.ID, String.Format("{0}{1}", mI.ID, IIf(Me.IsClientExecutable, String.Empty, "$")), String.Empty, Me.ProvideImageSource(IconResource.methodPublic), Nothing)
+                                        New Intellisense.Completion(mI.ID, String.Format("{0}{1}", mI.ID, IIf(Me._IsClientExecutable, String.Empty, "$")), String.Empty, Me.ProvideImageSource(IconResource.methodPublic), Nothing)
                                     )
                                 End If
                             Next
@@ -121,11 +133,11 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
                         For Each item As Object() In ExecutableLoaderHelper.ExecutableLoader.GetAssemblyClassFunctions(QueryDll, ClassIDs)
                             If CType(item(1), String()).Length > 0 Then
                                 Container.Add(
-                                    New Intellisense.Completion(CType(item(0), String), String.Format("{0},{1}{2}", CType(item(0), String), String.Join("|", CType(item(1), String())), IIf(Me.IsClientExecutable, String.Empty, "$")), String.Empty, Me.ProvideImageSource(IconResource.methodPublic), Nothing)
+                                    New Intellisense.Completion(CType(item(0), String), String.Format("{0},{1}{2}", CType(item(0), String), String.Join("|", CType(item(1), String())), IIf(Me._IsClientExecutable, String.Empty, "$")), String.Empty, Me.ProvideImageSource(IconResource.methodPublic), Nothing)
                                 )
                             Else
                                 Container.Add(
-                                    New Intellisense.Completion(CType(item(0), String), String.Format("{0}{1}", CType(item(0), String), IIf(Me.IsClientExecutable, String.Empty, "$")), String.Empty, Me.ProvideImageSource(IconResource.methodPublic), Nothing)
+                                    New Intellisense.Completion(CType(item(0), String), String.Format("{0}{1}", CType(item(0), String), IIf(Me._IsClientExecutable, String.Empty, "$")), String.Empty, Me.ProvideImageSource(IconResource.methodPublic), Nothing)
                                 )
                             End If
 

@@ -25,18 +25,10 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion
 
         Public Sub VsTextViewCreated(ByVal textViewAdapter As IVsTextView) Implements IVsTextViewCreationListener.VsTextViewCreated
             Dim textView As IWpfTextView = AdapterService.GetWpfTextView(textViewAdapter)
-            If textView Is Nothing Then Exit Sub
+            If textView Is Nothing Then Return
 
-            Dim filter As ControlsCommandHandler =
-                New ControlsCommandHandler(CompletionBroker, textView)
-
-            Dim NextCommandHandler As IOleCommandTarget = Nothing
-            textViewAdapter.AddCommandFilter(filter, NextCommandHandler)
-            filter.NextCommandHandler = NextCommandHandler
-
-            Dim createCommandHandler As Func(Of ControlsCommandHandler) =
-                Function() filter
-            textView.Properties.GetOrCreateSingletonProperty(createCommandHandler)
+            textView.Properties.GetOrCreateSingletonProperty(Of ControlsCommandHandler)(
+                Function() New ControlsCommandHandler(textViewAdapter, textView, Me))
         End Sub
     End Class
 End Namespace

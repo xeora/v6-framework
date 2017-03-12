@@ -144,6 +144,7 @@
     <Compile Include="Controller\Directive\Control\Interface\IHasSource.vb" />
     <Compile Include="Controller\Directive\Control\Interface\IHasText.vb" />
     <Compile Include="Controller\Directive\Control\Interface\IHasURL.vb" />
+    <Compile Include="Controller\Directive\Interface\IUpdateBlocks.vb" />
     <Compile Include="Controller\Directive\Interface\IInstanceRequires.vb" />
     <Compile Include="Controller\Directive\MessageBlock.vb" />
     <Compile Include="Controller\Directive\InLineStatement.vb" />

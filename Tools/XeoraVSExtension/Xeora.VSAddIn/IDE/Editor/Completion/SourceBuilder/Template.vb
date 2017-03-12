@@ -7,7 +7,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
         Private _Component As System.ComponentModel.Container
         Private _ImageSet As ImageList
 
-        Public Sub New()
+        Public Sub New(ByVal Directive As [Enum])
+            MyBase.New(Directive)
+
             Me._Component = New System.ComponentModel.Container()
 
             Dim resources As System.ComponentModel.ComponentResourceManager =
@@ -68,8 +70,9 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
         End Function
 
         Public Overrides Function Builders() As Intellisense.Completion()
+            ' TODO: Template Creation Form
             Return New Intellisense.Completion() {
-                    New Intellisense.Completion("Create New Template", String.Empty, String.Empty, Nothing, Nothing)
+                    New Intellisense.Completion("Create New Template", "__CREATE.TEMPLATE__", String.Empty, Nothing, Nothing)
                 }
         End Function
 

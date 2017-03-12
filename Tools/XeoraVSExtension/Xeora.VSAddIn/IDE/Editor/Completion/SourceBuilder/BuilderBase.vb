@@ -5,6 +5,12 @@ Namespace Xeora.VSAddIn.IDE.Editor.Completion.SourceBuilder
         Public MustOverride Function Build() As Intellisense.Completion()
         Public MustOverride Function Builders() As Intellisense.Completion()
 
+        Public ReadOnly Property RequestingDirective As [Enum]
+
+        Protected Sub New(ByVal Directive As [Enum])
+            RequestingDirective = Directive
+        End Sub
+
         Protected Function LocateTemplatesPath(ByVal ActivePath As String) As String
             Dim CheckDI As New IO.DirectoryInfo(ActivePath)
 
