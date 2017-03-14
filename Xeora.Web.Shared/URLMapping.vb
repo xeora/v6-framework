@@ -2,21 +2,17 @@
 
 Namespace Xeora.Web.Shared
     Public Class URLMapping
-        Private Shared _Instance As URLMapping = Nothing
-        Public Shared InstanceLock As Object = New Object()
+        Private Shared _URLMappings As New Concurrent.ConcurrentDictionary(Of String(), URLMapping)
 
         Private _IsActive As Boolean
         Private _ResolverBindInfo As Execution.BindInfo
         Private _Items As URLMappingItem.URLMappingItemCollection
 
-        Public Sub New()
-            Me._IsActive = False
-            Me._ResolverBindInfo = Nothing
-            Me._Items = New URLMappingItem.URLMappingItemCollection
-
-            SyncLock URLMapping.InstanceLock
-                URLMapping._Instance = Me
-            End SyncLock
+        Private Sub New(ByVal IsActive As Boolean, ByVal ResolverExecutable As String, ByVal MapItems As URLMappingItem())
+            Me._IsActive = IsActive
+            Me._ResolverBindInfo = Execution.BindInfo.Make(ResolverExecutable)
+            Me._Items = New URLMappingItem.URLMappingItemCollection()
+            Me._Items.AddRange(MapItems)
         End Sub
 
         Public Property IsActive() As Boolean
@@ -45,7 +41,24 @@ Namespace Xeora.Web.Shared
 
         Public Shared ReadOnly Property Current As URLMapping
             Get
-                Return URLMapping._Instance
+                If Not URLMapping._URLMappings.ContainsKey(Helpers.CurrentDomainIDAccessTree) Then
+                    Dim DomainInstance As IDomain =
+                        Helpers.CreateDomainInstance()
+
+                    Dim URLMappingInstance As URLMapping =
+                        New URLMapping(
+                            DomainInstance.Settings.URLMappings.IsActive,
+                            DomainInstance.Settings.URLMappings.ResolverExecutable,
+                            DomainInstance.Settings.URLMappings.Items.ToArray())
+
+                    URLMapping._URLMappings.TryAdd(DomainInstance.IDAccessTree, URLMappingInstance)
+                End If
+
+                Dim rURLMappingInstance As URLMapping = Nothing
+
+                URLMapping._URLMappings.TryGetValue(Helpers.CurrentDomainIDAccessTree, rURLMappingInstance)
+
+                Return rURLMappingInstance
             End Get
         End Property
 
@@ -53,36 +66,38 @@ Namespace Xeora.Web.Shared
             Dim rResolvedMapped As ResolvedMapped = Nothing
 
             If Me._IsActive Then
-                Dim rqMatch As Text.RegularExpressions.Match = Nothing
-                For Each mItem As URLMappingItem In Me._Items
-                    rqMatch = Text.RegularExpressions.Regex.Match(RequestFilePath, mItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
+                Dim DomainAsm As Reflection.Assembly, objDomain As Type
 
-                    If rqMatch.Success Then
-                        rResolvedMapped = New ResolvedMapped(True, mItem.ResolveInfo.ServicePathInfo)
+                DomainAsm = Reflection.Assembly.Load("Xeora.Web")
+                objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
 
-                        Dim medItemValue As String
-                        For Each medItem As ResolveInfos.MappedItem In mItem.ResolveInfo.MappedItems
-                            medItemValue = String.Empty
+                Dim workingDomainControl As IDomainControl =
+                    CType(objDomain.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
 
-                            If Not String.IsNullOrEmpty(medItem.ID) Then medItemValue = rqMatch.Groups.Item(medItem.ID).Value
+                rResolvedMapped = workingDomainControl.QueryURLResolver(RequestFilePath)
 
-                            rResolvedMapped.URLQueryDictionary.Item(medItem.QueryStringKey) =
-                                CType(IIf(String.IsNullOrEmpty(medItemValue), medItem.DefaultValue, medItemValue), String)
-                        Next
+                If rResolvedMapped Is Nothing OrElse Not rResolvedMapped.IsResolved Then
+                    For Each URLMapItem As URLMappingItem In Me._Items
+                        Dim rqMatch As Text.RegularExpressions.Match =
+                            Text.RegularExpressions.Regex.Match(RequestFilePath, URLMapItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
 
-                        Exit For
-                    Else
-                        Dim DomainAsm As Reflection.Assembly, objDomain As Type
+                        If rqMatch.Success Then
+                            rResolvedMapped = New ResolvedMapped(True, URLMapItem.ResolveInfo.ServicePathInfo)
 
-                        DomainAsm = Reflection.Assembly.Load("Xeora.Web")
-                        objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
+                            Dim medItemValue As String
+                            For Each medItem As ResolveInfos.MappedItem In URLMapItem.ResolveInfo.MappedItems
+                                medItemValue = String.Empty
 
-                        Dim workingDomainControl As IDomainControl =
-                            CType(objDomain.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
+                                If Not String.IsNullOrEmpty(medItem.ID) Then medItemValue = rqMatch.Groups.Item(medItem.ID).Value
 
-                        rResolvedMapped = workingDomainControl.QueryURLResolver(RequestFilePath)
-                    End If
-                Next
+                                rResolvedMapped.URLQueryDictionary.Item(medItem.QueryStringKey) =
+                                    CType(IIf(String.IsNullOrEmpty(medItemValue), medItem.DefaultValue, medItemValue), String)
+                            Next
+
+                            Exit For
+                        End If
+                    Next
+                End If
 
                 If rResolvedMapped Is Nothing Then _
                     rResolvedMapped = New ResolvedMapped(False, Nothing)

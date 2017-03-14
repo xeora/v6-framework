@@ -84,7 +84,13 @@ Namespace Xeora.Web.Configuration
         <ConfigurationProperty("loggingPath")>
         Public ReadOnly Property LoggingPath As String
             Get
-                Return CType(MyBase.Item("loggingPath"), String)
+                Dim ReturnValue As String = CType(MyBase.Item("loggingPath"), String)
+
+                If String.IsNullOrEmpty(ReturnValue) Then
+                    Return IO.Path.Combine(PhysicalRoot, "XeoraLogs")
+                Else
+                    Return ReturnValue
+                End If
             End Get
         End Property
     End Class

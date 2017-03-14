@@ -11,6 +11,7 @@ Namespace Xeora.Web.Site
 
         Private _ServicePathInfo As [Shared].ServicePathInfo
         Private _ServiceType As [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes
+        Private _AuthenticationKeys As String()
         Private _IsAuthenticationRequired As Boolean
         Private _IsWorkingAsStandAlone As Boolean
 
@@ -18,10 +19,9 @@ Namespace Xeora.Web.Site
         Private _ExecuteIn As String
         Private _ServiceResult As String
 
-        Public Sub New(ByVal RequestID As String, ByVal DomainIDAccessTree As String(), ByVal LanguageID As String, ByVal OverrideCurrentDomainLanguageID As Boolean)
+        Public Sub New(ByVal RequestID As String, ByVal URL As [Shared].URL, ByVal OverrideCurrentDomainLanguageID As Boolean)
             Me._RequestID = RequestID
-
-            Me._Domain = New Domain(DomainIDAccessTree, LanguageID)
+            Me._Domain = Nothing
 
             Me._ServicePathInfo = Nothing
             Me._MimeType = String.Empty
@@ -30,11 +30,6 @@ Namespace Xeora.Web.Site
             Me._IsWorkingAsStandAlone = False
 
             Me._ServiceResult = String.Empty
-
-            [Shared].Globals.PageCaching.DefaultType = Me._Domain.Settings.Configurations.DefaultCaching
-            [Shared].Helpers.CurrentDomainIDAccessTree = Me._Domain.IDAccessTree
-            If OverrideCurrentDomainLanguageID Then _
-                [Shared].Helpers.CurrentDomainLanguageID = Me._Domain.Language.ID
 
             If DomainControl._ReferenceTable Is Nothing Then _
                 DomainControl._ReferenceTable = Hashtable.Synchronized(New Hashtable())
@@ -45,6 +40,15 @@ Namespace Xeora.Web.Site
             Finally
                 Threading.Monitor.Exit(DomainControl._ReferenceTable.SyncRoot)
             End Try
+
+            Me.SelectDomain(URL)
+
+            If Not Me._Domain Is Nothing Then
+                [Shared].Globals.PageCaching.DefaultType = Me._Domain.Settings.Configurations.DefaultCaching
+                [Shared].Helpers.CurrentDomainIDAccessTree = Me._Domain.IDAccessTree
+                If OverrideCurrentDomainLanguageID Then _
+                    [Shared].Helpers.CurrentDomainLanguageID = Me._Domain.Language.ID
+            End If
         End Sub
 
         Public Shared ReadOnly Property Instance(ByVal RequestID As String) As [Shared].IDomainControl
@@ -63,6 +67,10 @@ Namespace Xeora.Web.Site
             End Get
         End Property
 
+        Public Sub OverrideDomain(ByVal DomainIDAccessTree As String(), ByVal LanguageID As String)
+            Me._Domain = New Domain(DomainIDAccessTree, LanguageID)
+        End Sub
+
         Public ReadOnly Property XeoraJSVersion() As String
             Get
                 Return My.Settings.ScriptVersion
@@ -77,15 +85,10 @@ Namespace Xeora.Web.Site
                                 String.Format("_sps_v{0}.js", Me.XeoraJSVersion))
         End Sub
 
-        Public Property ServicePathInfo() As [Shared].ServicePathInfo
+        Public ReadOnly Property ServicePathInfo() As [Shared].ServicePathInfo
             Get
                 Return Me._ServicePathInfo
             End Get
-            Set(ByVal Value As [Shared].ServicePathInfo)
-                Me._ServicePathInfo = Value
-
-                Me.PrepareServiceSettings()
-            End Set
         End Property
 
         Public ReadOnly Property ServiceType() As [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes
@@ -124,63 +127,6 @@ Namespace Xeora.Web.Site
             End Get
         End Property
 
-        Public ReadOnly Property URLMapping() As [Shared].URLMapping
-            Get
-                Dim rURLMapping As New [Shared].URLMapping
-
-                rURLMapping.IsActive = Me._Domain.Settings.URLMappings.IsActive
-                rURLMapping.Items.AddRange(Me._Domain.Settings.URLMappings.Items)
-
-                For Each ChildDI As [Shared].DomainInfo In Me._Domain.Children
-                    Dim ChildDomainIDAccessTree As String() =
-                        New String(Me._Domain.IDAccessTree.Length) {}
-                    Array.Copy(Me._Domain.IDAccessTree, 0, ChildDomainIDAccessTree, 0, Me._Domain.IDAccessTree.Length)
-                    ChildDomainIDAccessTree(ChildDomainIDAccessTree.Length - 1) = ChildDI.ID
-
-                    Dim WorkingInstance As [Shared].IDomain =
-                        New Domain(ChildDomainIDAccessTree, Me._Domain.Language.ID)
-
-                    rURLMapping.IsActive = rURLMapping.IsActive Or WorkingInstance.Settings.URLMappings.IsActive
-
-                    If WorkingInstance.Settings.URLMappings.IsActive Then
-                        For Each mItem As [Shared].URLMapping.URLMappingItem In WorkingInstance.Settings.URLMappings.Items
-                            Dim sItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                                WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                    [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                                    mItem.ResolveInfo.ServicePathInfo.FullPath
-                                )
-
-                            If sItem Is Nothing Then
-                                rURLMapping.Items.Add(mItem)
-                            Else
-                                If sItem.Overridable Then
-                                    For mIC_r As Integer = 0 To rURLMapping.Items.Count - 1
-                                        If String.Compare(rURLMapping.Items.Item(mIC_r).ResolveInfo.ServicePathInfo.FullPath, mItem.ResolveInfo.ServicePathInfo.FullPath, True) = 0 Then
-                                            rURLMapping.Items.RemoveAt(mIC_r)
-
-                                            Exit For
-                                        End If
-                                    Next
-
-                                    rURLMapping.Items.Add(mItem)
-                                End If
-                            End If
-                        Next
-                    End If
-
-                    WorkingInstance.Dispose()
-                Next
-
-                If rURLMapping.IsActive Then
-                    If rURLMapping.Items.Count = 0 Then rURLMapping.IsActive = False
-                Else
-                    rURLMapping.Items.Clear()
-                End If
-
-                Return rURLMapping
-            End Get
-        End Property
-
         Public Sub RenderService(ByVal MessageResult As [Shared].ControlResult.Message, ByVal UpdateBlockControlID As String)
             If Me._ServicePathInfo Is Nothing Then
                 Dim SystemMessage As String = Me._Domain.Language.Get("TEMPLATE_IDMUSTBESET")
@@ -201,37 +147,13 @@ Namespace Xeora.Web.Site
                         If Not PostedExecuteParameters.PublicKey Is Nothing Then
                             Me._IsAuthenticationRequired = False
 
-                            Dim WorkingInstance As [Shared].IDomain = Me._Domain
+                            For Each AuthKey As String In Me._AuthenticationKeys
+                                If Me._Domain.xService.ReadSessionVariable(PostedExecuteParameters.PublicKey, AuthKey) Is Nothing Then
+                                    Me._IsAuthenticationRequired = True
 
-                            Dim ServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem = Nothing
-                            Do
-                                ServiceItem =
-                                    WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService,
-                                        Me._ServicePathInfo.FullPath
-                                    )
-
-                                If ServiceItem Is Nothing Then WorkingInstance = WorkingInstance.Parent
-                            Loop Until WorkingInstance Is Nothing OrElse Not ServiceItem Is Nothing
-
-                            If Not ServiceItem Is Nothing Then
-                                If ServiceItem.Authentication AndAlso
-                                    ServiceItem.AuthenticationKeys.Length = 0 Then
-
-                                    ServiceItem.AuthenticationKeys =
-                                        Me._Domain.Settings.Services.ServiceItems.GetAuthenticationKeys()
+                                    Exit For
                                 End If
-
-                                For Each AuthKey As String In ServiceItem.AuthenticationKeys
-                                    If Me._Domain.xService.ReadSessionVariable(PostedExecuteParameters.PublicKey, AuthKey) Is Nothing Then
-                                        Me._IsAuthenticationRequired = True
-
-                                        Exit For
-                                    End If
-                                Next
-                            Else
-                                Throw New NullReferenceException("Xeora Configuration does not contain any xService definition for this request!")
-                            End If
+                            Next
                         End If
                     End If
 
@@ -239,9 +161,7 @@ Namespace Xeora.Web.Site
                         Me._ServiceResult = Me._Domain.xService.RenderxService(Me._ExecuteIn, Me._ServicePathInfo.ServiceID)
                     Else
                         Dim MethodResult As Object =
-                            New Security.SecurityException(
-                                [Global].SystemMessages.XSERVICE_AUTH
-                            )
+                            New Security.SecurityException([Global].SystemMessages.XSERVICE_AUTH)
 
                         Me._ServiceResult = Me._Domain.xService.GeneratexServiceXML(MethodResult)
                     End If
@@ -271,20 +191,25 @@ Namespace Xeora.Web.Site
         End Sub
 
         Public Function QueryURLResolver(ByVal RequestFilePath As String) As [Shared].URLMapping.ResolvedMapped Implements [Shared].IDomainControl.QueryURLResolver
-            Dim rResolvedMapped As [Shared].URLMapping.ResolvedMapped = Nothing
+            Return Me.QueryURLResolver(Nothing, RequestFilePath)
+        End Function
 
-            If Me._Domain.Settings.URLMappings.IsActive AndAlso
-                Not String.IsNullOrEmpty(Me._Domain.Settings.URLMappings.ResolverExecutable) Then
+        Private Function QueryURLResolver(ByRef WorkingInstance As [Shared].IDomain, ByVal RequestFilePath As String) As [Shared].URLMapping.ResolvedMapped
+            If WorkingInstance Is Nothing Then WorkingInstance = Me._Domain
+
+            If Not WorkingInstance Is Nothing AndAlso
+                WorkingInstance.Settings.URLMappings.IsActive AndAlso
+                Not String.IsNullOrEmpty(WorkingInstance.Settings.URLMappings.ResolverExecutable) Then
 
                 Dim ResolverBindInfo As [Shared].Execution.BindInfo =
                     [Shared].Execution.BindInfo.Make(
-                        String.Format("{0}?URLResolver,rfp", Me._Domain.Settings.URLMappings.ResolverExecutable))
+                        String.Format("{0}?URLResolver,rfp", WorkingInstance.Settings.URLMappings.ResolverExecutable))
                 ResolverBindInfo.PrepareProcedureParameters(
-                    New [Shared].Execution.BindInfo.ProcedureParser(
-                        Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
-                            ProcedureParameter.Value = RequestFilePath
-                        End Sub)
-                )
+                        New [Shared].Execution.BindInfo.ProcedureParser(
+                            Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                                ProcedureParameter.Value = RequestFilePath
+                            End Sub)
+                    )
                 ResolverBindInfo.InstanceExecution = True
 
                 Dim ResolverBindInvokeResult As [Shared].Execution.BindInvokeResult =
@@ -293,11 +218,11 @@ Namespace Xeora.Web.Site
                 If Not ResolverBindInvokeResult.ReloadRequired AndAlso
                     TypeOf ResolverBindInvokeResult.InvokeResult Is [Shared].URLMapping.ResolvedMapped Then
 
-                    rResolvedMapped = CType(ResolverBindInvokeResult.InvokeResult, [Shared].URLMapping.ResolvedMapped)
+                    Return CType(ResolverBindInvokeResult.InvokeResult, [Shared].URLMapping.ResolvedMapped)
                 End If
             End If
 
-            Return rResolvedMapped
+            Return Nothing
         End Function
 
         ' Cache for performance consideration
@@ -341,215 +266,82 @@ Namespace Xeora.Web.Site
             CType(Me._Domain, Domain).ClearCache()
         End Sub
 
-        Private Sub PrepareServiceSettings()
-            If Me._ServicePathInfo Is Nothing Then _
-                Me._ServicePathInfo = [Shared].ServicePathInfo.Parse(Me._Domain.Settings.Configurations.DefaultPage)
+        Private Sub SelectDomain(ByVal URL As [Shared].URL)
+            ' First search the request on top domains
+            For Each DI As [Shared].DomainInfo In DomainControl.GetAvailableDomains()
+                Me._Domain = New Domain(New String() {DI.ID}, Nothing)
+                Me.PrepareService(URL, False)
 
+                If Not Me._ServicePathInfo Is Nothing Then Exit Sub
+
+                Me._Domain.Dispose()
+            Next
+
+            ' If no results, start again by including children
+            For Each DI As [Shared].DomainInfo In DomainControl.GetAvailableDomains()
+                Me._Domain = New Domain(New String() {DI.ID}, Nothing)
+                Me.PrepareService(URL, True)
+
+                If Not Me._ServicePathInfo Is Nothing Then Exit Sub
+
+                Me._Domain.Dispose()
+            Next
+        End Sub
+
+        Private Sub PrepareService(ByVal URL As [Shared].URL, ByVal ActivateChildrenSearch As Boolean)
             Dim WorkingInstance As [Shared].IDomain = Me._Domain
 
-            ' Check ServiceFullPath is for Template
-            If CType(Me._Domain, Domain).CheckTemplateExists(Me._ServicePathInfo.FullPath) Then
-                ' This is a Template Request
-                If String.Compare(Me._ServicePathInfo.FullPath, Me._Domain.Settings.Configurations.AuthenticationPage, True) <> 0 Then
-                    ' This is not an AuthenticationPage Request
-                    Dim ServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                        Me._Domain.Settings.Services.ServiceItems.GetServiceItem(
-                            [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                            Me._ServicePathInfo.FullPath)
+            Me._ServicePathInfo = Me.TryResolveURL(WorkingInstance, URL)
+            If Me._ServicePathInfo Is Nothing Then Exit Sub
 
-                    If Not ServiceItem Is Nothing Then
-                        If ServiceItem.Overridable Then
-                            WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServicePathInfo.FullPath)
+            Dim ServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
+                WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(Me._ServicePathInfo.FullPath)
 
-                            ' If not null, it means WorkingInstance contains a service definition
-                            If Not WorkingInstance Is Nothing Then
-                                Dim OverridableServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                                    WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                                        Me._ServicePathInfo.FullPath
-                                    )
+            If Not ServiceItem Is Nothing Then
+                Dim CachedInstance As [Shared].IDomain = WorkingInstance
+                Dim CachedServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem = ServiceItem
 
-                                ' Check overriding serviceitem requires authentication but does not have authenticationkeys. So add the current one to the new one
-                                If OverridableServiceItem.Authentication AndAlso OverridableServiceItem.AuthenticationKeys.Length = 0 Then
-                                    OverridableServiceItem.AuthenticationKeys = ServiceItem.AuthenticationKeys
-                                End If
+                Do While CachedServiceItem.Overridable
+                    WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServicePathInfo.FullPath)
 
-                                ServiceItem = OverridableServiceItem
-                            End If
-                        End If
+                    ' If not null, it means WorkingInstance contains a service definition which will override
+                    If Not WorkingInstance Is Nothing Then
+                        CachedInstance = WorkingInstance
+                        CachedServiceItem = WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(Me._ServicePathInfo.FullPath)
 
-                        Me._ServiceType = ServiceItem.ServiceType
-                        If ServiceItem.Authentication Then
-                            For Each AuthKey As String In ServiceItem.AuthenticationKeys
-                                If [Shared].Helpers.Context.Session.Item(AuthKey) Is Nothing Then
-                                    Me._IsAuthenticationRequired = True
+                        If ServiceItem.ServiceType <> CachedServiceItem.ServiceType Then Exit Do
 
-                                    Exit For
-                                End If
-                            Next
-                        End If
-                        Me._IsWorkingAsStandAlone = ServiceItem.StandAlone
-                        Me._ExecuteIn = ServiceItem.ExecuteIn
-                        Me._MimeType = ServiceItem.MimeType
-                    Else
-                        Throw New NullReferenceException("Xeora Configuration does not contain any service definition for this request!")
-                    End If
-                Else
-                    ' This is an AuthenticationPage Request
-                    Dim ServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                        Me._Domain.Settings.Services.ServiceItems.GetServiceItem(
-                            [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                            Me._ServicePathInfo.FullPath)
-
-                    If Not ServiceItem Is Nothing Then
-                        Me._ServiceType = ServiceItem.ServiceType
-                        ' Overrides that page does not need authentication even it's been marked as authentication required in Configuration definition
-                        Me._IsAuthenticationRequired = False
-                        Me._IsWorkingAsStandAlone = ServiceItem.StandAlone
-                        Me._ExecuteIn = ServiceItem.ExecuteIn
-                        Me._MimeType = ServiceItem.MimeType
-
-                        If ServiceItem.Overridable Then
-                            WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServicePathInfo.FullPath)
-
-                            ' If not null, it means WorkingInstance contains a service definition
-                            If Not WorkingInstance Is Nothing Then
-                                Dim OverridableServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                                    WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                                        Me._ServicePathInfo.FullPath
-                                    )
-
-                                ' Check overriding serviceitem requires authentication but does not have authenticationkeys. So add the current one to the new one
-                                If OverridableServiceItem.Authentication AndAlso OverridableServiceItem.AuthenticationKeys.Length = 0 Then
-                                    OverridableServiceItem.AuthenticationKeys = ServiceItem.AuthenticationKeys
-                                End If
-
-                                ServiceItem = OverridableServiceItem
-                            End If
-                        End If
-                    Else
-                        Throw New NullReferenceException("Xeora Configuration does not contain any service definition for this request!")
-                    End If
-                End If
-            Else
-                ' This is a xSocket or xService request or ChildDomain Template, xSocket or xService Request
-                ' Check first if it is a xService or not
-                Dim ServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                    Me._Domain.Settings.Services.ServiceItems.GetServiceItem(
-                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService,
-                        Me._ServicePathInfo.FullPath)
-
-                If Not ServiceItem Is Nothing Then
-                    ' This is a xService Request
-                    If ServiceItem.Overridable Then
-                        WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServicePathInfo.FullPath)
-
-                        ' If not null, it means WorkingInstance contains a service definition
-                        If Not WorkingInstance Is Nothing Then
-                            Dim OverridableServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                                WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                    [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService,
-                                    Me._ServicePathInfo.FullPath
-                                )
-
-                            ' Overrides xService Definition
-                            If Not OverridableServiceItem Is Nothing Then ServiceItem = OverridableServiceItem
-                        End If
-                    End If
-
-                    Me._ServiceType = ServiceItem.ServiceType
-                    Me._IsAuthenticationRequired = ServiceItem.Authentication
-                    Me._IsWorkingAsStandAlone = ServiceItem.StandAlone
-                    Me._ExecuteIn = ServiceItem.ExecuteIn
-                    Me._MimeType = ServiceItem.MimeType
-                Else
-                    ServiceItem =
-                        Me._Domain.Settings.Services.ServiceItems.GetServiceItem(
-                            [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket,
-                            Me._ServicePathInfo.FullPath)
-
-                    If Not ServiceItem Is Nothing Then
-                        ' This is a xService Request
-                        If ServiceItem.Overridable Then
-                            WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServicePathInfo.FullPath)
-
-                            ' If not null, it means WorkingInstance contains a service definition
-                            If Not WorkingInstance Is Nothing Then
-                                Dim OverridableServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                                WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                    [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket,
-                                    Me._ServicePathInfo.FullPath
-                                )
-
-                                ' Overrides xService Definition
-                                If Not OverridableServiceItem Is Nothing Then ServiceItem = OverridableServiceItem
-                            End If
-                        End If
-
-                        Me._ServiceType = ServiceItem.ServiceType
-                        Me._IsAuthenticationRequired = ServiceItem.Authentication
-                        Me._IsWorkingAsStandAlone = ServiceItem.StandAlone
-                        Me._ExecuteIn = ServiceItem.ExecuteIn
-                        Me._MimeType = ServiceItem.MimeType
-                    Else
-                        ' This is not xService or socket but it can be a template, xSocket or xService in Children
-                        ' First Check if related Service Request exists in Children.
-                        ' TODO: First most deep match returns. However, there should be some priority in the same depth
-                        WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServicePathInfo.FullPath)
-
-                        If Not WorkingInstance Is Nothing Then
-                            ' Set the Working domain as child domain for this call because call requires the child domain access!
-                            Me._Domain = WorkingInstance
-
-                            ' Okay Something Exists. But is it a Template or xService
-                            ' First Check if it is a Template
-                            Dim ChildServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                                WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                    [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                                    Me._ServicePathInfo.FullPath
-                                )
-
-                            If Not ChildServiceItem Is Nothing Then
-                                ' Okay this is a child Template
-                                ServiceItem = ChildServiceItem
+                        ' Merge or set the authenticationkeys
+                        If CachedServiceItem.Authentication Then
+                            If CachedServiceItem.AuthenticationKeys.Length = 0 Then
+                                CachedServiceItem.AuthenticationKeys = ServiceItem.AuthenticationKeys
                             Else
-                                ' Hmm Let me check for xService and xSocket So
-                                ChildServiceItem =
-                                    WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService,
-                                        Me._ServicePathInfo.FullPath
-                                    )
+                                ' Merge
+                                Dim Keys As String() =
+                                    CType(Array.CreateInstance(GetType(String), CachedServiceItem.AuthenticationKeys.Length + ServiceItem.AuthenticationKeys.Length), String())
 
-                                If Not ChildServiceItem Is Nothing Then
-                                    ' Okay this is a child xService
-                                    ServiceItem = ChildServiceItem
-                                Else
-                                    ChildServiceItem =
-                                        WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                            [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket,
-                                            Me._ServicePathInfo.FullPath
-                                        )
+                                Array.Copy(CachedServiceItem.AuthenticationKeys, 0, Keys, 0, CachedServiceItem.AuthenticationKeys.Length)
+                                Array.Copy(ServiceItem.AuthenticationKeys, 0, Keys, CachedServiceItem.AuthenticationKeys.Length, ServiceItem.AuthenticationKeys.Length)
 
-                                    If Not ChildServiceItem Is Nothing Then
-                                        ' Okay this is a child Socket
-                                        ServiceItem = ChildServiceItem
-                                    Else
-                                        '' Nothing found Anywhere!
-                                        '[Shared].Helpers.Context.Response.StatusCode = 404
-
-                                        Me._ServicePathInfo = Nothing
-
-                                        Exit Sub
-                                    End If
-                                End If
+                                CachedServiceItem.AuthenticationKeys = Keys
                             End If
                         End If
 
-                        If Not ServiceItem Is Nothing Then
-                            ' Let work on Found Service Item in Children
+                        ServiceItem = CachedServiceItem
+                    Else
+                        Exit Do
+                    End If
+                Loop
 
-                            Me._ServiceType = ServiceItem.ServiceType
+                Me._ServiceType = ServiceItem.ServiceType
+                Me._AuthenticationKeys = ServiceItem.AuthenticationKeys
+
+                Select Case CachedServiceItem.ServiceType
+                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
+                        If String.Compare(Me._ServicePathInfo.FullPath, CachedInstance.Settings.Configurations.AuthenticationPage, True) = 0 Then
+                            ' Overrides that page does not need authentication even it has been marked as authentication required in Configuration definition
+                            Me._IsAuthenticationRequired = False
+                        Else
                             If ServiceItem.Authentication Then
                                 For Each AuthKey As String In ServiceItem.AuthenticationKeys
                                     If [Shared].Helpers.Context.Session.Item(AuthKey) Is Nothing Then
@@ -559,49 +351,152 @@ Namespace Xeora.Web.Site
                                     End If
                                 Next
                             End If
-                            Me._IsWorkingAsStandAlone = ServiceItem.StandAlone
-                            Me._ExecuteIn = ServiceItem.ExecuteIn
-                            Me._MimeType = ServiceItem.MimeType
-                        Else
-                            Me._ServicePathInfo = Nothing
                         End If
+                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
+                        Me._IsAuthenticationRequired = ServiceItem.Authentication
+                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket
+                        Me._IsAuthenticationRequired = ServiceItem.Authentication
+                End Select
+
+                Me._IsWorkingAsStandAlone = ServiceItem.StandAlone
+                Me._ExecuteIn = ServiceItem.ExecuteIn
+                Me._MimeType = ServiceItem.MimeType
+
+                Me._Domain = CachedInstance
+            Else
+                If Not ActivateChildrenSearch Then
+                    Me._ServicePathInfo = Nothing
+                Else
+                    ' Search SubDomains For Match
+                    WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServicePathInfo.FullPath)
+
+                    If Not WorkingInstance Is Nothing Then
+                        ' Set the Working domain as child domain for this call because call requires the child domain access!
+                        Me._Domain = WorkingInstance
+                        Me.PrepareService(URL, True)
+                    Else
+                        ' Nothing Found in Anywhere
+                        '[Shared].Helpers.Context.Response.StatusCode = 404
+
+                        Me._ServicePathInfo = Nothing
                     End If
                 End If
             End If
         End Sub
 
+        Private Function TryResolveURL(ByRef WorkingInstance As [Shared].IDomain, ByVal URL As [Shared].URL) As [Shared].ServicePathInfo
+            If WorkingInstance.Settings.URLMappings.IsActive Then
+                ' First Try Dynamic Resolve
+                Dim ResolvedMapped As [Shared].URLMapping.ResolvedMapped =
+                    Me.QueryURLResolver(WorkingInstance, URL.RelativePath)
+
+                If ResolvedMapped Is Nothing OrElse Not ResolvedMapped.IsResolved Then
+                    ' No Result So Check Static Definitions
+                    For Each URLMapItem As [Shared].URLMapping.URLMappingItem In WorkingInstance.Settings.URLMappings.Items
+                        Dim rqMatch As Text.RegularExpressions.Match =
+                            Text.RegularExpressions.Regex.Match(URL.RelativePath, URLMapItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
+
+                        If rqMatch.Success Then
+                            ResolvedMapped = New [Shared].URLMapping.ResolvedMapped(True, URLMapItem.ResolveInfo.ServicePathInfo)
+
+                            Dim medItemValue As String
+                            For Each medItem As [Shared].URLMapping.ResolveInfos.MappedItem In URLMapItem.ResolveInfo.MappedItems
+                                medItemValue = String.Empty
+
+                                If Not String.IsNullOrEmpty(medItem.ID) Then medItemValue = rqMatch.Groups.Item(medItem.ID).Value
+
+                                ResolvedMapped.URLQueryDictionary.Item(medItem.QueryStringKey) =
+                                    CType(IIf(String.IsNullOrEmpty(medItemValue), medItem.DefaultValue, medItemValue), String)
+                            Next
+
+                            Exit For
+                        End If
+                    Next
+                End If
+
+                If Not ResolvedMapped Is Nothing AndAlso ResolvedMapped.IsResolved Then
+                    Me.RectifyRequestPath(ResolvedMapped)
+
+                    Return ResolvedMapped.ServicePathInfo
+                End If
+            End If
+
+            ' Take Care Application Path and HashCode if it is exists work with application browser path
+            ' this comes /APPPATH(/path?somekey=withquery)?
+            ' or this /APPPATH/432432/(path?somekey=withquery)?
+            ' or this /Standart_tr-TR/somefile.png
+            ' take care of it!
+            Dim CurrentDomainContentPath As String =
+                [Shared].Helpers.GetDomainContentsPath(WorkingInstance.IDAccessTree, WorkingInstance.Language.ID)
+            Dim RequestFilePath As String = URL.RelativePath
+
+            ' first test if it is domain content path
+            If RequestFilePath.IndexOf(CurrentDomainContentPath) <> 0 Then
+                Dim ApplicationRootPath As String = [Shared].Configurations.ApplicationRoot.BrowserImplementation
+                Dim mR As Text.RegularExpressions.Match =
+                    Text.RegularExpressions.Regex.Match(RequestFilePath, String.Format("{0}(\d+/)?", ApplicationRootPath))
+                If mR.Success AndAlso mR.Index = 0 Then _
+                    RequestFilePath = RequestFilePath.Remove(0, mR.Length)
+
+                ' Check if there is any query string exists! if so, template will be till there. 
+                If RequestFilePath.IndexOf("?"c) > -1 Then _
+                    RequestFilePath = RequestFilePath.Substring(0, RequestFilePath.IndexOf("?"c))
+
+                If Not String.IsNullOrEmpty(RequestFilePath) Then
+                    Dim rServicePathInfo As [Shared].ServicePathInfo =
+                        [Shared].ServicePathInfo.Parse(RequestFilePath)
+
+                    If String.IsNullOrEmpty(rServicePathInfo.ServiceID) Then Return Nothing
+
+                    Return rServicePathInfo
+                Else
+                    Return [Shared].ServicePathInfo.Parse(WorkingInstance.Settings.Configurations.DefaultPage)
+                End If
+            End If
+
+            Return Nothing
+        End Function
+
+        Private Sub RectifyRequestPath(ByVal ResolvedMapped As [Shared].URLMapping.ResolvedMapped)
+            Dim RequestURL As String =
+                String.Format("{0}{1}",
+                    [Shared].Configurations.ApplicationRoot.BrowserImplementation,
+                    ResolvedMapped.ServicePathInfo.FullPath
+                )
+            If ResolvedMapped.URLQueryDictionary.Count > 0 Then _
+                RequestURL = String.Concat(RequestURL, "?", ResolvedMapped.URLQueryDictionary.ToString())
+
+            ' Let the server understand what this URL is about...
+            [Shared].Helpers.Context.Request.RewritePath(RequestURL)
+        End Sub
+
         Private Function SearchChildrenThatOverrides(ByRef WorkingInstance As [Shared].IDomain, ByVal ServiceFullPath As String) As [Shared].IDomain
-            Dim rDomainInstance As [Shared].IDomain = Nothing
+            If WorkingInstance Is Nothing Then Return Nothing
+
+            Dim ChildDomainIDAccessTree As New Generic.List(Of String)
+            ChildDomainIDAccessTree.AddRange(WorkingInstance.IDAccessTree)
 
             For Each ChildDI As [Shared].DomainInfo In WorkingInstance.Children
-                Dim ChildDomainIDAccessTree As String() =
-                        New String(Me._Domain.IDAccessTree.Length) {}
-                Array.Copy(Me._Domain.IDAccessTree, 0, ChildDomainIDAccessTree, 0, Me._Domain.IDAccessTree.Length)
-                ChildDomainIDAccessTree(ChildDomainIDAccessTree.Length - 1) = ChildDI.ID
+                ChildDomainIDAccessTree.Add(ChildDI.ID)
 
-                rDomainInstance = New Domain(ChildDomainIDAccessTree, Me._Domain.Language.ID)
+                Dim rDomainInstance As [Shared].IDomain =
+                    New Domain(ChildDomainIDAccessTree.ToArray(), Me._Domain.Language.ID)
 
-                If rDomainInstance.Settings.Services.ServiceItems.GetServiceItem(
-                        [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                        ServiceFullPath) Is Nothing Then
-
+                If rDomainInstance.Settings.Services.ServiceItems.GetServiceItem(ServiceFullPath) Is Nothing Then
                     If rDomainInstance.Children.Count > 0 Then
                         rDomainInstance = Me.SearchChildrenThatOverrides(rDomainInstance, ServiceFullPath)
 
-                        If Not rDomainInstance Is Nothing Then Exit For
+                        If Not rDomainInstance Is Nothing Then Return rDomainInstance
                     End If
                 Else
-                    If rDomainInstance.Children.Count > 0 Then _
-                        rDomainInstance = Me.SearchChildrenThatOverrides(rDomainInstance, ServiceFullPath)
-
-                    If rDomainInstance Is Nothing Then _
-                        rDomainInstance = New Domain(rDomainInstance.IDAccessTree, WorkingInstance.Language.ID)
-
-                    Exit For
+                    Return rDomainInstance
                 End If
+
+                rDomainInstance.Dispose()
+                ChildDomainIDAccessTree.RemoveAt(ChildDomainIDAccessTree.Count - 1)
             Next
 
-            Return rDomainInstance
+            Return Nothing
         End Function
 
         Private disposedValue As Boolean = False        ' To detect redundant calls

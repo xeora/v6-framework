@@ -101,20 +101,12 @@ Namespace Xeora.Web.Site.Setting
             Inherits Generic.List(Of ServiceItem)
             Implements [Shared].IDomain.ISettings.IServices.IServiceItem.IServiceItemCollection
 
-            Public Function GetServiceItem(ByVal ServiceType As [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes, ByVal ID As String) As [Shared].IDomain.ISettings.IServices.IServiceItem Implements [Shared].IDomain.ISettings.IServices.IServiceItem.IServiceItemCollection.GetServiceItem
-                Dim rServiceItem As ServiceItem = Nothing
-
+            Public Function GetServiceItem(ByVal ID As String) As [Shared].IDomain.ISettings.IServices.IServiceItem Implements [Shared].IDomain.ISettings.IServices.IServiceItem.IServiceItemCollection.GetServiceItem
                 For Each sI As ServiceItem In Me
-                    If sI.ServiceType = ServiceType AndAlso
-                            String.Compare(sI.ID, ID, True) = 0 Then
-
-                        rServiceItem = sI
-
-                        Exit For
-                    End If
+                    If String.Compare(sI.ID, ID, True) = 0 Then Return sI
                 Next
 
-                Return rServiceItem
+                Return Nothing
             End Function
 
             Public Function GetServiceItems(ByVal ServiceType As [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes) As [Shared].IDomain.ISettings.IServices.IServiceItem.IServiceItemCollection Implements [Shared].IDomain.ISettings.IServices.IServiceItem.IServiceItemCollection.GetServiceItems
@@ -128,11 +120,10 @@ Namespace Xeora.Web.Site.Setting
             End Function
 
             Public Function GetAuthenticationKeys() As String() Implements [Shared].IDomain.ISettings.IServices.IServiceItem.IServiceItemCollection.GetAuthenticationKeys
-                Dim rAuthenticationKeys As String() = New String() {}
+                If Me.Count > 0 Then _
+                    Return Me.Item(0).AuthenticationKeys
 
-                If Me.Count > 0 Then rAuthenticationKeys = Me.Item(0).AuthenticationKeys
-
-                Return rAuthenticationKeys
+                Return New String() {}
             End Function
         End Class
     End Class

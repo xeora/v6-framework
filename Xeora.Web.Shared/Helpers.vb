@@ -75,25 +75,23 @@ Namespace Xeora.Web.Shared
             If Not String.IsNullOrEmpty(RequestFilePath) Then
                 Dim ByPass As Boolean = False
 
-                SyncLock URLMapping.InstanceLock
-                    Dim URLMI As URLMapping = URLMapping.Current
+                Dim URLMappingInstance As URLMapping = URLMapping.Current
 
-                    If URLMI.IsActive Then
-                        Dim URLMI_C As URLMapping.URLMappingItem() =
-                            URLMI.Items.ToArray()
-                        Dim rqMatch As Text.RegularExpressions.Match = Nothing
+                If URLMappingInstance.IsActive Then
+                    Dim URLMappingItems As URLMapping.URLMappingItem() =
+                        URLMappingInstance.Items.ToArray()
+                    Dim rqMatch As Text.RegularExpressions.Match = Nothing
 
-                        For Each mItem As URLMapping.URLMappingItem In URLMI_C
-                            rqMatch = Text.RegularExpressions.Regex.Match(RequestFilePath, mItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
+                    For Each URLMapItem As URLMapping.URLMappingItem In URLMappingItems
+                        rqMatch = Text.RegularExpressions.Regex.Match(RequestFilePath, URLMapItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
 
-                            If rqMatch.Success Then
-                                rServicePathInfo = mItem.ResolveInfo.ServicePathInfo
+                        If rqMatch.Success Then
+                            rServicePathInfo = URLMapItem.ResolveInfo.ServicePathInfo
 
-                                Return rServicePathInfo
-                            End If
-                        Next
-                    End If
-                End SyncLock
+                            Return rServicePathInfo
+                        End If
+                    Next
+                End If
 
                 ' RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(Configurations.ApplicationRoot.BrowserImplementation) + Configurations.ApplicationRoot.BrowserImplementation.Length)
 

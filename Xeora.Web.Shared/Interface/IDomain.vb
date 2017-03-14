@@ -54,7 +54,7 @@ Namespace Xeora.Web.Shared
                     Property ExecuteIn() As String
 
                     Public Interface IServiceItemCollection
-                        Function GetServiceItem(ByVal ServiceType As ServiceTypes, ByVal ID As String) As IServiceItem
+                        Function GetServiceItem(ByVal ID As String) As IServiceItem
                         Function GetServiceItems(ByVal ServiceType As ServiceTypes) As IServiceItemCollection
                         Function GetAuthenticationKeys() As String()
                     End Interface

@@ -38,90 +38,120 @@ Namespace Xeora.Web.Controller.Directive
 
             Dim WorkingInstance As IDomain = Instance
 
-            Dim ServiceItem As IDomain.ISettings.IServices.IServiceItem = Nothing
-            Do
-                ServiceItem =
-                    WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                        IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                        Me.ControlID
-                    )
+            ' Gather Parent Authentication Keys
+            Dim AuthenticationKeys As New Generic.List(Of String)
+            Dim ServiceItem As IDomain.ISettings.IServices.IServiceItem =
+                WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(Me.ControlID)
 
-                If ServiceItem Is Nothing Then WorkingInstance = WorkingInstance.Parent
-            Loop Until WorkingInstance Is Nothing OrElse Not ServiceItem Is Nothing
+            If ServiceItem Is Nothing Then _
+                Throw New Security.SecurityException(String.Format("Service definition of {0} has not been found!", Me.ControlID))
 
-            If Not ServiceItem Is Nothing Then
-                ' If Overridable so check children if there is any exists which overrides
-                If ServiceItem.Overridable Then
-                    WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance)
-
-                    If Not WorkingInstance Is Nothing Then
-                        Dim OverridableServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem =
-                            WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(
-                                IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                                Me.ControlID
-                            )
-
-                        ' Check overriding serviceitem requires authentication but does not have authenticationkeys. So add the current one to the new one
-                        If Not OverridableServiceItem Is Nothing Then
-                            If OverridableServiceItem.Authentication AndAlso OverridableServiceItem.AuthenticationKeys.Length = 0 Then
-                                OverridableServiceItem.AuthenticationKeys = ServiceItem.AuthenticationKeys
-                            End If
-
-                            ServiceItem = OverridableServiceItem
-                        End If
-                    End If
-                End If
-
-                If ServiceItem.Authentication Then
-                    Dim LocalAuthenticationNotAccepted As Boolean = False
-
-                    For Each AuthKey As String In ServiceItem.AuthenticationKeys
-                        If Helpers.Context.Session.Item(AuthKey) Is Nothing Then
-                            LocalAuthenticationNotAccepted = True
-
-                            Exit For
-                        End If
+            Dim CachedServiceItem As IDomain.ISettings.IServices.IServiceItem = ServiceItem
+            Do Until WorkingInstance Is Nothing
+                For Each Key As String In CachedServiceItem.AuthenticationKeys
+                    Dim IsExists As Boolean = False
+                    For Each Item As String In AuthenticationKeys
+                        If String.Compare(Item, Key, True) = 0 Then IsExists = True : Exit For
                     Next
+                    If Not IsExists Then AuthenticationKeys.Add(Key)
+                Next
 
-                    If Not LocalAuthenticationNotAccepted Then
-                        Me.RenderInternal(WorkingInstance, SenderController)
-                    Else
-                        Dim SystemMessage As String = Instance.Language.Get("TEMPLATE_AUTH")
+                WorkingInstance = WorkingInstance.Parent
 
-                        If String.IsNullOrEmpty(SystemMessage) Then SystemMessage = SystemMessages.TEMPLATE_AUTH
+                If Not WorkingInstance Is Nothing Then _
+                    CachedServiceItem = WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(Me.ControlID)
+            Loop
+            ServiceItem.AuthenticationKeys = AuthenticationKeys.ToArray()
 
-                        Me.DefineRenderedValue("<div style='width:100%; font-weight:bolder; color:#CC0000; text-align:center'>" & SystemMessage & "!</div>")
+            WorkingInstance = Instance
+            CachedServiceItem = ServiceItem
+
+            Do While CachedServiceItem.Overridable
+                WorkingInstance = Me.SearchChildrenThatOverrides(Instance, WorkingInstance)
+
+                ' If not null, it means WorkingInstance contains a service definition which will override
+                If Not WorkingInstance Is Nothing Then
+                    Instance = WorkingInstance
+                    CachedServiceItem = WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(Me.ControlID)
+
+                    ' Merge or set the authenticationkeys
+                    If CachedServiceItem.Authentication Then
+                        If CachedServiceItem.AuthenticationKeys.Length = 0 Then
+                            CachedServiceItem.AuthenticationKeys = ServiceItem.AuthenticationKeys
+                        Else
+                            ' Merge
+                            Dim Keys As String() =
+                                CType(Array.CreateInstance(GetType(String), CachedServiceItem.AuthenticationKeys.Length + ServiceItem.AuthenticationKeys.Length), String())
+
+                            Array.Copy(CachedServiceItem.AuthenticationKeys, 0, Keys, 0, CachedServiceItem.AuthenticationKeys.Length)
+                            Array.Copy(ServiceItem.AuthenticationKeys, 0, Keys, CachedServiceItem.AuthenticationKeys.Length, ServiceItem.AuthenticationKeys.Length)
+
+                            CachedServiceItem.AuthenticationKeys = Keys
+                        End If
                     End If
+
+                    ServiceItem = CachedServiceItem
                 Else
-                    Me.RenderInternal(WorkingInstance, SenderController)
+                    Exit Do
                 End If
+            Loop
+
+            If ServiceItem.Authentication Then
+                Dim LocalAuthenticationNotAccepted As Boolean = False
+
+                For Each AuthKey As String In ServiceItem.AuthenticationKeys
+                    If Helpers.Context.Session.Item(AuthKey) Is Nothing Then
+                        LocalAuthenticationNotAccepted = True
+
+                        Exit For
+                    End If
+                Next
+
+                If Not LocalAuthenticationNotAccepted Then
+                    Me.RenderInternal(Instance, SenderController)
+                Else
+                    Dim SystemMessage As String = Instance.Language.Get("TEMPLATE_AUTH")
+
+                    If String.IsNullOrEmpty(SystemMessage) Then SystemMessage = SystemMessages.TEMPLATE_AUTH
+
+                    Me.DefineRenderedValue("<div style='width:100%; font-weight:bolder; color:#CC0000; text-align:center'>" & SystemMessage & "!</div>")
+                End If
+            Else
+                Me.RenderInternal(Instance, SenderController)
             End If
         End Sub
 
-        Private Function SearchChildrenThatOverrides(ByRef WorkingInstance As [Shared].IDomain) As [Shared].IDomain
-            Dim rDomainInstance As IDomain = Nothing
+        Private Function SearchChildrenThatOverrides(ByRef OriginalInstance As IDomain, ByRef WorkingInstance As IDomain) As IDomain
+            If WorkingInstance Is Nothing Then Return Nothing
 
-            For Each ChildDomain As IDomain In WorkingInstance.Children
-                If ChildDomain.Settings.Services.ServiceItems.GetServiceItem(
-                        IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template,
-                        Me.ControlID) Is Nothing Then
+            Dim ChildDomainIDAccessTree As New Generic.List(Of String)
+            ChildDomainIDAccessTree.AddRange(WorkingInstance.IDAccessTree)
 
-                    If ChildDomain.Children.Count > 0 Then
-                        rDomainInstance = Me.SearchChildrenThatOverrides(ChildDomain)
+            For Each ChildDI As DomainInfo In WorkingInstance.Children
+                ChildDomainIDAccessTree.Add(ChildDI.ID)
 
-                        If Not rDomainInstance Is Nothing Then Exit For
+                Dim rDomainInstance As IDomain =
+                    New Site.Domain(ChildDomainIDAccessTree.ToArray(), OriginalInstance.Language.ID)
+                Dim ServiceItem As IDomain.ISettings.IServices.IServiceItem =
+                    rDomainInstance.Settings.Services.ServiceItems.GetServiceItem(Me.ControlID)
+
+                If ServiceItem Is Nothing OrElse
+                    ServiceItem.ServiceType <> IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template Then
+
+                    If rDomainInstance.Children.Count > 0 Then
+                        rDomainInstance = Me.SearchChildrenThatOverrides(OriginalInstance, rDomainInstance)
+
+                        If Not rDomainInstance Is Nothing Then Return rDomainInstance
                     End If
                 Else
-                    If ChildDomain.Children.Count > 0 Then _
-                        rDomainInstance = Me.SearchChildrenThatOverrides(ChildDomain)
-
-                    If rDomainInstance Is Nothing Then rDomainInstance = ChildDomain
-
-                    Exit For
+                    Return rDomainInstance
                 End If
+
+                rDomainInstance.Dispose()
+                ChildDomainIDAccessTree.RemoveAt(ChildDomainIDAccessTree.Count - 1)
             Next
 
-            Return rDomainInstance
+            Return Nothing
         End Function
 
         Private Sub RenderInternal(ByRef WorkingInstance As IDomain, ByRef SenderController As ControllerBase)

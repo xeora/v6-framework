@@ -42,7 +42,7 @@ Namespace Xeora.Web.Helper
             End Try
         End Sub
 
-        Public Overloads Shared Sub LogToSystemEvent(ByVal Content As String, ByVal Type As EventLogEntryType)
+        Public Shared Sub LogToSystemEvent(ByVal Content As String, ByVal Type As EventLogEntryType)
             Try
                 If Not EventLog.SourceExists("XeoraCube") Then EventLog.CreateEventSource("XeoraCube", "XeoraCube")
 
@@ -144,19 +144,8 @@ Namespace Xeora.Web.Helper
                         XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, XeoraSettingsObject, Nothing)
 
                     EventLogger._OutputLocation = CType(WorkingObject.GetType().InvokeMember("LoggingPath", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
-
-                    If String.IsNullOrEmpty(EventLogger._OutputLocation) Then
-                        EventLogger._OutputLocation =
-                                IO.Path.Combine(
-                                    [Shared].Configurations.PhysicalRoot,
-                                    "XeoraLogs"
-                                )
-
-                        If String.Compare(EventLogger._OutputLocation, "XeoraLogs") = 0 Then _
-                            EventLogger._OutputLocation = String.Empty
-                    End If
                 Catch ex As System.Exception
-                    ' Just Handle Exceptions
+                    EventLogger.LogToSystemEvent(ex.ToString(), EventLogEntryType.Error)
                 End Try
             End If
 

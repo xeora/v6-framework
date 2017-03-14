@@ -12,7 +12,7 @@ Namespace Xeora.Web.Shared
             ' Fix false path request
             If String.Compare(ApplicationRootPath, "/") <> 0 AndAlso
                 String.Compare(
-                String.Format("{0}/", RawURL).Substring((RawURL.Length + 1) - ApplicationRootPath.Length), ApplicationRootPath) = 0 Then _
+                    String.Format("{0}/", RawURL).Substring((RawURL.Length + 1) - ApplicationRootPath.Length), ApplicationRootPath) = 0 Then _
                 RawURL = String.Format("{0}/", RawURL)
 
             Me._Raw = RawURL

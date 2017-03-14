@@ -42,7 +42,6 @@ Namespace Xeora.Web.Site
             End Try
             AddHandler Me._Deployment.Language.ResolveTranslationRequested, AddressOf Me.ResolveTranslationRequest
 
-            ' TODO: ???????? CHECK PLEASE
             If DomainIDAccessTree.Length > 1 Then
                 Dim DomainIDAccessTreeA As New Generic.List(Of String)
                 DomainIDAccessTreeA.AddRange(DomainIDAccessTree)
@@ -572,29 +571,29 @@ Namespace Xeora.Web.Site
 #End Region
         End Class
 
-        Public Class DomainCollection
-            Inherits Generic.List(Of Domain)
+        'Public Class DomainCollection
+        '    Inherits Generic.List(Of Domain)
 
-            Private _ParentHolder As Domain
+        '    Private _ParentHolder As Domain
 
-            Public Sub New(ByVal Parent As Domain)
-                Me._ParentHolder = Parent
-            End Sub
+        '    Public Sub New(ByVal Parent As Domain)
+        '        Me._ParentHolder = Parent
+        '    End Sub
 
-            Public Shadows Sub Add(ByVal Item As Domain)
-                Item._Parent = Me._ParentHolder
+        '    Public Shadows Sub Add(ByVal Item As Domain)
+        '        Item._Parent = Me._ParentHolder
 
-                MyBase.Add(Item)
-            End Sub
+        '        MyBase.Add(Item)
+        '    End Sub
 
-            Public Shadows Sub AddRange(ByVal Collection As DomainCollection)
-                For Each Item As Domain In Collection
-                    Item._Parent = Me._ParentHolder
-                Next
+        '    Public Shadows Sub AddRange(ByVal Collection As DomainCollection)
+        '        For Each Item As Domain In Collection
+        '            Item._Parent = Me._ParentHolder
+        '        Next
 
-                MyBase.AddRange(Collection)
-            End Sub
-        End Class
+        '        MyBase.AddRange(Collection)
+        '    End Sub
+        'End Class
 
         Private disposedValue As Boolean = False        ' To detect redundant calls
 

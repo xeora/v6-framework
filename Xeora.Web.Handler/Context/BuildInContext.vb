@@ -30,6 +30,9 @@ Namespace Xeora.Web.Context
             AddHandler Me._Request.RewritePathRaised,
                 New IHttpContext.IHttpRequest.RewritePathRaisedEventHandler(Sub(ByVal RawURL As String)
                                                                                 Me._UnderlyingContext.RewritePath(RawURL)
+
+                                                                                Me._Request = New HttpRequest(Me._UnderlyingContext.Request, Me._XeoraRequestID)
+                                                                                CType(Me._Request, HttpRequest).Build()
                                                                             End Sub)
             CType(Me._Request, HttpRequest).Build()
             Me._Response = New HttpResponse(HttpContext.Response)

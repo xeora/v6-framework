@@ -19,18 +19,20 @@ Namespace Xeora.Web.Handler
             Dim XeoraHandler As DoXeoraDelegate =
                 New DoXeoraDelegate(AddressOf Me.DoXeora)
 
-            Return XeoraHandler.BeginInvoke(RequestID, New AsyncCallback(Sub(aR As IAsyncResult)
-                                                                             Try
-                                                                                 XeoraHandler.EndInvoke(aR)
-                                                                             Catch ex As System.Exception
-                                                                                 ' Just Handle Exceptions
-                                                                                 ' I catch this error when i was testing the videostream of Mayadroom
-                                                                                 ' w3wp.exe create an exception which is "Remote Host Close the Connection"
-                                                                                 ' that was causing to stop the Website...
-                                                                             End Try
+            Return XeoraHandler.BeginInvoke(RequestID,
+                                            New AsyncCallback(
+                                                Sub(aR As IAsyncResult)
+                                                    Try
+                                                        XeoraHandler.EndInvoke(aR)
+                                                    Catch ex As System.Exception
+                                                        ' Just Handle Exceptions
+                                                        ' I catch this error when i was testing the videostream of Mayadroom
+                                                        ' w3wp.exe create an exception which is "Remote Host Close the Connection"
+                                                        ' that was causing to stop the Website...
+                                                    End Try
 
-                                                                             CallBack.Invoke(aR)
-                                                                         End Sub), State)
+                                                    CallBack.Invoke(aR)
+                                                End Sub), State)
         End Function
 
         Private Delegate Sub DoXeoraDelegate(ByVal RequestID As String)
@@ -66,7 +68,6 @@ Namespace Xeora.Web.Handler
                     RequestModule.Context(Me._RequestID)
                 If Context Is Nothing Then Exit Sub
 
-                ' Prepare RequestDate and Compression Support
                 Me._BeginRequestTime = Date.Now
                 Me._SupportCompression = False
 
@@ -74,41 +75,13 @@ Namespace Xeora.Web.Handler
                 [Shared].Helpers.AssignRequestID(Me._RequestID)
                 ' !--
 
-                ' DO NOT USE General.Context for this line
                 Context.Content.Item("_sys_TemplateRequest") = False
 
                 Dim IsEO As Boolean = False
-
                 Try
-                    ' DomainIDAccessTree should be always the DefaultDomain according to the request it will change in the following code lines
-                    Dim DomainIDAccessTree As String() = [Shared].Configurations.DefaultDomain
-                    ' Create with default ones
-                    Me._DomainControl = New Site.DomainControl(Me._RequestID, DomainIDAccessTree, [Shared].Helpers.CurrentDomainLanguageID, True)
+                    Me._DomainControl = New Site.DomainControl(Me._RequestID, Context.Request.URL, True)
 
-                    ' Resolve If Request is Mapped (and if urlmapping is active)
-                    If Me._DomainControl.URLMapping.IsActive Then
-                        Dim ResolvedMapped As [Shared].URLMapping.ResolvedMapped =
-                            Me._DomainControl.URLMapping.ResolveMappedURL([Shared].Helpers.Context.Request.URL.RelativePath)
-
-                        If Not ResolvedMapped Is Nothing AndAlso
-                            ResolvedMapped.IsResolved Then
-                            ' This is a mapped request
-
-                            Dim RequestURL As String =
-                                String.Format("{0}{1}",
-                                    [Shared].Configurations.ApplicationRoot.BrowserImplementation,
-                                    ResolvedMapped.ServicePathInfo.FullPath
-                                )
-                            If ResolvedMapped.URLQueryDictionary.Count > 0 Then _
-                                RequestURL = String.Concat(RequestURL, "?", ResolvedMapped.URLQueryDictionary.ToString())
-
-                            ' Let the server understand what this URL is about...
-                            [Shared].Helpers.Context.Request.RewritePath(RequestURL)
-                        End If
-                    End If
-                    ' !---
-
-                    ' Lets prepare the caching settings in server and on client
+                    ' Caching Settings
                     If [Shared].Globals.PageCaching.DefaultType <> [Shared].Globals.PageCaching.Types.AllContent AndAlso
                         [Shared].Globals.PageCaching.DefaultType <> [Shared].Globals.PageCaching.Types.AllContentCookiless Then
 
@@ -129,22 +102,14 @@ Namespace Xeora.Web.Handler
                     End If
                     ' !---
 
-                    'If [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") Is Nothing Then _
-                    '    [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") = Text.Encoding.UTF8.WebName
+                    ' Empty Content-Encoding should be replaced
+                    If [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") Is Nothing Then _
+                        [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") = Text.Encoding.UTF8.WebName
 
-                    ' Let's check if the browser accept compressed output
                     Dim AcceptEncodings As String =
                         [Shared].Helpers.Context.Request.Server.Item("HTTP_ACCEPT_ENCODING")
                     If Not AcceptEncodings Is Nothing Then _
                         Me._SupportCompression = (AcceptEncodings.IndexOf("gzip") > -1)
-
-                    ' This is a xService or Template request
-                    Dim UseDefaultTemplate As Boolean
-                    Dim CapturedServicePathInfo As [Shared].ServicePathInfo =
-                        [Shared].Helpers.ResolveServicePathInfoFromURL([Shared].Helpers.Context.Request.URL.Relative, UseDefaultTemplate)
-
-                    If Not CapturedServicePathInfo Is Nothing OrElse UseDefaultTemplate Then _
-                        Me._DomainControl.ServicePathInfo = CapturedServicePathInfo
 
                     If Me._DomainControl.ServicePathInfo Is Nothing Then
                         ' Requested File is not a xService Or Template
@@ -179,7 +144,7 @@ Namespace Xeora.Web.Handler
                                         ChildDomainIDAccessTree = SplittedRequestedDomainWebPath(0).Split("-"c)
                                         ChildDomainLanguageID = SplittedRequestedDomainWebPath(1)
 
-                                        Me._DomainControl = New Site.DomainControl(Me._RequestID, ChildDomainIDAccessTree, ChildDomainLanguageID, False)
+                                        Me._DomainControl.OverrideDomain(ChildDomainIDAccessTree, ChildDomainLanguageID)
 
                                         DomainContentsPath = [Shared].Helpers.GetDomainContentsPath(ChildDomainIDAccessTree, ChildDomainLanguageID)
                                     End If
@@ -212,14 +177,13 @@ Namespace Xeora.Web.Handler
                         ' Mark this request is for TemplateRequest, DO NOT USE General.Context for this line
                         Context.Content.Item("_sys_TemplateRequest") = True
 
-                        ' Set Title Globals
                         [Shared].Helpers.SiteTitle = Me._DomainControl.Domain.Language.Get("SITETITLE")
 
+                        ' TODO: Simplify
                         If String.Compare([Shared].Helpers.Context.Request.Method, "GET", True) = 0 Then
                             ' Check if hashcode is assign to the requested template
                             Dim ParentURL As String =
                                 [Shared].Helpers.Context.Request.URL.RelativePath
-
                             ParentURL = ParentURL.Remove(0, ParentURL.IndexOf([Shared].Configurations.ApplicationRoot.BrowserImplementation) + [Shared].Configurations.ApplicationRoot.BrowserImplementation.Length)
 
                             Dim mR_Parent As Text.RegularExpressions.Match =
