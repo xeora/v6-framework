@@ -255,7 +255,7 @@ Namespace Xeora.Web.Site
 
                     DomainControl._AvailableDomains = rDomainInfoCollection
                 Catch ex As System.Exception
-                    ' Just Handle Exceptions No Action Taken
+                    Helper.EventLogger.LogToSystemEvent(ex.ToString(), EventLogEntryType.Error)
                 End Try
             End If
 

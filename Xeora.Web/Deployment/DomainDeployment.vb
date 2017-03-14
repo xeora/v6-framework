@@ -252,77 +252,38 @@ Namespace Xeora.Web.Deployment
         End Sub
 
         Public Overloads Shared Function AvailableLanguageInfos(ByVal DomainIDAccessTree As String()) As [Shared].DomainInfo.LanguageInfo()
-            Dim rLanguageInfos As New Generic.List(Of [Shared].DomainInfo.LanguageInfo)
+            Dim DomainDeployment As New DomainDeployment(DomainIDAccessTree)
 
-            Dim tDomainDeployment1 As New DomainDeployment(DomainIDAccessTree), tDomainDeployment2 As DomainDeployment
-
-            Select Case tDomainDeployment1.DeploymentType
-                Case [Shared].DomainInfo.DeploymentTypes.Release
-                    Select Case tDomainDeployment1.Decompiler.RequestStatus
-                        Case XeoraDomainDecompiler.RequestResults.Authenticated
-                            For Each sFI As XeoraDomainDecompiler.XeoraFileInfo In tDomainDeployment1.Decompiler.FilesList
-                                If sFI.RegistrationPath.IndexOf(tDomainDeployment1.LanguagesRegistration) > -1 Then
-                                    tDomainDeployment2 = New DomainDeployment(tDomainDeployment1.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(sFI.FileName))
-
-                                    rLanguageInfos.Add(tDomainDeployment2.Language.Info)
-
-                                    tDomainDeployment2.Dispose()
-                                End If
-                            Next
-                        Case XeoraDomainDecompiler.RequestResults.PasswordError
-                            Throw New Exception.DeploymentException([Global].SystemMessages.PASSWORD_WRONG, New Security.SecurityException())
-                    End Select
-
-                Case [Shared].DomainInfo.DeploymentTypes.Development
-                    If IO.Directory.Exists(tDomainDeployment1.LanguagesRegistration) Then
-                        Dim LanguagesDI As New IO.DirectoryInfo(tDomainDeployment1.LanguagesRegistration)
-
-                        For Each TFI As IO.FileInfo In LanguagesDI.GetFiles()
-                            tDomainDeployment2 = New DomainDeployment(tDomainDeployment1.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(TFI.Name))
-
-                            rLanguageInfos.Add(tDomainDeployment2.Language.Info)
-
-                            tDomainDeployment2.Dispose()
-                        Next
-                    End If
-
-            End Select
-
-            Return rLanguageInfos.ToArray()
+            Return DomainDeployment.AvailableLanguageInfos(DomainDeployment)
         End Function
 
         Public Overloads Shared Function AvailableLanguageInfos(ByRef WorkingDomainDeployment As DomainDeployment) As [Shared].DomainInfo.LanguageInfo()
             Dim rLanguageInfos As New Generic.List(Of [Shared].DomainInfo.LanguageInfo)
 
-            Dim tDomainDeployment As DomainDeployment
+            Dim DomainDeployment As DomainDeployment
 
             Select Case WorkingDomainDeployment.DeploymentType
                 Case [Shared].DomainInfo.DeploymentTypes.Release
-                    Select Case WorkingDomainDeployment.Decompiler.RequestStatus
-                        Case XeoraDomainDecompiler.RequestResults.Authenticated
-                            For Each sFI As XeoraDomainDecompiler.XeoraFileInfo In WorkingDomainDeployment.Decompiler.FilesList
-                                If sFI.RegistrationPath.IndexOf(WorkingDomainDeployment.LanguagesRegistration) > -1 Then
-                                    tDomainDeployment = New DomainDeployment(WorkingDomainDeployment.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(sFI.FileName))
+                    For Each sFI As XeoraDomainDecompiler.XeoraFileInfo In WorkingDomainDeployment.Decompiler.FilesList
+                        If sFI.RegistrationPath.IndexOf(WorkingDomainDeployment.LanguagesRegistration) > -1 Then
+                            DomainDeployment = New DomainDeployment(WorkingDomainDeployment.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(sFI.FileName))
 
-                                    rLanguageInfos.Add(tDomainDeployment.Language.Info)
+                            rLanguageInfos.Add(DomainDeployment.Language.Info)
 
-                                    tDomainDeployment.Dispose()
-                                End If
-                            Next
-                        Case XeoraDomainDecompiler.RequestResults.PasswordError
-                            Throw New Exception.DeploymentException([Global].SystemMessages.PASSWORD_WRONG, New Security.SecurityException())
-                    End Select
+                            DomainDeployment.Dispose()
+                        End If
+                    Next
 
                 Case [Shared].DomainInfo.DeploymentTypes.Development
                     If IO.Directory.Exists(WorkingDomainDeployment.LanguagesRegistration) Then
                         Dim LanguagesDI As New IO.DirectoryInfo(WorkingDomainDeployment.LanguagesRegistration)
 
                         For Each TFI As IO.FileInfo In LanguagesDI.GetFiles()
-                            tDomainDeployment = New DomainDeployment(WorkingDomainDeployment.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(TFI.Name))
+                            DomainDeployment = New DomainDeployment(WorkingDomainDeployment.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(TFI.Name))
 
-                            rLanguageInfos.Add(tDomainDeployment.Language.Info)
+                            rLanguageInfos.Add(DomainDeployment.Language.Info)
 
-                            tDomainDeployment.Dispose()
+                            DomainDeployment.Dispose()
                         Next
                     End If
 
