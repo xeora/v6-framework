@@ -228,18 +228,18 @@ Namespace Xeora.Web.Site
         ' Cache for performance consideration
         Private Shared _AvailableDomains As [Shared].DomainInfo.DomainInfoCollection = Nothing
         Public Shared Function GetAvailableDomains() As [Shared].DomainInfo.DomainInfoCollection
+            Dim DomainDI As IO.DirectoryInfo =
+                New IO.DirectoryInfo(
+                    IO.Path.Combine(
+                        [Shared].Configurations.PhysicalRoot,
+                        String.Format("{0}Domains", [Shared].Configurations.ApplicationRoot.FileSystemImplementation)
+                    )
+                )
+
             If DomainControl._AvailableDomains Is Nothing Then
                 Dim rDomainInfoCollection As New [Shared].DomainInfo.DomainInfoCollection()
 
                 Try
-                    Dim DomainDI As IO.DirectoryInfo =
-                        New IO.DirectoryInfo(
-                            IO.Path.Combine(
-                                [Shared].Configurations.PhysicalRoot,
-                                String.Format("{0}Domains", [Shared].Configurations.ApplicationRoot.FileSystemImplementation)
-                            )
-                        )
-
                     For Each DI As IO.DirectoryInfo In DomainDI.GetDirectories()
                         Dim Languages As [Shared].DomainInfo.LanguageInfo() =
                             Deployment.DomainDeployment.AvailableLanguageInfos(New String() {DI.Name})
@@ -257,6 +257,20 @@ Namespace Xeora.Web.Site
                 Catch ex As System.Exception
                     Helper.EventLogger.LogToSystemEvent(ex.ToString(), EventLogEntryType.Error)
                 End Try
+            Else
+                If DomainControl._AvailableDomains.Count <> DomainDI.GetDirectories().Length Then
+                    DomainControl._AvailableDomains = Nothing
+
+                    Return DomainControl.GetAvailableDomains()
+                End If
+
+                For Each DI As IO.DirectoryInfo In DomainDI.GetDirectories()
+                    If DomainControl._AvailableDomains.Item(DI.Name) Is Nothing Then
+                        DomainControl._AvailableDomains = Nothing
+
+                        Return DomainControl.GetAvailableDomains()
+                    End If
+                Next
             End If
 
             Return DomainControl._AvailableDomains
@@ -267,25 +281,36 @@ Namespace Xeora.Web.Site
         End Sub
 
         Private Sub SelectDomain(ByVal URL As [Shared].URL)
-            ' First search the request on top domains
-            For Each DI As [Shared].DomainInfo In DomainControl.GetAvailableDomains()
-                Me._Domain = New Domain(New String() {DI.ID}, Nothing)
+            Dim RequestedServiceID As String = Me.GetRequestedServiceID(URL)
+
+            If String.IsNullOrEmpty(RequestedServiceID) Then
+                Me._Domain = New Domain([Shared].Configurations.DefaultDomain, Nothing)
                 Me.PrepareService(URL, False)
 
                 If Not Me._ServicePathInfo Is Nothing Then Exit Sub
 
                 Me._Domain.Dispose()
-            Next
+            Else
+                ' First search the request on top domains
+                For Each DI As [Shared].DomainInfo In DomainControl.GetAvailableDomains()
+                    Me._Domain = New Domain(New String() {DI.ID}, Nothing)
+                    Me.PrepareService(URL, False)
 
-            ' If no results, start again by including children
-            For Each DI As [Shared].DomainInfo In DomainControl.GetAvailableDomains()
-                Me._Domain = New Domain(New String() {DI.ID}, Nothing)
-                Me.PrepareService(URL, True)
+                    If Not Me._ServicePathInfo Is Nothing Then Exit Sub
 
-                If Not Me._ServicePathInfo Is Nothing Then Exit Sub
+                    Me._Domain.Dispose()
+                Next
 
-                Me._Domain.Dispose()
-            Next
+                ' If no results, start again by including children
+                For Each DI As [Shared].DomainInfo In DomainControl.GetAvailableDomains()
+                    Me._Domain = New Domain(New String() {DI.ID}, Nothing)
+                    Me.PrepareService(URL, True)
+
+                    If Not Me._ServicePathInfo Is Nothing Then Exit Sub
+
+                    Me._Domain.Dispose()
+                Next
+            End If
         End Sub
 
         Private Sub PrepareService(ByVal URL As [Shared].URL, ByVal ActivateChildrenSearch As Boolean)
@@ -428,19 +453,10 @@ Namespace Xeora.Web.Site
             ' take care of it!
             Dim CurrentDomainContentPath As String =
                 [Shared].Helpers.GetDomainContentsPath(WorkingInstance.IDAccessTree, WorkingInstance.Language.ID)
-            Dim RequestFilePath As String = URL.RelativePath
 
             ' first test if it is domain content path
-            If RequestFilePath.IndexOf(CurrentDomainContentPath) <> 0 Then
-                Dim ApplicationRootPath As String = [Shared].Configurations.ApplicationRoot.BrowserImplementation
-                Dim mR As Text.RegularExpressions.Match =
-                    Text.RegularExpressions.Regex.Match(RequestFilePath, String.Format("{0}(\d+/)?", ApplicationRootPath))
-                If mR.Success AndAlso mR.Index = 0 Then _
-                    RequestFilePath = RequestFilePath.Remove(0, mR.Length)
-
-                ' Check if there is any query string exists! if so, template will be till there. 
-                If RequestFilePath.IndexOf("?"c) > -1 Then _
-                    RequestFilePath = RequestFilePath.Substring(0, RequestFilePath.IndexOf("?"c))
+            If URL.RelativePath.IndexOf(CurrentDomainContentPath) <> 0 Then
+                Dim RequestFilePath As String = Me.GetRequestedServiceID(URL)
 
                 If Not String.IsNullOrEmpty(RequestFilePath) Then
                     Dim rServicePathInfo As [Shared].ServicePathInfo =
@@ -455,6 +471,22 @@ Namespace Xeora.Web.Site
             End If
 
             Return Nothing
+        End Function
+
+        Private Function GetRequestedServiceID(ByVal URL As [Shared].URL) As String
+            Dim RequestFilePath As String = URL.RelativePath
+
+            Dim ApplicationRootPath As String = [Shared].Configurations.ApplicationRoot.BrowserImplementation
+            Dim mR As Text.RegularExpressions.Match =
+                Text.RegularExpressions.Regex.Match(RequestFilePath, String.Format("{0}(\d+/)?", ApplicationRootPath))
+            If mR.Success AndAlso mR.Index = 0 Then _
+                RequestFilePath = RequestFilePath.Remove(0, mR.Length)
+
+            ' Check if there is any query string exists! if so, template will be till there. 
+            If RequestFilePath.IndexOf("?"c) > -1 Then _
+                RequestFilePath = RequestFilePath.Substring(0, RequestFilePath.IndexOf("?"c))
+
+            Return RequestFilePath
         End Function
 
         Private Sub RectifyRequestPath(ByVal ResolvedMapped As [Shared].URLMapping.ResolvedMapped)

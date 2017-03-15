@@ -71,22 +71,34 @@ Namespace Xeora.Web.Shared
         Public Class DomainInfoCollection
             Inherits Generic.List(Of DomainInfo)
 
+            Private _NameIndexMap As Generic.Dictionary(Of String, Integer)
+
             Public Sub New()
                 MyBase.New()
+
+                Me._NameIndexMap = New Generic.Dictionary(Of String, Integer)
             End Sub
 
             Public Shadows Sub Add(ByVal value As DomainInfo)
                 MyBase.Add(value)
+
+                Me._NameIndexMap.Add(value.ID, MyBase.Count - 1)
             End Sub
 
             Public Shadows Sub Remove(ByVal ID As String)
-                For Each item As DomainInfo In Me
-                    If String.Compare(ID, item.ID, True) = 0 Then
-                        MyBase.Remove(item)
+                If Me._NameIndexMap.ContainsKey(ID) Then
+                    MyBase.RemoveAt(Me._NameIndexMap.Item(ID))
 
-                        Exit For
-                    End If
-                Next
+                    Me._NameIndexMap.Clear()
+
+                    ' Rebuild, NameIndexMap
+                    Dim Index As Integer = 0
+                    For Each item As DomainInfo In Me
+                        Me._NameIndexMap.Add(item.ID, Index)
+
+                        Index += 1
+                    Next
+                End If
             End Sub
 
             Public Shadows Sub Remove(ByVal value As DomainInfo)
@@ -111,13 +123,7 @@ Namespace Xeora.Web.Shared
                 Get
                     Dim rDomainInfo As DomainInfo = Nothing
 
-                    For Each tI As DomainInfo In Me
-                        If String.Compare(ID, tI.ID, True) = 0 Then
-                            rDomainInfo = tI
-
-                            Exit For
-                        End If
-                    Next
+                    If Me._NameIndexMap.ContainsKey(ID) Then rDomainInfo = Me(Me._NameIndexMap.Item(ID))
 
                     Return rDomainInfo
                 End Get

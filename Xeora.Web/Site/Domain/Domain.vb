@@ -150,7 +150,7 @@ Namespace Xeora.Web.Site
                 If Me._ControlsXPathNavigator Is Nothing Then
                     Dim xPathDoc As Xml.XPath.XPathDocument = Nothing
                     Dim ControlMapContent As String =
-                        Me._Deployment.ProvideControlMapContent()
+                        Me._Deployment.ProvideControlsContent()
 
                     If Not Me._xPathStream Is Nothing Then Me._xPathStream.Close() : GC.SuppressFinalize(Me._xPathStream)
 

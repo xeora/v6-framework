@@ -241,9 +241,10 @@ Namespace Xeora.Web.Deployment
                     If XeoraFileInfo.Index > -1 Then
                         OutputStream = New IO.MemoryStream()
 
-                        Me.Decompiler.ReadFile(XeoraFileInfo.Index, XeoraFileInfo.CompressedLength, CType(OutputStream, IO.Stream))
+                        Dim RequestResult As XeoraDomainDecompiler.RequestResults =
+                            Me.Decompiler.ReadFile(XeoraFileInfo.Index, XeoraFileInfo.CompressedLength, CType(OutputStream, IO.Stream))
 
-                        If Me.Decompiler.RequestStatus = XeoraDomainDecompiler.RequestResults.PasswordError Then _
+                        If RequestResult = XeoraDomainDecompiler.RequestResults.PasswordError Then _
                             Throw New Exception.DeploymentException([Global].SystemMessages.PASSWORD_WRONG, New Security.SecurityException())
                     Else
                         OutputStream = Nothing
@@ -264,9 +265,15 @@ Namespace Xeora.Web.Deployment
 
             Select Case WorkingDomainDeployment.DeploymentType
                 Case [Shared].DomainInfo.DeploymentTypes.Release
-                    For Each sFI As XeoraDomainDecompiler.XeoraFileInfo In WorkingDomainDeployment.Decompiler.FilesList
-                        If sFI.RegistrationPath.IndexOf(WorkingDomainDeployment.LanguagesRegistration) > -1 Then
-                            DomainDeployment = New DomainDeployment(WorkingDomainDeployment.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(sFI.FileName))
+                    Dim FileListDictionary As Generic.Dictionary(Of String, XeoraDomainDecompiler.XeoraFileInfo) =
+                        WorkingDomainDeployment.Decompiler.FilesList
+
+                    For Each Key As String In FileListDictionary.Keys
+                        If Key.IndexOf(XeoraDomainDecompiler.XeoraFileInfo.CreateSearchKey(WorkingDomainDeployment.LanguagesRegistration, String.Empty)) = 0 Then
+                            Dim XeoraFileInfo As XeoraDomainDecompiler.XeoraFileInfo =
+                                FileListDictionary.Item(Key)
+
+                            DomainDeployment = New DomainDeployment(WorkingDomainDeployment.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(XeoraFileInfo.FileName))
 
                             rLanguageInfos.Add(DomainDeployment.Language.Info)
 

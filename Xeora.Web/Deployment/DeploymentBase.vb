@@ -259,9 +259,10 @@ Namespace Xeora.Web.Deployment
                     If XeoraFileInfo.Index > -1 Then
                         Dim contentStream As New IO.MemoryStream
 
-                        Me._Decompiler.ReadFile(XeoraFileInfo.Index, XeoraFileInfo.CompressedLength, CType(contentStream, IO.Stream))
+                        Dim RequestResult As XeoraDomainDecompiler.RequestResults =
+                            Me._Decompiler.ReadFile(XeoraFileInfo.Index, XeoraFileInfo.CompressedLength, CType(contentStream, IO.Stream))
 
-                        Select Case Me._Decompiler.RequestStatus
+                        Select Case RequestResult
                             Case XeoraDomainDecompiler.RequestResults.Authenticated
                                 Dim sR As New IO.StreamReader(contentStream)
 
@@ -323,9 +324,10 @@ Namespace Xeora.Web.Deployment
                     If XeoraFileInfo.Index > -1 Then
                         Dim contentStream As New IO.MemoryStream
 
-                        Me._Decompiler.ReadFile(XeoraFileInfo.Index, XeoraFileInfo.CompressedLength, CType(contentStream, IO.Stream))
+                        Dim RequestResult As XeoraDomainDecompiler.RequestResults =
+                            Me._Decompiler.ReadFile(XeoraFileInfo.Index, XeoraFileInfo.CompressedLength, CType(contentStream, IO.Stream))
 
-                        Select Case Me._Decompiler.RequestStatus
+                        Select Case RequestResult
                             Case XeoraDomainDecompiler.RequestResults.Authenticated
                                 Dim sR As New IO.StreamReader(contentStream)
 
@@ -388,9 +390,10 @@ Namespace Xeora.Web.Deployment
                     If XeoraFileInfo.Index > -1 Then
                         Dim contentStream As New IO.MemoryStream
 
-                        Me._Decompiler.ReadFile(XeoraFileInfo.Index, XeoraFileInfo.CompressedLength, CType(contentStream, IO.Stream))
+                        Dim RequestResult As XeoraDomainDecompiler.RequestResults =
+                            Me._Decompiler.ReadFile(XeoraFileInfo.Index, XeoraFileInfo.CompressedLength, CType(contentStream, IO.Stream))
 
-                        Select Case Me._Decompiler.RequestStatus
+                        Select Case RequestResult
                             Case XeoraDomainDecompiler.RequestResults.Authenticated
                                 Dim sR As New IO.StreamReader(contentStream)
 
@@ -410,7 +413,7 @@ Namespace Xeora.Web.Deployment
             Return rConfigurationContent
         End Function
 
-        Public Function ProvideControlMapContent() As String
+        Public Function ProvideControlsContent() As String
             Dim rControlMapContent As String = String.Empty
 
             Select Case Me._DeploymentType
@@ -436,7 +439,7 @@ Namespace Xeora.Web.Deployment
                         rControlMapContent = ControlMapContent.ToString()
                     Catch ex As IO.FileNotFoundException
                         Throw New Exception.DeploymentException([Global].SystemMessages.ESSENTIAL_CONTROLSXMLNOTFOUND, ex)
-                    Catch ex As system.Exception
+                    Catch ex As System.Exception
                         rControlMapContent = String.Empty
                     Finally
                         If Not fS Is Nothing Then fS.Close() : GC.SuppressFinalize(fS)
@@ -450,9 +453,10 @@ Namespace Xeora.Web.Deployment
                     If XeoraFileInfo.Index > -1 Then
                         Dim contentStream As New IO.MemoryStream
 
-                        Me._Decompiler.ReadFile(XeoraFileInfo.Index, XeoraFileInfo.CompressedLength, CType(contentStream, IO.Stream))
+                        Dim RequestResult As XeoraDomainDecompiler.RequestResults =
+                            Me._Decompiler.ReadFile(XeoraFileInfo.Index, XeoraFileInfo.CompressedLength, CType(contentStream, IO.Stream))
 
-                        Select Case Me._Decompiler.RequestStatus
+                        Select Case RequestResult
                             Case XeoraDomainDecompiler.RequestResults.Authenticated
                                 Dim sR As New IO.StreamReader(contentStream)
 
@@ -512,6 +516,12 @@ Namespace Xeora.Web.Deployment
                     End Get
                 End Property
 
+                Public ReadOnly Property SearchKey() As String
+                    Get
+                        Return XeoraFileInfo.CreateSearchKey(Me._RegistrationPath, Me._FileName)
+                    End Get
+                End Property
+
                 Public ReadOnly Property Length() As Long
                     Get
                         Return Me._Length
@@ -523,13 +533,18 @@ Namespace Xeora.Web.Deployment
                         Return Me._CompressedLength
                     End Get
                 End Property
+
+                Public Shared Function CreateSearchKey(ByVal RegistrationPath As String, ByVal FileName As String) As String
+                    Return String.Format("{0}${1}", RegistrationPath, FileName)
+                End Function
             End Class
 
             Private _XeoraDomainFileLocation As String
             Private _PasswordHash As Byte() = Nothing
-            Private Shared _LastModifiedDate As Date = Date.MinValue
 
-            Private _RequestStatus As RequestResults
+            Private Shared _XeoraDomainFilesListCache As New Concurrent.ConcurrentDictionary(Of String, Generic.Dictionary(Of String, XeoraFileInfo))
+            Private Shared _XeoraDomainFileStreamBytesCache As Hashtable = Hashtable.Synchronized(New Hashtable())
+            Private Shared _XeoraDomainFileLastModifiedDate As New Concurrent.ConcurrentDictionary(Of String, Date)
 
             Public Enum RequestResults
                 None
@@ -562,42 +577,45 @@ Namespace Xeora.Web.Deployment
                 Dim FI As IO.FileInfo =
                     New IO.FileInfo(Me._XeoraDomainFileLocation)
 
-                If FI.Exists Then XeoraDomainDecompiler._LastModifiedDate = FI.CreationTime
-
-                Me._RequestStatus = RequestResults.None
+                If FI.Exists Then XeoraDomainDecompiler._XeoraDomainFileLastModifiedDate.TryAdd(Me._XeoraDomainFileLocation, FI.CreationTime)
             End Sub
 
-            Public ReadOnly Property RequestStatus() As RequestResults
-                Get
-                    Return Me._RequestStatus
-                End Get
-            End Property
-
-            Private Shared _XeoraDomainFilesList As Generic.List(Of XeoraFileInfo) = Nothing
-            Public ReadOnly Property FilesList() As Generic.List(Of XeoraFileInfo)
+            Public ReadOnly Property FilesList() As Generic.Dictionary(Of String, XeoraFileInfo)
                 Get
                     ' Control Template File Changes
+                    Dim CachedFileDate As Date
+                    If Not XeoraDomainDecompiler._XeoraDomainFileLastModifiedDate.TryGetValue(Me._XeoraDomainFileLocation, CachedFileDate) Then _
+                        CachedFileDate = Date.MinValue
+
                     Dim FI As IO.FileInfo =
                         New IO.FileInfo(Me._XeoraDomainFileLocation)
 
                     If FI.Exists AndAlso
-                        Date.Compare(XeoraDomainDecompiler._LastModifiedDate, FI.CreationTime) <> 0 Then
+                        Date.Compare(CachedFileDate, FI.CreationTime) <> 0 Then
 
-                        ' Clear All Cache
-                        XeoraDomainDecompiler._XeoraDomainFilesList = Nothing
-                        XeoraDomainDecompiler._StreamBytesCache = Nothing
-                        XeoraDomainDecompiler._LastModifiedDate = FI.CreationTime
+                        Me.ClearCache()
                     End If
                     ' !---
 
-                    If XeoraDomainDecompiler._XeoraDomainFilesList Is Nothing Then _
-                        XeoraDomainDecompiler._XeoraDomainFilesList = Me.ReadFileList()
+                    Dim rFileList As New Generic.Dictionary(Of String, XeoraFileInfo)
 
-                    Return XeoraDomainDecompiler._XeoraDomainFilesList
+                    If XeoraDomainDecompiler._XeoraDomainFilesListCache.ContainsKey(Me._XeoraDomainFileLocation) Then
+                        XeoraDomainDecompiler._XeoraDomainFilesListCache.TryGetValue(Me._XeoraDomainFileLocation, rFileList)
+                    Else
+                        Dim XeoraFileInfoList As XeoraFileInfo() = Me.ReadFileList()
+
+                        For Each XeoraFileInfo As XeoraFileInfo In XeoraFileInfoList
+                            rFileList.Add(XeoraFileInfo.SearchKey, XeoraFileInfo)
+                        Next
+
+                        XeoraDomainDecompiler._XeoraDomainFilesListCache.TryAdd(Me._XeoraDomainFileLocation, rFileList)
+                    End If
+
+                    Return rFileList
                 End Get
             End Property
 
-            Private Function ReadFileList() As Generic.List(Of XeoraFileInfo)
+            Private Function ReadFileList() As XeoraFileInfo()
                 Dim rXeoraFileInfo As New Generic.List(Of XeoraFileInfo)
 
                 Dim Index As Long = -1, localRegistrationPath As String = Nothing, localFileName As String = Nothing, Length As Long = -1, CompressedLength As Long = -1
@@ -628,18 +646,15 @@ Namespace Xeora.Web.Deployment
                     If Not XeoraStreamBinaryReader Is Nothing Then XeoraStreamBinaryReader.Close() : GC.SuppressFinalize(XeoraStreamBinaryReader)
                 End Try
 
-                Return rXeoraFileInfo
+                Return rXeoraFileInfo.ToArray()
             End Function
 
             Public Function GetFileInfo(ByVal RegistrationPath As String, ByVal FileName As String) As XeoraFileInfo
                 ' Search In Cache First
-                For Each Item As XeoraFileInfo In Me.FilesList
-                    If String.Compare(RegistrationPath, Item.RegistrationPath, True) = 0 AndAlso
-                        String.Compare(FileName, Item.FileName, True) = 0 Then
+                Dim FilesList As Generic.Dictionary(Of String, XeoraFileInfo) = Me.FilesList
+                Dim CacheSearchKey As String = XeoraFileInfo.CreateSearchKey(RegistrationPath, FileName)
 
-                        Return Item
-                    End If
-                Next
+                If FilesList.ContainsKey(CacheSearchKey) Then Return FilesList.Item(CacheSearchKey)
                 ' !---
 
                 Dim Index As Long = -1, localRegistrationPath As String = Nothing, localFileName As String = Nothing, Length As Long = -1, CompressedLength As Long = -1
@@ -691,27 +706,25 @@ Namespace Xeora.Web.Deployment
                 Return New XeoraFileInfo(Index, localRegistrationPath, localFileName, Length, CompressedLength)
             End Function
 
-            Private Shared _StreamBytesCache As Hashtable = Nothing
-            Public Sub ReadFile(ByVal index As Long, ByVal length As Long, ByRef OutputStream As IO.Stream)
+            Public Function ReadFile(ByVal index As Long, ByVal length As Long, ByRef OutputStream As IO.Stream) As RequestResults
+                Dim rRequestResult As RequestResults = RequestResults.None
+
                 If index = -1 Then Throw New IndexOutOfRangeException()
                 If length < 1 Then Throw New ArgumentOutOfRangeException()
                 If OutputStream Is Nothing Then Throw New NullReferenceException()
 
                 ' Search in Cache First
                 Dim SearchKey As String =
-                    String.Format("i:{0}.l:{1}", index, length)
+                    String.Format("{0}$i:{1}.l:{2}", Me._XeoraDomainFileLocation, index, length)
                 Dim InCache As Boolean = False
 
-                If XeoraDomainDecompiler._StreamBytesCache Is Nothing Then _
-                    XeoraDomainDecompiler._StreamBytesCache = Hashtable.Synchronized(New Hashtable)
-
-                SyncLock XeoraDomainDecompiler._StreamBytesCache.SyncRoot
-                    If XeoraDomainDecompiler._StreamBytesCache.ContainsKey(SearchKey) Then
-                        Dim rbuffer As Byte() = CType(XeoraDomainDecompiler._StreamBytesCache.Item(SearchKey), Byte())
+                SyncLock XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.SyncRoot
+                    If XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.ContainsKey(SearchKey) Then
+                        Dim rbuffer As Byte() = CType(XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.Item(SearchKey), Byte())
 
                         OutputStream.Write(rbuffer, 0, rbuffer.Length)
 
-                        Me._RequestStatus = RequestResults.Authenticated
+                        rRequestResult = RequestResults.Authenticated
 
                         InCache = True
                     End If
@@ -751,7 +764,7 @@ Namespace Xeora.Web.Deployment
                         If bC > 0 Then OutputStream.Write(rbuffer, 0, bC)
                     Loop While bC > 0
 
-                    Me._RequestStatus = RequestResults.Authenticated
+                    rRequestResult = RequestResults.Authenticated
 
                     ' Cache What You Read
                     Dim cacheBytes As Byte() = CType(Array.CreateInstance(GetType(Byte), tB), Byte())
@@ -759,12 +772,12 @@ Namespace Xeora.Web.Deployment
                     OutputStream.Seek(0, IO.SeekOrigin.Begin)
                     OutputStream.Read(cacheBytes, 0, cacheBytes.Length)
 
-                    SyncLock XeoraDomainDecompiler._StreamBytesCache.SyncRoot
+                    SyncLock XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.SyncRoot
                         Try
-                            If XeoraDomainDecompiler._StreamBytesCache.ContainsKey(SearchKey) Then _
-                                XeoraDomainDecompiler._StreamBytesCache.Remove(SearchKey)
+                            If XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.ContainsKey(SearchKey) Then _
+                                XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.Remove(SearchKey)
 
-                            XeoraDomainDecompiler._StreamBytesCache.Add(SearchKey, cacheBytes)
+                            XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.Add(SearchKey, cacheBytes)
                         Catch ex As System.Exception
                             ' Just Handle Exceptions
                             ' If an error occur while caching, let it not to be cached.
@@ -772,9 +785,9 @@ Namespace Xeora.Web.Deployment
                     End SyncLock
                     ' !---
                 Catch ex As IO.FileNotFoundException
-                    Me._RequestStatus = RequestResults.ContentNotExists
+                    rRequestResult = RequestResults.ContentNotExists
                 Catch ex As System.Exception
-                    Me._RequestStatus = RequestResults.PasswordError
+                    rRequestResult = RequestResults.PasswordError
                 Finally
                     If Not XeoraFileStream Is Nothing Then XeoraFileStream.Close() : GC.SuppressFinalize(XeoraFileStream)
 
@@ -784,11 +797,22 @@ Namespace Xeora.Web.Deployment
 
 QUICKEXIT:
                 OutputStream.Seek(0, IO.SeekOrigin.Begin)
-            End Sub
+
+                Return rRequestResult
+            End Function
 
             Public Sub ClearCache()
-                If Not XeoraDomainDecompiler._StreamBytesCache Is Nothing Then _
-                    XeoraDomainDecompiler._StreamBytesCache = Hashtable.Synchronized(New Hashtable)
+                SyncLock XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.SyncRoot
+                    For Each Key As Object In XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.Keys
+                        Dim Key_s As String = CType(Key, String)
+
+                        If Key_s.IndexOf(String.Format("{0}$", Me._XeoraDomainFileLocation)) = 0 Then _
+                            XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.Remove(Key_s)
+                    Next
+                End SyncLock
+
+                XeoraDomainDecompiler._XeoraDomainFilesListCache.TryRemove(Me._XeoraDomainFileLocation, Nothing)
+                XeoraDomainDecompiler._XeoraDomainFileLastModifiedDate.TryRemove(Me._XeoraDomainFileLocation, Nothing)
             End Sub
         End Class
 #End Region
