@@ -71,6 +71,8 @@ Namespace Xeora.Web.Shared
         ReadOnly Property Response As IHttpResponse
         ReadOnly Property Content As IHttpContextContent(Of Object, Object)
         ReadOnly Property XeoraRequestID As String
+        Function CreateThreadID() As String
+        Sub Dispose()
 
         Interface IHttpContextContent(Of K, V)
             ReadOnly Property Items As Generic.KeyValuePair(Of K, V)()

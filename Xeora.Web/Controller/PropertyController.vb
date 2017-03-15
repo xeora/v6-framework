@@ -68,7 +68,7 @@ Namespace Xeora.Web.Controller
                                     [Shared].Helpers.Context.Request.QueryString.Item(Me.InsideValue.Substring(1))
 
                                 Select Case [Shared].Configurations.RequestTagFiltering
-                                    Case [Shared].Globals.RequestTagFilteringTypes.OnlyQuery, [Shared].Globals.RequestTagFilteringTypes.Both
+                                    Case [Shared].Enumerators.RequestTagFilteringTypes.OnlyQuery, [Shared].Enumerators.RequestTagFilteringTypes.Both
                                         Dim ArgumentNameForCompare As String =
                                                 Me.InsideValue.Substring(1).ToLower(New Globalization.CultureInfo("en-US"))
 
@@ -110,7 +110,7 @@ Namespace Xeora.Web.Controller
                                                 [Shared].Helpers.Context.Request.Form.Item(Me.InsideValue.Substring(1))
 
                                             Select Case [Shared].Configurations.RequestTagFiltering
-                                                Case [Shared].Globals.RequestTagFilteringTypes.OnlyForm, [Shared].Globals.RequestTagFilteringTypes.Both
+                                                Case [Shared].Enumerators.RequestTagFilteringTypes.OnlyForm, [Shared].Enumerators.RequestTagFilteringTypes.Both
                                                     Dim ArgumentNameForCompare As String =
                                                     Me.InsideValue.Substring(1).ToLower(New Globalization.CultureInfo("en-US"))
 

@@ -4,7 +4,7 @@ Namespace Xeora.Web.Shared
     <CLSCompliant(True)>
     Public Class Execution
         Public Overloads Shared Function CrossCall(ByVal ExecutableName As String, ByVal ClassName As String, ByVal ProcedureName As String, ByVal ParamArray ParameterValues As Object()) As Object
-            Return Execution.CrossCall(Helpers.CurrentDomainIDAccessTree, ExecutableName, ClassName, ProcedureName, ParameterValues)
+            Return Execution.CrossCall(Helpers.CurrentDomainInstance.IDAccessTree, ExecutableName, ClassName, ProcedureName, ParameterValues)
         End Function
 
         Public Overloads Shared Function CrossCall(ByVal DomainIDAccessTree As String(), ByVal ExecutableName As String, ByVal ClassName As String, ByVal ProcedureName As String, ByVal ParamArray ParameterValues As Object()) As Object

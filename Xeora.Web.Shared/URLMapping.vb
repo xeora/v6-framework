@@ -41,9 +41,9 @@ Namespace Xeora.Web.Shared
 
         Public Shared ReadOnly Property Current As URLMapping
             Get
-                If Not URLMapping._URLMappings.ContainsKey(Helpers.CurrentDomainIDAccessTree) Then
+                If Not URLMapping._URLMappings.ContainsKey(Helpers.CurrentDomainInstance.IDAccessTree) Then
                     Dim DomainInstance As IDomain =
-                        Helpers.CreateDomainInstance()
+                        Helpers.CurrentDomainInstance
 
                     Dim URLMappingInstance As URLMapping =
                         New URLMapping(
@@ -56,7 +56,7 @@ Namespace Xeora.Web.Shared
 
                 Dim rURLMappingInstance As URLMapping = Nothing
 
-                URLMapping._URLMappings.TryGetValue(Helpers.CurrentDomainIDAccessTree, rURLMappingInstance)
+                URLMapping._URLMappings.TryGetValue(Helpers.CurrentDomainInstance.IDAccessTree, rURLMappingInstance)
 
                 Return rURLMappingInstance
             End Get

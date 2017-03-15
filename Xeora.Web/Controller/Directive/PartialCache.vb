@@ -43,10 +43,12 @@ Namespace Xeora.Web.Controller.Directive
                     Dim Instance As IDomain = Nothing
                     RaiseEvent InstanceRequested(Instance)
 
-                    Dim UniqueCacheID As String = [Object].ProvideUniqueCacheID(Me, Instance)
+                    Dim UniqueCacheID As String = CacheObject.ProvideUniqueCacheID(Me, Instance)
 
-                    If Me.Objects.ContainsKey(UniqueCacheID) Then
-                        Me.DefineRenderedValue(CType(Me.Objects.Item(UniqueCacheID), [Object]).Content)
+                    If Me.PartialCaches.ContainsKey(Instance.IDAccessTree) AndAlso
+                        CType(Me.PartialCaches.Item(Instance.IDAccessTree), Hashtable).ContainsKey(UniqueCacheID) Then
+
+                        Me.DefineRenderedValue(CType(CType(Me.PartialCaches.Item(Instance.IDAccessTree), Hashtable).Item(UniqueCacheID), CacheObject).Content)
                     Else
                         Dim controlValueSplitted As String() =
                             Me.InsideValue.Split(":"c)
@@ -60,19 +62,31 @@ Namespace Xeora.Web.Controller.Directive
 
                             RaiseEvent ParseRequested(BlockContent, Me)
 
-                            Threading.Monitor.Enter(Me.Objects.SyncRoot)
-                            Try
-                                If Not Me.Objects.ContainsKey(UniqueCacheID) Then
-                                    Dim CacheObject As [Object] =
-                                        New [Object](UniqueCacheID, Me.Create())
+                            Dim CacheObject As CacheObject
 
-                                    Me.Objects.Item(UniqueCacheID) = CacheObject
+                            Threading.Monitor.Enter(Me.PartialCaches.SyncRoot)
+                            Try
+
+                                If Not Me.PartialCaches.ContainsKey(Instance.IDAccessTree) Then _
+                                    Me.PartialCaches.Item(Instance.IDAccessTree) = New Hashtable()
+
+                                Dim WorkingCacheGroup As Hashtable =
+                                    CType(Me.PartialCaches.Item(Instance.IDAccessTree), Hashtable)
+
+                                If Not WorkingCacheGroup.ContainsKey(UniqueCacheID) Then
+                                    CacheObject = New CacheObject(UniqueCacheID, Me.Create())
+
+                                    WorkingCacheGroup.Item(UniqueCacheID) = CacheObject
+                                Else
+                                    CacheObject = CType(WorkingCacheGroup.Item(UniqueCacheID), CacheObject)
                                 End If
+
+                                Me.PartialCaches.Item(Instance.IDAccessTree) = WorkingCacheGroup
                             Finally
-                                Threading.Monitor.Exit(Me.Objects.SyncRoot)
+                                Threading.Monitor.Exit(Me.PartialCaches.SyncRoot)
                             End Try
 
-                            Me.DefineRenderedValue(CType(Me.Objects.Item(UniqueCacheID), [Object]).Content)
+                            Me.DefineRenderedValue(CacheObject.Content)
                         End If
                     End If
                 Else ' Standart Value
@@ -83,21 +97,27 @@ Namespace Xeora.Web.Controller.Directive
             End If
         End Sub
 
-        Private Shared _Objects As Hashtable = Nothing
-        Private ReadOnly Property Objects As Hashtable
+        Private Shared _PartialCaches As Hashtable = Nothing
+        Private ReadOnly Property PartialCaches As Hashtable
             Get
-                If PartialCache._Objects Is Nothing Then _
-                    PartialCache._Objects = Hashtable.Synchronized(New Hashtable())
+                If PartialCache._PartialCaches Is Nothing Then _
+                    PartialCache._PartialCaches = Hashtable.Synchronized(New Hashtable())
 
-                Return PartialCache._Objects
+                Return PartialCache._PartialCaches
             End Get
         End Property
 
-        Public Shared Sub ClearCache()
-            PartialCache._Objects = Nothing
+        Public Shared Sub ClearCache(ByVal DomainIDAccessTree As String())
+            Threading.Monitor.Enter(PartialCache._PartialCaches.SyncRoot)
+            Try
+                If PartialCache._PartialCaches.ContainsKey(DomainIDAccessTree) Then _
+                    PartialCache._PartialCaches.Remove(DomainIDAccessTree)
+            Finally
+                Threading.Monitor.Exit(PartialCache._PartialCaches.SyncRoot)
+            End Try
         End Sub
 
-        Private Class [Object]
+        Private Class CacheObject
             Private _UniqueCacheID As String
 
             Private _Content As String
@@ -112,7 +132,6 @@ Namespace Xeora.Web.Controller.Directive
             Public Shared Function ProvideUniqueCacheID(ByVal PartialCache As PartialCache, ByVal Instance As IDomain) As String
                 If PartialCache Is Nothing Then Throw New NullReferenceException("PartialCache Parameter must not be null!")
 
-                Dim DomainIDAccessTreeString As String = String.Join(Of String)("\", Helpers.CurrentDomainIDAccessTree)
                 Dim ServiceFullPath As String = String.Empty
 
                 Dim WorkingObject As ControllerBase =
@@ -137,7 +156,7 @@ Namespace Xeora.Web.Controller.Directive
                 If String.IsNullOrEmpty(Instance.Language.ID) OrElse String.IsNullOrEmpty(ServiceFullPath) OrElse PositionID = -1 Then _
                     Throw New Exception.ParseException()
 
-                Return String.Format("{0}_{1}_{2}_{3}", DomainIDAccessTreeString, Instance.Language.ID, ServiceFullPath, PositionID)
+                Return String.Format("{0}_{1}_{2}", Instance.Language.ID, ServiceFullPath, PositionID)
             End Function
 
             Public ReadOnly Property UniqueCacheID As String

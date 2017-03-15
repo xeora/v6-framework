@@ -19,7 +19,7 @@ Namespace Xeora.Web.Site
         Private _ExecuteIn As String
         Private _ServiceResult As String
 
-        Public Sub New(ByVal RequestID As String, ByVal URL As [Shared].URL, ByVal OverrideCurrentDomainLanguageID As Boolean)
+        Public Sub New(ByVal RequestID As String, ByVal URL As [Shared].URL)
             Me._RequestID = RequestID
             Me._Domain = Nothing
 
@@ -42,13 +42,6 @@ Namespace Xeora.Web.Site
             End Try
 
             Me.SelectDomain(URL)
-
-            If Not Me._Domain Is Nothing Then
-                [Shared].Globals.PageCaching.DefaultType = Me._Domain.Settings.Configurations.DefaultCaching
-                [Shared].Helpers.CurrentDomainIDAccessTree = Me._Domain.IDAccessTree
-                If OverrideCurrentDomainLanguageID Then _
-                    [Shared].Helpers.CurrentDomainLanguageID = Me._Domain.Language.ID
-            End If
         End Sub
 
         Public Shared ReadOnly Property Instance(ByVal RequestID As String) As [Shared].IDomainControl
@@ -186,8 +179,6 @@ Namespace Xeora.Web.Site
 
         Public Sub PushLanguageChange(ByVal LanguageID As String) Implements [Shared].IDomainControl.PushLanguageChange
             CType(Me._Domain, Domain).PushLanguageChange(LanguageID)
-
-            [Shared].Helpers.CurrentDomainLanguageID = Me._Domain.Language.ID
         End Sub
 
         Public Function QueryURLResolver(ByVal RequestFilePath As String) As [Shared].URLMapping.ResolvedMapped Implements [Shared].IDomainControl.QueryURLResolver

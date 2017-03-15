@@ -56,7 +56,7 @@ Namespace Xeora.Web.Shared
         End Function
 
         Public Overloads Shared Function GetDomainContentsPath() As String
-            Return Helpers.GetDomainContentsPath(Helpers.CurrentDomainIDAccessTree, Helpers.CurrentDomainLanguageID)
+            Return Helpers.GetDomainContentsPath(Helpers.CurrentDomainInstance.IDAccessTree, Helpers.CurrentDomainInstance.Language.ID)
         End Function
 
         Public Overloads Shared Function GetDomainContentsPath(ByVal DomainIDAccessTree As String(), ByVal DomainLanguageID As String) As String
@@ -132,8 +132,20 @@ Namespace Xeora.Web.Shared
             Return rServicePathInfo
         End Function
 
-        Public Shared Function GetMimeType(ByVal FileExtension As String) As String
-            Dim rString As Object = "application/octet-stream"
+        Private Enum MimeLookups
+            Type
+            Extention
+        End Enum
+
+        Private Shared Function ResolveMime(ByVal MimeLookup As MimeLookups, ByVal SearchValue As String) As String
+            Dim rString As String = String.Empty
+
+            Select Case MimeLookup
+                Case MimeLookups.Type
+                    rString = "application/octet-stream"
+                Case MimeLookups.Extention
+                    rString = ".dat"
+            End Select
 
             Try
                 Dim HelperAsm As Reflection.Assembly, objHelper As Type
@@ -156,88 +168,63 @@ Namespace Xeora.Web.Shared
                 If Not HelperInstance Is Nothing Then
                     Dim AccessPathProp As Reflection.PropertyInfo =
                         HelperInstance.GetType().GetProperty("AccessPath", GetType(String))
-                    AccessPathProp.SetValue(HelperInstance, FileExtension, Nothing)
 
-                    rString = HelperInstance.GetType().GetMethod("GetRegistryValue").Invoke(HelperInstance, New Object() {CType("Content Type", Object)})
+                    Dim Result As Object = Nothing
+                    Select Case MimeLookup
+                        Case MimeLookups.Type
+                            AccessPathProp.SetValue(HelperInstance, SearchValue, Nothing)
+                            Result = HelperInstance.GetType().GetMethod("GetRegistryValue").Invoke(HelperInstance, New Object() {CType("Content Type", Object)})
 
-                    If rString Is Nothing Then rString = "application/octet-stream"
+                            If Result Is Nothing Then rString = "application/octet-stream"
+                        Case MimeLookups.Extention
+                            AccessPathProp.SetValue(HelperInstance, String.Format("Mime\Database\Content Type\{0}", SearchValue), Nothing)
+                            Result = HelperInstance.GetType().GetMethod("GetRegistryValue").Invoke(HelperInstance, New Object() {CType("Extension", Object)})
+
+                            If Result Is Nothing Then rString = ".dat"
+                    End Select
                 End If
             Catch ex As Exception
                 ' Do Nothing Just Handle Exception
             End Try
 
-            Return rString.ToString()
+            Return rString
+        End Function
+
+        Public Shared Function GetMimeType(ByVal FileExtension As String) As String
+            Return Helpers.ResolveMime(MimeLookups.Type, FileExtension)
         End Function
 
         Public Shared Function GetExtensionFromMimeType(ByVal MimeType As String) As String
-            Dim rString As Object = ".dat"
-
-            Try
-                Dim HelperAsm As Reflection.Assembly, objHelper As Type
-                Dim HelperInstance As Object = Nothing
-
-                HelperAsm = Reflection.Assembly.Load("Xeora.Web")
-                objHelper = HelperAsm.GetType("Xeora.Web.Helper.Registry")
-
-                For Each _ctorInfo As Reflection.ConstructorInfo In objHelper.GetConstructors()
-                    If _ctorInfo.IsConstructor AndAlso
-                        _ctorInfo.IsPublic AndAlso
-                        _ctorInfo.GetParameters().Length = 1 Then
-
-                        HelperInstance = _ctorInfo.Invoke(New Object() {0})
-
-                        Exit For
-                    End If
-                Next
-
-                If Not HelperInstance Is Nothing Then
-                    Dim AccessPathProp As Reflection.PropertyInfo =
-                        HelperInstance.GetType().GetProperty("AccessPath", GetType(String))
-                    AccessPathProp.SetValue(HelperInstance, String.Format("Mime\Database\Content Type\{0}", MimeType), Nothing)
-
-                    rString = HelperInstance.GetType().GetMethod("GetRegistryValue").Invoke(HelperInstance, New Object() {CType("Extension", Object)})
-
-                    If rString Is Nothing Then rString = ".dat"
-                End If
-            Catch ex As Exception
-                ' Do Nothing Just Handle Exception
-            End Try
-
-            Return rString.ToString()
+            Return Helpers.ResolveMime(MimeLookups.Extention, MimeType)
         End Function
 
+        Private Shared ReadOnly Property DomainControlInstance As IDomainControl
+            Get
+                Dim DomainAsm As Reflection.Assembly, objDomain As Type
+
+                DomainAsm = Reflection.Assembly.Load("Xeora.Web")
+                objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
+
+                Return CType(objDomain.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
+            End Get
+        End Property
+
         Public Shared Sub ProvideDomainContentsFileStream(ByRef OutputStream As IO.Stream, ByVal FileName As String)
-            Dim DomainAsm As Reflection.Assembly, objDomain As Type
-
-            DomainAsm = Reflection.Assembly.Load("Xeora.Web")
-            objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
-
-            Dim workingDomainControl As IDomainControl =
-                CType(objDomain.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
-
-            workingDomainControl.ProvideFileStream(OutputStream, FileName)
+            Helpers.DomainControlInstance.ProvideFileStream(OutputStream, FileName)
         End Sub
 
         Public Shared Sub PushLanguageChange(ByVal LanguageID As String)
-            Dim DomainAsm As Reflection.Assembly, objDomain As Type
-
-            DomainAsm = Reflection.Assembly.Load("Xeora.Web")
-            objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
-
-            Dim workingDomainControl As IDomainControl =
-                CType(objDomain.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
-
-            workingDomainControl.PushLanguageChange(LanguageID)
+            Helpers.DomainControlInstance.PushLanguageChange(LanguageID)
         End Sub
 
         Private Shared ReadOnly Property IsCookiless() As Boolean
             Get
                 Dim _IsCookiless As Boolean = False
 
-                Select Case Globals.PageCaching.DefaultType
-                    Case Globals.PageCaching.Types.AllContentCookiless,
-                         Globals.PageCaching.Types.NoCacheCookiless,
-                         Globals.PageCaching.Types.TextsOnlyCookiless
+                Select Case Helpers.CurrentDomainInstance.Settings.Configurations.DefaultCaching
+                    Case Enumerators.PageCachingTypes.AllContentCookiless,
+                         Enumerators.PageCachingTypes.NoCacheCookiless,
+                         Enumerators.PageCachingTypes.TextsOnlyCookiless
 
                         _IsCookiless = True
                     Case Else
@@ -248,103 +235,17 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
-        Public Shared Property CurrentDomainIDAccessTree() As String()
+        Public Shared ReadOnly Property CurrentDomainInstance() As IDomain
             Get
-                Dim rCurrentDomainIDAccessTree As String() = Nothing
-                Dim SearchString As String =
-                    String.Format("{0}_DomainIDAccessTree", Configurations.VirtualRoot.Replace("/"c, "_"c))
-
-                If Not Helpers.Context.Session.Item(SearchString) Is Nothing Then _
-                    rCurrentDomainIDAccessTree = CType(Helpers.Context.Session.Item(SearchString), String())
-
-                If Not Helpers.IsCookiless AndAlso rCurrentDomainIDAccessTree Is Nothing Then
-                    If Helpers.Context.Request.Cookie.Item(SearchString) Is Nothing OrElse
-                        Helpers.Context.Request.Cookie.Item(SearchString).Value Is Nothing OrElse
-                        Helpers.Context.Request.Cookie.Item(SearchString).Value.Trim().Length = 0 Then
-
-                        rCurrentDomainIDAccessTree = Configurations.DefaultDomain
-                        Helpers.CurrentDomainIDAccessTree = rCurrentDomainIDAccessTree
-                    Else
-                        rCurrentDomainIDAccessTree = Helpers.Context.Request.Cookie.Item(SearchString).Value.Split("\"c)
-                    End If
-                Else
-                    If rCurrentDomainIDAccessTree Is Nothing Then
-                        rCurrentDomainIDAccessTree = Configurations.DefaultDomain
-                        Helpers.CurrentDomainIDAccessTree = rCurrentDomainIDAccessTree
-                    End If
-                End If
-
-                Return rCurrentDomainIDAccessTree
+                Return Helpers.DomainControlInstance.Domain
             End Get
-            Set(ByVal Value As String())
-                Dim SearchString As String =
-                    String.Format("{0}_DomainIDAccessTree", Configurations.VirtualRoot.Replace("/"c, "_"c))
-
-                Helpers.Context.Session.Item(SearchString) = Value
-
-                If Not Helpers.IsCookiless Then
-                    Dim DomainID_Cookie As New System.Web.HttpCookie(SearchString, String.Join(Of String)("\", Value))
-
-                    DomainID_Cookie.Expires = Date.Now.AddMonths(1)
-                    Helpers.Context.Response.Cookie.Add(DomainID_Cookie)
-                End If
-            End Set
         End Property
 
-        Public Shared Property CurrentDomainLanguageID() As String
-            Get
-                Dim rCurrentDomainLanguage As String = Nothing
-                Dim LanguageSearchString As String =
-                    String.Format("{0}_DomainLanguageID", Configurations.VirtualRoot.Replace("/"c, "_"c))
-
-                If Not Helpers.Context.Session.Item(LanguageSearchString) Is Nothing Then _
-                    rCurrentDomainLanguage = CType(Helpers.Context.Session.Item(LanguageSearchString), String)
-
-                If Not Helpers.IsCookiless AndAlso String.IsNullOrEmpty(rCurrentDomainLanguage) Then
-                    If Helpers.Context.Request.Cookie.Item(LanguageSearchString) Is Nothing OrElse
-                        Helpers.Context.Request.Cookie.Item(LanguageSearchString).Value Is Nothing OrElse
-                        Helpers.Context.Request.Cookie.Item(LanguageSearchString).Value.Trim().Length = 0 Then
-
-                        rCurrentDomainLanguage = Nothing
-                    Else
-                        rCurrentDomainLanguage = Helpers.Context.Request.Cookie.Item(LanguageSearchString).Value
-                    End If
-                End If
-
-                Return rCurrentDomainLanguage
-            End Get
-            Set(ByVal Value As String)
-                Dim LanguageSearchString As String =
-                    String.Format("{0}_DomainLanguageID", Configurations.VirtualRoot.Replace("/"c, "_"c))
-
-                Helpers.Context.Session.Item(LanguageSearchString) = Value
-
-                If Not Helpers.IsCookiless Then
-                    Dim DomainLanguage_Cookie As New System.Web.HttpCookie(LanguageSearchString, Value)
-
-                    DomainLanguage_Cookie.Expires = Date.Now.AddMonths(1)
-                    Helpers.Context.Response.Cookie.Add(DomainLanguage_Cookie)
-                End If
-            End Set
-        End Property
-
-        Public Overloads Shared Function CreateDomainInstance() As IDomain
-            Dim DomainAsm As Reflection.Assembly, objDomain As Type
-
-            DomainAsm = Reflection.Assembly.Load("Xeora.Web")
-            objDomain = DomainAsm.GetType("Xeora.Web.Site.DomainControl", False, True)
-
-            Dim workingDomainControl As IDomainControl =
-                CType(objDomain.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
-
-            Return workingDomainControl.Domain
+        Public Overloads Shared Function CreateNewDomainInstance(ByVal DomainIDAccessTree As String()) As IDomain
+            Return Helpers.CreateNewDomainInstance(DomainIDAccessTree, Nothing)
         End Function
 
-        Public Overloads Shared Function CreateDomainInstance(ByVal DomainIDAccessTree As String()) As IDomain
-            Return Helpers.CreateDomainInstance(DomainIDAccessTree, Nothing)
-        End Function
-
-        Public Overloads Shared Function CreateDomainInstance(ByVal DomainIDAccessTree As String(), ByVal DomainLanguageID As String) As IDomain
+        Public Overloads Shared Function CreateNewDomainInstance(ByVal DomainIDAccessTree As String(), ByVal DomainLanguageID As String) As IDomain
             Dim rIDomain As IDomain
             Dim DomainAsm As Reflection.Assembly, objDomain As Type
 
@@ -384,37 +285,6 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
-        Public Shared ReadOnly Property URLReferrer() As String
-            Get
-                Dim rString As String
-                Try
-                    rString = CType(Helpers.Context.Session.Item("_sys_Referrer"), String)
-                Catch ex As Exception
-                    rString = String.Empty
-                End Try
-
-                Return rString
-            End Get
-        End Property
-
-        Public Shared Function CreateThreadContext() As String
-            Dim RequestAsm As Reflection.Assembly, objRequest As Type
-
-            RequestAsm = Reflection.Assembly.Load("Xeora.Web.Handler")
-            objRequest = RequestAsm.GetType("Xeora.Web.Handler.RequestModule", False, True)
-
-            Return CType(objRequest.InvokeMember("CreateThreadContext", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), String)
-        End Function
-
-        Public Shared Sub DestroyThreadContext(ByVal ThreadRequestID As String)
-            Dim RequestAsm As Reflection.Assembly, objRequest As Type
-
-            RequestAsm = Reflection.Assembly.Load("Xeora.Web.Handler")
-            objRequest = RequestAsm.GetType("Xeora.Web.Handler.RequestModule", False, True)
-
-            objRequest.InvokeMember("DestroyThreadContext", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, New Object() {ThreadRequestID})
-        End Sub
-
         Public Shared Sub AssignRequestID(ByVal RequestID As String)
             AppDomain.CurrentDomain.SetData(
                     String.Format("RequestID_{0}",
@@ -433,38 +303,18 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
-        'Public Shared ReadOnly Property HashCode() As String
-        '    Get
-        '        Dim _HashCode As String
+        Public Shared ReadOnly Property URLReferrer() As String
+            Get
+                Dim rString As String
+                Try
+                    rString = CType(Helpers.Context.Session.Item("_sys_Referrer"), String)
+                Catch ex As Exception
+                    rString = String.Empty
+                End Try
 
-        '        Dim RequestFilePath As String =
-        '            Context.Request.FilePath
-
-        '        RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(Configurations.ApplicationRoot.BrowserImplementation) + Configurations.ApplicationRoot.BrowserImplementation.Length)
-
-        '        Dim mR As Text.RegularExpressions.Match =
-        '            Text.RegularExpressions.Regex.Match(RequestFilePath, "\d+/")
-
-        '        If mR.Success AndAlso
-        '            mR.Index = 0 Then
-
-        '            _HashCode = mR.Value.Substring(0, mR.Value.Length - 1)
-        '        Else
-        '            _HashCode = Context.GetHashCode().ToString()
-        '        End If
-
-        '        Return _HashCode
-        '    End Get
-        'End Property
-
-        Public Shared Sub ClearStaticCache()
-            Dim RequestAsm As Reflection.Assembly, objRequest As Type
-
-            RequestAsm = Reflection.Assembly.Load("Xeora.Web.Handler")
-            objRequest = RequestAsm.GetType("Xeora.Web.Handler.RequestModule", False, True)
-
-            objRequest.InvokeMember("ClearStaticCache", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, Nothing)
-        End Sub
+                Return rString
+            End Get
+        End Property
 
         Public Shared Sub ReloadApplication()
             Dim RequestAsm As Reflection.Assembly, objRequest As Type

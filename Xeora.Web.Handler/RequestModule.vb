@@ -711,10 +711,6 @@ Namespace Xeora.Web.Handler
                 Context.Response.Redirect(Context.Request.URL.Raw)
         End Sub
 
-        Public Shared Sub ClearStaticCache()
-            Controller.Directive.PartialCache.ClearCache()
-        End Sub
-
         Public Shared ReadOnly Property VariablePool() As Site.Service.VariablePool
             Get
                 Return RequestModule._VPService
@@ -737,7 +733,7 @@ Namespace Xeora.Web.Handler
             End Get
         End Property
 
-        Public Shared Function CreateThreadContext(ByVal RequestID As String) As String
+        Friend Shared Function DuplicateContext(ByVal RequestID As String) As String
             Dim rNewRequestID As String = String.Empty
 
             If Not RequestModule._HttpContextTable Is Nothing AndAlso
@@ -774,7 +770,7 @@ Namespace Xeora.Web.Handler
             Return rNewRequestID
         End Function
 
-        Public Shared Sub DestroyThreadContext(ByVal RequestID As String)
+        Friend Shared Function DisposeContext(ByVal RequestID As String) As Boolean
             If Not RequestModule._HttpContextTable Is Nothing AndAlso
                 Not String.IsNullOrEmpty(RequestID) Then
 
@@ -784,14 +780,19 @@ Namespace Xeora.Web.Handler
                         Dim ContextItem As ContextContainer =
                             CType(RequestModule._HttpContextTable.Item(RequestID), ContextContainer)
 
-                        If ContextItem.IsThreadContext Then _
+                        If ContextItem.IsThreadContext Then
                             RequestModule._HttpContextTable.Remove(RequestID)
+
+                            Return True
+                        End If
                     End If
                 Finally
                     Threading.Monitor.Exit(RequestModule._HttpContextTable.SyncRoot)
                 End Try
             End If
-        End Sub
+
+            Return False
+        End Function
 
         Private Sub LoadApplication(ByVal ForceReload As Boolean)
             If Not ForceReload AndAlso Not String.IsNullOrEmpty(RequestModule._pApplicationID) Then Exit Sub

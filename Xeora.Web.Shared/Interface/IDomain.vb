@@ -19,6 +19,7 @@ Namespace Xeora.Web.Shared
         ReadOnly Property xService() As IDomain.IxService
         ReadOnly Property Children() As DomainInfo.DomainInfoCollection
         Function Render(ByVal ServicePathInfo As ServicePathInfo, ByVal MessageResult As ControlResult.Message, Optional UpdateBlockControlID As String = Nothing) As String
+        Sub ClearCache()
 
         Public Interface ISettings
             Inherits IDisposable
@@ -30,7 +31,7 @@ Namespace Xeora.Web.Shared
                 ReadOnly Property AuthenticationPage() As String
                 ReadOnly Property DefaultPage() As String
                 ReadOnly Property DefaultLanguage() As String
-                ReadOnly Property DefaultCaching() As Globals.PageCaching.Types
+                ReadOnly Property DefaultCaching() As Enumerators.PageCachingTypes
                 ReadOnly Property DefaultSecurityBind() As String
             End Interface
 

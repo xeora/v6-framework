@@ -132,9 +132,9 @@ Namespace Xeora.Web.Site
             Me.BuildDomain(Me._Deployment.DomainIDAccessTree, LanguageID)
         End Sub
 
-        Public Sub ClearCache()
+        Public Sub ClearCache() Implements [Shared].IDomain.ClearCache
             ' Clear Template Partial Render Cache
-            Controller.Directive.PartialCache.ClearCache()
+            Controller.Directive.PartialCache.ClearCache(Me.IDAccessTree)
 
             ' Clear Deployment Template Cache
             Me._Deployment.ClearCache()
