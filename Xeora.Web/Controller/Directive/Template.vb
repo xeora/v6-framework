@@ -48,13 +48,15 @@ Namespace Xeora.Web.Controller.Directive
 
             Dim CachedServiceItem As IDomain.ISettings.IServices.IServiceItem = ServiceItem
             Do Until WorkingInstance Is Nothing
-                For Each Key As String In CachedServiceItem.AuthenticationKeys
-                    Dim IsExists As Boolean = False
-                    For Each Item As String In AuthenticationKeys
-                        If String.Compare(Item, Key, True) = 0 Then IsExists = True : Exit For
+                If Not CachedServiceItem Is Nothing Then
+                    For Each Key As String In CachedServiceItem.AuthenticationKeys
+                        Dim IsExists As Boolean = False
+                        For Each Item As String In AuthenticationKeys
+                            If String.Compare(Item, Key, True) = 0 Then IsExists = True : Exit For
+                        Next
+                        If Not IsExists Then AuthenticationKeys.Add(Key)
                     Next
-                    If Not IsExists Then AuthenticationKeys.Add(Key)
-                Next
+                End If
 
                 WorkingInstance = WorkingInstance.Parent
 
