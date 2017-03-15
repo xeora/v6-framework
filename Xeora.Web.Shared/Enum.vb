@@ -1,7 +1,7 @@
 ﻿Option Strict On
 
 Namespace Xeora.Web.Shared
-    Public Class Enumerators
+    Public Class [Enum]
         Public Enum PageCachingTypes
             AllContent
             AllContentCookiless

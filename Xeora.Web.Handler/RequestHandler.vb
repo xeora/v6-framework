@@ -81,16 +81,16 @@ Namespace Xeora.Web.Handler
                 Try
                     Me._DomainControl = New Site.DomainControl(Me._RequestID, Context.Request.URL)
 
-                    Dim DefaultCaching As [Shared].Enumerators.PageCachingTypes =
+                    Dim DefaultCaching As [Shared].Enum.PageCachingTypes =
                         Me._DomainControl.Domain.Settings.Configurations.DefaultCaching
 
                     ' Caching Settings
-                    If DefaultCaching <> [Shared].Enumerators.PageCachingTypes.AllContent AndAlso
-                        DefaultCaching <> [Shared].Enumerators.PageCachingTypes.AllContentCookiless Then
+                    If DefaultCaching <> [Shared].Enum.PageCachingTypes.AllContent AndAlso
+                        DefaultCaching <> [Shared].Enum.PageCachingTypes.AllContentCookiless Then
 
                         Select Case DefaultCaching
-                            Case [Shared].Enumerators.PageCachingTypes.NoCache,
-                                 [Shared].Enumerators.PageCachingTypes.NoCacheCookiless
+                            Case [Shared].Enum.PageCachingTypes.NoCache,
+                                 [Shared].Enum.PageCachingTypes.NoCacheCookiless
 
                                 [Shared].Helpers.Context.Response.Header.Item("Cache-Control") = "no-store, must-revalidate"
                             Case Else
@@ -806,11 +806,11 @@ QUICKFINISH:
                         )
                     End If
 
-                    Dim DefaultType As [Shared].Enumerators.PageCachingTypes =
+                    Dim DefaultType As [Shared].Enum.PageCachingTypes =
                         Me._DomainControl.Domain.Settings.Configurations.DefaultCaching
 
-                    If DefaultType = [Shared].Enumerators.PageCachingTypes.NoCache OrElse
-                        DefaultType = [Shared].Enumerators.PageCachingTypes.NoCacheCookiless Then
+                    If DefaultType = [Shared].Enum.PageCachingTypes.NoCache OrElse
+                        DefaultType = [Shared].Enum.PageCachingTypes.NoCacheCookiless Then
 
                         If Not IsPragmaAdded Then sW.WriteLine("<meta http-equiv=""Pragma"" content=""no-cache"" />")
                         If Not IsCacheControlAdded Then sW.WriteLine("<meta http-equiv=""Cache-Control"" content=""no-cache"" />")

@@ -148,7 +148,7 @@
     <Compile Include="ControlResult\VariableBlock.vb" />
     <Compile Include="DomainInfo.vb" />
     <Compile Include="Execution.vb" />
-    <Compile Include="Enumerators.vb" />
+    <Compile Include="Enum.vb" />
     <Compile Include="Interface\IDomain.vb" />
     <Compile Include="Interface\IDomainExecutable.vb" />
     <Compile Include="OverrideBinder.vb" />

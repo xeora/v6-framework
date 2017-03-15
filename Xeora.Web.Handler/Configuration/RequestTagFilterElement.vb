@@ -2,11 +2,11 @@
     Public Class RequestTagFilterElement
         Inherits System.Configuration.ConfigurationElement
 
-        <System.Configuration.ConfigurationProperty("direction", DefaultValue:=[Shared].Enumerators.RequestTagFilteringTypes.None, IsRequired:=True)>
-        Public ReadOnly Property Direction As [Shared].Enumerators.RequestTagFilteringTypes
+        <System.Configuration.ConfigurationProperty("direction", DefaultValue:=[Shared].Enum.RequestTagFilteringTypes.None, IsRequired:=True)>
+        Public ReadOnly Property Direction As [Shared].Enum.RequestTagFilteringTypes
             Get
-                Dim rValue As [Shared].Enumerators.RequestTagFilteringTypes =
-                    [Shared].Enumerators.RequestTagFilteringTypes.None
+                Dim rValue As [Shared].Enum.RequestTagFilteringTypes =
+                    [Shared].Enum.RequestTagFilteringTypes.None
 
                 [Enum].TryParse(CType(MyBase.Item("direction"), String), rValue)
 

@@ -222,9 +222,9 @@ Namespace Xeora.Web.Shared
                 Dim _IsCookiless As Boolean = False
 
                 Select Case Helpers.CurrentDomainInstance.Settings.Configurations.DefaultCaching
-                    Case Enumerators.PageCachingTypes.AllContentCookiless,
-                         Enumerators.PageCachingTypes.NoCacheCookiless,
-                         Enumerators.PageCachingTypes.TextsOnlyCookiless
+                    Case [Enum].PageCachingTypes.AllContentCookiless,
+                         [Enum].PageCachingTypes.NoCacheCookiless,
+                         [Enum].PageCachingTypes.TextsOnlyCookiless
 
                         _IsCookiless = True
                     Case Else

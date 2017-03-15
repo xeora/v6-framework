@@ -263,10 +263,10 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
-        Public Shared ReadOnly Property RequestTagFiltering() As Enumerators.RequestTagFilteringTypes
+        Public Shared ReadOnly Property RequestTagFiltering() As [Enum].RequestTagFilteringTypes
             Get
-                Dim rRequestTagFilteringType As Enumerators.RequestTagFilteringTypes =
-                    Enumerators.RequestTagFilteringTypes.None
+                Dim rRequestTagFilteringType As [Enum].RequestTagFilteringTypes =
+                    [Enum].RequestTagFilteringTypes.None
 
                 Dim WorkingObject As Object =
                     Configurations.XeoraSettingsObject.GetType().InvokeMember("RequestTagFilter", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
@@ -282,10 +282,10 @@ Namespace Xeora.Web.Shared
                     Try
                         rRequestTagFilteringType =
                             CType(
-                                [Enum].Parse(
-                                    GetType(Enumerators.RequestTagFilteringTypes),
+                                System.Enum.Parse(
+                                    GetType([Enum].RequestTagFilteringTypes),
                                     _RequestTagFiltering
-                                ), Enumerators.RequestTagFilteringTypes
+                                ), [Enum].RequestTagFilteringTypes
                             )
                     Catch ex As Exception
                         ' Just Handle Exception

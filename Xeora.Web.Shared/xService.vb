@@ -155,7 +155,7 @@ Namespace Xeora.Web.Shared
                                         rMethodResult = New ControlResult.Message(
                                                                     xPathIter.Current.Value,
                                                                     CType(
-                                                                        [Enum].Parse(
+                                                                        System.Enum.Parse(
                                                                             GetType(ControlResult.Message.Types),
                                                                             xPathIter.Current.GetAttribute("messagetype", xPathIter.Current.NamespaceURI)
                                                                         ), ControlResult.Message.Types
@@ -189,7 +189,7 @@ Namespace Xeora.Web.Shared
                                     Case "Conditional"
                                         rMethodResult = New ControlResult.Conditional(
                                                                 CType(
-                                                                    [Enum].Parse(
+                                                                    System.Enum.Parse(
                                                                         GetType(ControlResult.Conditional.Conditions),
                                                                         xPathIter.Current.Value
                                                                     ),
@@ -256,7 +256,7 @@ Namespace Xeora.Web.Shared
                                                 New ControlResult.Message(
                                                     xPathIter_E.Current.Value.ToString(CultureInfo),
                                                     CType(
-                                                        [Enum].Parse(
+                                                        System.Enum.Parse(
                                                             GetType(ControlResult.Message.Types),
                                                             xPathIter_E.Current.GetAttribute("messagetype", xPathIter_E.Current.NamespaceURI)
                                                         ), ControlResult.Message.Types
