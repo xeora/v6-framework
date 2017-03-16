@@ -20,4 +20,4 @@ Xeora is powerful but also needs contributors to increase its perfection! We app
 
 Note that the Xeora project does not use GitHub pull requests, and that we use the issue tracker for bug reports and proposals only.
 
-For documentation you can check https://github.com/xeora/v6/blob/master/QuickGuide.txt or http://www.xeora.org/documentation
+For documentation you can check https://github.com/xeora/v6/blob/master/QuickGuide.txt for xeora grammer summary or http://www.xeora.org/documentation for detailed documentation.
