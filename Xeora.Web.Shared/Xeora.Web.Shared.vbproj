@@ -130,6 +130,7 @@
   <ItemGroup>
     <Compile Include="Attribute\HttpMethodAttribute.vb" />
     <Compile Include="ControlResult\ObjectFeed.vb" />
+    <Compile Include="MimeType.vb" />
     <Compile Include="Interface\IHttpContext.vb" />
     <Compile Include="MetaRecord.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />

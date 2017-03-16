@@ -520,7 +520,7 @@ QUICKFINISH:
                     Context.Response.StatusCode = 404
                 Else
                     Dim ContentType As String =
-                        [Shared].Helpers.GetMimeType(
+                        [Shared].MimeType.GetMime(
                             IO.Path.GetExtension(RequestFilePath)
                         )
 
@@ -610,7 +610,7 @@ QUICKFINISH:
                     [Shared].Helpers.Context.Response.StatusCode = 404
                 Else
                     Me.WriteOutput(
-                        [Shared].Helpers.GetMimeType(
+                        [Shared].MimeType.GetMime(
                             IO.Path.GetExtension(RequestedFilePathInDomainContents)
                         ),
                         RequestFileStream,
@@ -631,7 +631,7 @@ QUICKFINISH:
                 Me._DomainControl.ProvideXeoraJSStream(RequestFileStream)
 
                 Me.WriteOutput(
-                    [Shared].Helpers.GetMimeType(".js"),
+                    [Shared].MimeType.GetMime(".js"),
                     RequestFileStream,
                     Me._SupportCompression
                 )
@@ -646,14 +646,14 @@ QUICKFINISH:
                 Select Case Me._DomainControl.ServiceType
                     Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
                         ' Get AuthenticationPage 
+                        Dim ReferrerURLQueryString As KeyValuePair(Of String, String) = Nothing
                         Dim AuthenticationPage As String =
                             Me._DomainControl.Domain.Settings.Configurations.AuthenticationPage
 
                         If Not String.IsNullOrEmpty(CurrentRequestedTemplate) AndAlso
                             String.Compare(AuthenticationPage, CurrentRequestedTemplate, True) <> 0 Then
 
-                            [Shared].Helpers.Context.Session.Item("_sys_Referrer") =
-                                [Shared].Helpers.Context.Request.URL.Raw
+                            ReferrerURLQueryString = New KeyValuePair(Of String, String)("xcRef", [Shared].Helpers.Context.Request.URL.Raw)
                         End If
 
                         ' Remove Redirect Location IF Exists
@@ -662,7 +662,8 @@ QUICKFINISH:
                         [Shared].Helpers.Context.Content.Item("RedirectLocation") =
                             [Shared].Helpers.GetRedirectURL(
                                 True,
-                                AuthenticationPage
+                                AuthenticationPage,
+                                ReferrerURLQueryString
                             )
 
                     Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService

@@ -251,9 +251,9 @@ Namespace Xeora.Web.Context
             End Sub
 
             Public Sub Build()
-                Me._URL = New URL(Me._Request.RawUrl)
+                Me._URL = New URL(HttpUtility.UrlDecode(Me._Request.Url.PathAndQuery))
 
-                If String.Compare(Me._URL.Raw, Me._Request.RawUrl) <> 0 Then _
+                If String.Compare(Me._URL.Raw, HttpUtility.UrlDecode(Me._Request.Url.PathAndQuery)) <> 0 Then _
                     Me.RewritePath(Me._URL.Raw)
             End Sub
 

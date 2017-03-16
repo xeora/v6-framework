@@ -69,15 +69,15 @@ Namespace Xeora.Web.Shared
             Return DomainWebPath
         End Function
 
-        Public Shared Function ResolveServicePathInfoFromURL(ByVal RequestFilePath As String, ByRef UseDefaultTemplate As Boolean) As ServicePathInfo
-            Dim rServicePathInfo As ServicePathInfo = Nothing
-
+        Public Shared Function ResolveServicePathInfoFromURL(ByVal RequestFilePath As String) As ServicePathInfo
             If Not String.IsNullOrEmpty(RequestFilePath) Then
                 Dim ByPass As Boolean = False
 
                 Dim URLMappingInstance As URLMapping = URLMapping.Current
 
-                If URLMappingInstance.IsActive Then
+                If Not URLMappingInstance Is Nothing AndAlso
+                    URLMappingInstance.IsActive Then
+
                     Dim URLMappingItems As URLMapping.URLMappingItem() =
                         URLMappingInstance.Items.ToArray()
                     Dim rqMatch As Text.RegularExpressions.Match = Nothing
@@ -85,15 +85,9 @@ Namespace Xeora.Web.Shared
                     For Each URLMapItem As URLMapping.URLMappingItem In URLMappingItems
                         rqMatch = Text.RegularExpressions.Regex.Match(RequestFilePath, URLMapItem.RequestMap, Text.RegularExpressions.RegexOptions.IgnoreCase)
 
-                        If rqMatch.Success Then
-                            rServicePathInfo = URLMapItem.ResolveInfo.ServicePathInfo
-
-                            Return rServicePathInfo
-                        End If
+                        If rqMatch.Success Then Return URLMapItem.ResolveInfo.ServicePathInfo
                     Next
                 End If
-
-                ' RequestFilePath = RequestFilePath.Remove(0, RequestFilePath.IndexOf(Configurations.ApplicationRoot.BrowserImplementation) + Configurations.ApplicationRoot.BrowserImplementation.Length)
 
                 ' Take Care Application Path and HashCode if it is exists work with application browser path
                 ' this comes /APPPATH(/path?somekey=withquery)?
@@ -107,7 +101,7 @@ Namespace Xeora.Web.Shared
                 If RequestFilePath.IndexOf(CurrentDomainContentPath) = 0 Then
                     ' This is a DomainContents Request
                     ' So no Template and also no default template usage
-                    UseDefaultTemplate = False
+                    Return Nothing
                 Else
                     Dim ApplicationRootPath As String = Configurations.ApplicationRoot.BrowserImplementation
                     Dim mR As Text.RegularExpressions.Match =
@@ -120,82 +114,14 @@ Namespace Xeora.Web.Shared
                         RequestFilePath = RequestFilePath.Substring(0, RequestFilePath.IndexOf("?"c))
 
                     If String.IsNullOrEmpty(RequestFilePath) Then
-                        UseDefaultTemplate = True
+                        Return ServicePathInfo.Parse(Helpers.CurrentDomainInstance.Settings.Configurations.DefaultPage)
                     Else
-                        rServicePathInfo = ServicePathInfo.Parse(RequestFilePath)
-
-                        If String.IsNullOrEmpty(rServicePathInfo.ServiceID) Then UseDefaultTemplate = True
+                        Return ServicePathInfo.Parse(RequestFilePath)
                     End If
                 End If
             End If
 
-            Return rServicePathInfo
-        End Function
-
-        Private Enum MimeLookups
-            Type
-            Extention
-        End Enum
-
-        Private Shared Function ResolveMime(ByVal MimeLookup As MimeLookups, ByVal SearchValue As String) As String
-            Dim rString As String = String.Empty
-
-            Select Case MimeLookup
-                Case MimeLookups.Type
-                    rString = "application/octet-stream"
-                Case MimeLookups.Extention
-                    rString = ".dat"
-            End Select
-
-            Try
-                Dim HelperAsm As Reflection.Assembly, objHelper As Type
-                Dim HelperInstance As Object = Nothing
-
-                HelperAsm = Reflection.Assembly.Load("Xeora.Web")
-                objHelper = HelperAsm.GetType("Xeora.Web.Helper.Registry")
-
-                For Each _ctorInfo As Reflection.ConstructorInfo In objHelper.GetConstructors()
-                    If _ctorInfo.IsConstructor AndAlso
-                        _ctorInfo.IsPublic AndAlso
-                        _ctorInfo.GetParameters().Length = 1 Then
-
-                        HelperInstance = _ctorInfo.Invoke(New Object() {0})
-
-                        Exit For
-                    End If
-                Next
-
-                If Not HelperInstance Is Nothing Then
-                    Dim AccessPathProp As Reflection.PropertyInfo =
-                        HelperInstance.GetType().GetProperty("AccessPath", GetType(String))
-
-                    Dim Result As Object = Nothing
-                    Select Case MimeLookup
-                        Case MimeLookups.Type
-                            AccessPathProp.SetValue(HelperInstance, SearchValue, Nothing)
-                            Result = HelperInstance.GetType().GetMethod("GetRegistryValue").Invoke(HelperInstance, New Object() {CType("Content Type", Object)})
-
-                            If Result Is Nothing Then rString = "application/octet-stream"
-                        Case MimeLookups.Extention
-                            AccessPathProp.SetValue(HelperInstance, String.Format("Mime\Database\Content Type\{0}", SearchValue), Nothing)
-                            Result = HelperInstance.GetType().GetMethod("GetRegistryValue").Invoke(HelperInstance, New Object() {CType("Extension", Object)})
-
-                            If Result Is Nothing Then rString = ".dat"
-                    End Select
-                End If
-            Catch ex As Exception
-                ' Do Nothing Just Handle Exception
-            End Try
-
-            Return rString
-        End Function
-
-        Public Shared Function GetMimeType(ByVal FileExtension As String) As String
-            Return Helpers.ResolveMime(MimeLookups.Type, FileExtension)
-        End Function
-
-        Public Shared Function GetExtensionFromMimeType(ByVal MimeType As String) As String
-            Return Helpers.ResolveMime(MimeLookups.Extention, MimeType)
+            Return Nothing
         End Function
 
         Private Shared ReadOnly Property DomainControlInstance As IDomainControl
@@ -300,19 +226,6 @@ Namespace Xeora.Web.Shared
                                 ),
                             String
                         )
-            End Get
-        End Property
-
-        Public Shared ReadOnly Property URLReferrer() As String
-            Get
-                Dim rString As String
-                Try
-                    rString = CType(Helpers.Context.Session.Item("_sys_Referrer"), String)
-                Catch ex As Exception
-                    rString = String.Empty
-                End Try
-
-                Return rString
             End Get
         End Property
 

@@ -45,7 +45,7 @@ Namespace Xeora.Web.Site
 
             ' Check has ever user changed the Language
             Me._CookieSearchKeyForLanguage =
-                String.Format("{0}_LanguageID", String.Join(Of String)("-", Me._Domain.IDAccessTree))
+                String.Format("{0}_LanguageID", [Shared].Configurations.ApplicationRoot.BrowserImplementation.Replace("/"c, "_"c))
 
             Dim LanguageID As String = String.Empty
             Dim LanguageCookie As System.Web.HttpCookie =

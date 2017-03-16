@@ -35,7 +35,7 @@ Namespace Xeora.Web.Shared
 
             If Not QueryStrings Is Nothing Then
                 For Each Item As Generic.KeyValuePair(Of String, String) In QueryStrings
-                    If Not String.IsNullOrEmpty(Item.Key) AndAlso Not String.IsNullOrEmpty(Item.Value) Then _
+                    If Not Item.Equals(Nothing) AndAlso Not String.IsNullOrEmpty(Item.Key) AndAlso Not String.IsNullOrEmpty(Item.Value) Then _
                         URLQueryDictionary.Item(Item.Key) = Item.Value
                 Next
             End If

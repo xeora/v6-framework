@@ -9,7 +9,7 @@ Namespace Xeora.Web.Shared
             Me.New(String.Empty)
         End Sub
 
-        Public Sub New(ByVal ServiceID As String)
+        Private Sub New(ByVal ServiceID As String)
             Me._PathTree = New Generic.LinkedList(Of String)
             Me._ServiceID = ServiceID
         End Sub
