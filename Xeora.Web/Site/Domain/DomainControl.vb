@@ -19,6 +19,8 @@ Namespace Xeora.Web.Site
         Private _ExecuteIn As String
         Private _ServiceResult As String
 
+        Private _CookieSearchKeyForLanguage As String
+
         Public Sub New(ByVal RequestID As String, ByVal URL As [Shared].URL)
             Me._RequestID = RequestID
             Me._Domain = Nothing
@@ -41,7 +43,22 @@ Namespace Xeora.Web.Site
                 Threading.Monitor.Exit(DomainControl._ReferenceTable.SyncRoot)
             End Try
 
-            Me.SelectDomain(URL)
+            ' Check has ever user changed the Language
+            Me._CookieSearchKeyForLanguage =
+                String.Format("{0}_LanguageID", String.Join(Of String)("-", Me._Domain.IDAccessTree))
+
+            Dim LanguageID As String = String.Empty
+            Dim LanguageCookie As System.Web.HttpCookie =
+                [Shared].Helpers.Context.Request.Cookie.Item(Me._CookieSearchKeyForLanguage)
+
+            If Not LanguageCookie Is Nothing AndAlso
+                Not String.IsNullOrEmpty(LanguageCookie.Value) Then
+
+                LanguageID = LanguageCookie.Value
+            End If
+            ' !---
+
+            Me.SelectDomain(URL, LanguageID)
         End Sub
 
         Public Shared ReadOnly Property Instance(ByVal RequestID As String) As [Shared].IDomainControl
@@ -178,6 +195,19 @@ Namespace Xeora.Web.Site
         End Sub
 
         Public Sub PushLanguageChange(ByVal LanguageID As String) Implements [Shared].IDomainControl.PushLanguageChange
+            ' Make the language Persist
+            Dim LanguageCookie As System.Web.HttpCookie =
+                [Shared].Helpers.Context.Request.Cookie.Item(Me._CookieSearchKeyForLanguage)
+
+            If LanguageCookie Is Nothing Then _
+                LanguageCookie = New System.Web.HttpCookie(Me._CookieSearchKeyForLanguage)
+
+            LanguageCookie.Value = LanguageID
+            LanguageCookie.Expires = Date.Now.AddDays(30)
+
+            [Shared].Helpers.Context.Response.Cookie.Add(LanguageCookie)
+            '!---
+
             CType(Me._Domain, Domain).PushLanguageChange(LanguageID)
         End Sub
 
@@ -271,11 +301,11 @@ Namespace Xeora.Web.Site
             CType(Me._Domain, Domain).ClearCache()
         End Sub
 
-        Private Sub SelectDomain(ByVal URL As [Shared].URL)
+        Private Sub SelectDomain(ByVal URL As [Shared].URL, ByVal LanguageID As String)
             Dim RequestedServiceID As String = Me.GetRequestedServiceID(URL)
 
             If String.IsNullOrEmpty(RequestedServiceID) Then
-                Me._Domain = New Domain([Shared].Configurations.DefaultDomain, Nothing)
+                Me._Domain = New Domain([Shared].Configurations.DefaultDomain, LanguageID)
                 Me.PrepareService(URL, False)
 
                 If Not Me._ServicePathInfo Is Nothing Then Exit Sub
@@ -284,7 +314,7 @@ Namespace Xeora.Web.Site
             Else
                 ' First search the request on top domains
                 For Each DI As [Shared].DomainInfo In DomainControl.GetAvailableDomains()
-                    Me._Domain = New Domain(New String() {DI.ID}, Nothing)
+                    Me._Domain = New Domain(New String() {DI.ID}, LanguageID)
                     Me.PrepareService(URL, False)
 
                     If Not Me._ServicePathInfo Is Nothing Then Exit Sub
@@ -294,7 +324,7 @@ Namespace Xeora.Web.Site
 
                 ' If no results, start again by including children
                 For Each DI As [Shared].DomainInfo In DomainControl.GetAvailableDomains()
-                    Me._Domain = New Domain(New String() {DI.ID}, Nothing)
+                    Me._Domain = New Domain(New String() {DI.ID}, LanguageID)
                     Me.PrepareService(URL, True)
 
                     If Not Me._ServicePathInfo Is Nothing Then Exit Sub
@@ -318,7 +348,7 @@ Namespace Xeora.Web.Site
                 Dim CachedServiceItem As [Shared].IDomain.ISettings.IServices.IServiceItem = ServiceItem
 
                 Do While CachedServiceItem.Overridable
-                    WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServicePathInfo.FullPath)
+                    WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, URL)
 
                     ' If not null, it means WorkingInstance contains a service definition which will override
                     If Not WorkingInstance Is Nothing Then
@@ -384,7 +414,7 @@ Namespace Xeora.Web.Site
                     Me._ServicePathInfo = Nothing
                 Else
                     ' Search SubDomains For Match
-                    WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, Me._ServicePathInfo.FullPath)
+                    WorkingInstance = Me.SearchChildrenThatOverrides(WorkingInstance, URL)
 
                     If Not WorkingInstance Is Nothing Then
                         ' Set the Working domain as child domain for this call because call requires the child domain access!
@@ -493,7 +523,7 @@ Namespace Xeora.Web.Site
             [Shared].Helpers.Context.Request.RewritePath(RequestURL)
         End Sub
 
-        Private Function SearchChildrenThatOverrides(ByRef WorkingInstance As [Shared].IDomain, ByVal ServiceFullPath As String) As [Shared].IDomain
+        Private Function SearchChildrenThatOverrides(ByRef WorkingInstance As [Shared].IDomain, ByVal URL As [Shared].URL) As [Shared].IDomain
             If WorkingInstance Is Nothing Then Return Nothing
 
             Dim ChildDomainIDAccessTree As New Generic.List(Of String)
@@ -505,9 +535,13 @@ Namespace Xeora.Web.Site
                 Dim rDomainInstance As [Shared].IDomain =
                     New Domain(ChildDomainIDAccessTree.ToArray(), Me._Domain.Language.ID)
 
-                If rDomainInstance.Settings.Services.ServiceItems.GetServiceItem(ServiceFullPath) Is Nothing Then
+                Dim ServicePathInfo As [Shared].ServicePathInfo =
+                    Me.TryResolveURL(rDomainInstance, URL)
+                If ServicePathInfo Is Nothing Then Continue For
+
+                If rDomainInstance.Settings.Services.ServiceItems.GetServiceItem(ServicePathInfo.FullPath) Is Nothing Then
                     If rDomainInstance.Children.Count > 0 Then
-                        rDomainInstance = Me.SearchChildrenThatOverrides(rDomainInstance, ServiceFullPath)
+                        rDomainInstance = Me.SearchChildrenThatOverrides(rDomainInstance, URL)
 
                         If Not rDomainInstance Is Nothing Then Return rDomainInstance
                     End If

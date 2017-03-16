@@ -60,8 +60,10 @@ Namespace Xeora.Web.Shared
         End Function
 
         Public Overloads Shared Sub Add(ByVal TagSpace As TagSpaces, ByVal Name As String, ByVal Value As String)
-            If String.IsNullOrEmpty(Name) OrElse String.IsNullOrEmpty(Value) Then _
-                Throw New NullReferenceException("Name and Value can not be null!")
+            If String.IsNullOrEmpty(Name) Then _
+                Throw New NullReferenceException("Name can not be null!")
+
+            If String.IsNullOrEmpty(Value) Then Value = String.Empty
 
             Threading.Monitor.Enter(MetaRecord._CustomRecords.SyncRoot)
             Try
@@ -92,8 +94,7 @@ Namespace Xeora.Web.Shared
         End Sub
 
         Public Overloads Shared Sub Add(ByVal Tag As Tags, ByVal Value As String)
-            If String.IsNullOrEmpty(Value) Then _
-                Throw New NullReferenceException("Value can not be null!")
+            If String.IsNullOrEmpty(Value) Then Value = String.Empty
 
             Threading.Monitor.Enter(MetaRecord._Records.SyncRoot)
             Try
