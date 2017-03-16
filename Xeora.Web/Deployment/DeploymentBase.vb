@@ -803,7 +803,9 @@ QUICKEXIT:
 
             Public Sub ClearCache()
                 SyncLock XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.SyncRoot
-                    For Each Key As Object In XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.Keys
+                    Dim Keys As ICollection = XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.Keys
+
+                    For Each Key As Object In Keys
                         Dim Key_s As String = CType(Key, String)
 
                         If Key_s.IndexOf(String.Format("{0}$", Me._XeoraDomainFileLocation)) = 0 Then _

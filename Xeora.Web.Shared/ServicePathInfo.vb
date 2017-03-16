@@ -2,17 +2,26 @@
 
 Namespace Xeora.Web.Shared
     Public Class ServicePathInfo
+        Private _IsMapped As Boolean
         Private _PathTree As Generic.LinkedList(Of String)
         Private _ServiceID As String
 
         Public Sub New()
-            Me.New(String.Empty)
+            Me.New(String.Empty, False)
         End Sub
 
-        Private Sub New(ByVal ServiceID As String)
+        Private Sub New(ByVal ServiceID As String, ByVal IsMapped As Boolean)
+            Me._IsMapped = IsMapped
+
             Me._PathTree = New Generic.LinkedList(Of String)
             Me._ServiceID = ServiceID
         End Sub
+
+        Public ReadOnly Property IsMapped As Boolean
+            Get
+                Return Me._IsMapped
+            End Get
+        End Property
 
         Public ReadOnly Property PathTree As Generic.LinkedList(Of String)
             Get
@@ -46,10 +55,10 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
-        Public Shared Function Parse(ByVal FullPath As String) As ServicePathInfo
+        Public Shared Function Parse(ByVal FullPath As String, ByVal IsMapped As Boolean) As ServicePathInfo
             Dim RequestPaths As String() = FullPath.Split("/"c)
 
-            Dim rServicePathInfo As New ServicePathInfo(RequestPaths(RequestPaths.Length - 1))
+            Dim rServicePathInfo As New ServicePathInfo(RequestPaths(RequestPaths.Length - 1), IsMapped)
             For pC As Integer = 0 To RequestPaths.Length - 2
                 rServicePathInfo.PathTree.AddLast(RequestPaths(pC))
             Next

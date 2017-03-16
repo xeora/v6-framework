@@ -114,9 +114,9 @@ Namespace Xeora.Web.Shared
                         RequestFilePath = RequestFilePath.Substring(0, RequestFilePath.IndexOf("?"c))
 
                     If String.IsNullOrEmpty(RequestFilePath) Then
-                        Return ServicePathInfo.Parse(Helpers.CurrentDomainInstance.Settings.Configurations.DefaultPage)
+                        Return ServicePathInfo.Parse(Helpers.CurrentDomainInstance.Settings.Configurations.DefaultPage, False)
                     Else
-                        Return ServicePathInfo.Parse(RequestFilePath)
+                        Return ServicePathInfo.Parse(RequestFilePath, False)
                     End If
                 End If
             End If

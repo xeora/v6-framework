@@ -22,6 +22,10 @@ Namespace Xeora.Web.Site
         Private _CookieSearchKeyForLanguage As String
 
         Public Sub New(ByVal RequestID As String, ByVal URL As [Shared].URL)
+            Me.Build(RequestID, URL)
+        End Sub
+
+        Private Sub Build(ByVal RequestID As String, ByVal URL As [Shared].URL)
             Me._RequestID = RequestID
             Me._Domain = Nothing
 
@@ -410,6 +414,16 @@ Namespace Xeora.Web.Site
 
                 Me._Domain = CachedInstance
             Else
+                ' If ServiceItem is null but ServicePathInfo is not, then there should be a map match
+                ' with the a service on other domain. So start the whole process with the rewritten url
+                If Not Me._ServicePathInfo Is Nothing AndAlso
+                    Me._ServicePathInfo.IsMapped Then
+
+                    Me.Build(Me._RequestID, [Shared].Helpers.Context.Request.URL)
+
+                    Exit Sub
+                End If
+
                 If Not ActivateChildrenSearch Then
                     Me._ServicePathInfo = Nothing
                 Else
@@ -481,13 +495,13 @@ Namespace Xeora.Web.Site
 
                 If Not String.IsNullOrEmpty(RequestFilePath) Then
                     Dim rServicePathInfo As [Shared].ServicePathInfo =
-                        [Shared].ServicePathInfo.Parse(RequestFilePath)
+                        [Shared].ServicePathInfo.Parse(RequestFilePath, False)
 
                     If String.IsNullOrEmpty(rServicePathInfo.ServiceID) Then Return Nothing
 
                     Return rServicePathInfo
                 Else
-                    Return [Shared].ServicePathInfo.Parse(WorkingInstance.Settings.Configurations.DefaultPage)
+                    Return [Shared].ServicePathInfo.Parse(WorkingInstance.Settings.Configurations.DefaultPage, False)
                 End If
             End If
 
@@ -523,7 +537,7 @@ Namespace Xeora.Web.Site
             [Shared].Helpers.Context.Request.RewritePath(RequestURL)
         End Sub
 
-        Private Function SearchChildrenThatOverrides(ByRef WorkingInstance As [Shared].IDomain, ByVal URL As [Shared].URL) As [Shared].IDomain
+        Private Function SearchChildrenThatOverrides(ByRef WorkingInstance As [Shared].IDomain, ByRef URL As [Shared].URL) As [Shared].IDomain
             If WorkingInstance Is Nothing Then Return Nothing
 
             Dim ChildDomainIDAccessTree As New Generic.List(Of String)
@@ -544,6 +558,12 @@ Namespace Xeora.Web.Site
                         rDomainInstance = Me.SearchChildrenThatOverrides(rDomainInstance, URL)
 
                         If Not rDomainInstance Is Nothing Then Return rDomainInstance
+                    End If
+
+                    If ServicePathInfo.IsMapped Then
+                        URL = [Shared].Helpers.Context.Request.URL
+
+                        Return WorkingInstance
                     End If
                 Else
                     Return rDomainInstance

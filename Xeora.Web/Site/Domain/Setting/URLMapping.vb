@@ -125,7 +125,7 @@ Namespace Xeora.Web.Site.Setting
                             .Priority = Priority
                             .RequestMap = Request
 
-                            Dim resInfo As New [Shared].URLMapping.ResolveInfos([Shared].ServicePathInfo.Parse(Reverse_ID))
+                            Dim resInfo As New [Shared].URLMapping.ResolveInfos([Shared].ServicePathInfo.Parse(Reverse_ID, True))
 
                             resInfo.MapFormat = Reverse_Mapped
                             resInfo.MappedItems.AddRange(Reverse_MappedItems)
