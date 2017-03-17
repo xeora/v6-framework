@@ -14,6 +14,7 @@ Namespace Xeora.Web.Shared
         ReadOnly Property Parent() As IDomain
         ReadOnly Property IDAccessTree() As String()
         ReadOnly Property DeploymentType() As DomainInfo.DeploymentTypes
+        ReadOnly Property ContentsVirtualPath() As String
         ReadOnly Property Settings() As IDomain.ISettings
         ReadOnly Property Language() As IDomain.ILanguage
         ReadOnly Property xService() As IDomain.IxService

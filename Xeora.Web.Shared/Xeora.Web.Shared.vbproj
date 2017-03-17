@@ -138,7 +138,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Configurations.vb" />
-    <Compile Include="ControlResult\Condition.vb" />
+    <Compile Include="ControlResult\Conditional.vb" />
     <Compile Include="ControlResult\DirectDataAccess.vb" />
     <Compile Include="ControlResult\Message.vb" />
     <Compile Include="ControlResult\PartialDataTable.vb">

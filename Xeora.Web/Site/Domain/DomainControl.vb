@@ -487,7 +487,7 @@ Namespace Xeora.Web.Site
             ' or this /Standart_tr-TR/somefile.png
             ' take care of it!
             Dim CurrentDomainContentPath As String =
-                [Shared].Helpers.GetDomainContentsPath(WorkingInstance.IDAccessTree, WorkingInstance.Language.ID)
+                WorkingInstance.ContentsVirtualPath
 
             ' first test if it is domain content path
             If URL.RelativePath.IndexOf(CurrentDomainContentPath) <> 0 Then

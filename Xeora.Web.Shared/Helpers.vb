@@ -42,31 +42,19 @@ Namespace Xeora.Web.Shared
 
             Dim URLQueryDictionary As URLQueryDictionary =
                 URLQueryDictionary.Make(QueryStrings)
+            Dim ApplicationRoot As String =
+                Configurations.ApplicationRoot.BrowserImplementation
 
             If Not UseSameVariablePool Then
-                rString = String.Format("{0}{1}", Configurations.ApplicationRoot.BrowserImplementation, ServiceFullPath)
+                rString = String.Format("{0}{1}", ApplicationRoot, ServiceFullPath)
             Else
-                rString = String.Format("{0}{1}/{2}", Configurations.ApplicationRoot.BrowserImplementation, Helpers.Context.Request.HashCode, ServiceFullPath)
+                rString = String.Format("{0}{1}/{2}", ApplicationRoot, Helpers.Context.Request.HashCode, ServiceFullPath)
             End If
 
             If URLQueryDictionary.Count > 0 Then _
                 rString = String.Concat(rString, "?", URLQueryDictionary.ToString())
 
             Return rString
-        End Function
-
-        Public Overloads Shared Function GetDomainContentsPath() As String
-            Return Helpers.GetDomainContentsPath(Helpers.CurrentDomainInstance.IDAccessTree, Helpers.CurrentDomainInstance.Language.ID)
-        End Function
-
-        Public Overloads Shared Function GetDomainContentsPath(ByVal DomainIDAccessTree As String(), ByVal DomainLanguageID As String) As String
-            Dim DomainWebPath As String =
-                String.Format("{0}{1}_{2}",
-                    Configurations.ApplicationRoot.BrowserImplementation,
-                    String.Join(Of String)("-", DomainIDAccessTree),
-                    DomainLanguageID)
-
-            Return DomainWebPath
         End Function
 
         Public Shared Function ResolveServicePathInfoFromURL(ByVal RequestFilePath As String) As ServicePathInfo
@@ -95,7 +83,7 @@ Namespace Xeora.Web.Shared
                 ' or this /Standart_tr-TR/somefile.png
                 ' take care of it!
                 Dim CurrentDomainContentPath As String =
-                    Helpers.GetDomainContentsPath()
+                    Helpers.CurrentDomainInstance.ContentsVirtualPath
 
                 ' first test if it is domain content path
                 If RequestFilePath.IndexOf(CurrentDomainContentPath) = 0 Then

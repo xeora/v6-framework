@@ -44,9 +44,8 @@ Namespace Xeora.Web.Handler
                 Me._BeginRequestTime = Date.Now
                 Me._SupportCompression = False
 
-                ' Make Available Context for Current Async Call
+                ' Register This Thread to AppDomain
                 [Shared].Helpers.AssignRequestID(Me._RequestID)
-                ' !--
 
                 Try
                     Me._DomainControl = New Site.DomainControl(Me._RequestID, Me._Context.Request.URL)
@@ -70,7 +69,6 @@ Namespace Xeora.Web.Handler
 
                         Me._Context.Response.Header.Item("Expires") = "0"
                     Else
-                        ' 1 month cache
                         Me._Context.Response.Header.Item("Expires") = Date.Now.AddMonths(1).ToString("r")
                     End If
                     ' !---
@@ -81,10 +79,10 @@ Namespace Xeora.Web.Handler
                         Me._SupportCompression = (AcceptEncodings.IndexOf("gzip") > -1)
 
                     If Me._DomainControl.ServicePathInfo Is Nothing Then
-                        ' This Static File that has the same level of Application folder or Domain Content File
+                        ' Static File that has the same level of Application folder or Domain Content File
                         Me.HandleStaticFile()
                     Else
-                        ' This is Service Request (Template, xService, xSocket)
+                        ' Service Request (Template, xService, xSocket)
                         Me.HandleServiceRequest()
                     End If
                 Catch ex As System.Exception
@@ -128,7 +126,7 @@ Namespace Xeora.Web.Handler
 
             Private Sub HandleStaticFile()
                 Dim DomainContentsPath As String =
-                    [Shared].Helpers.GetDomainContentsPath(Me._DomainControl.Domain.IDAccessTree, Me._DomainControl.Domain.Language.ID)
+                    Me._DomainControl.Domain.ContentsVirtualPath
                 Dim RequestedFileVirtualPath As String =
                     Me._Context.Request.URL.RelativePath
 
@@ -159,7 +157,7 @@ Namespace Xeora.Web.Handler
 
                                 Me._DomainControl.OverrideDomain(ChildDomainIDAccessTree, ChildDomainLanguageID)
 
-                                DomainContentsPath = [Shared].Helpers.GetDomainContentsPath(ChildDomainIDAccessTree, ChildDomainLanguageID)
+                                DomainContentsPath = Me._DomainControl.Domain.ContentsVirtualPath
                             End If
                         End If
                     End If
@@ -793,12 +791,8 @@ Namespace Xeora.Web.Handler
 
                     sW.WriteLine(
                         String.Format(
-                            "<link type=""text/css"" rel=""stylesheet"" href=""{0}"" />",
-                            IO.Path.Combine(
-                                [Shared].Helpers.GetDomainContentsPath(
-                                    Me._DomainControl.Domain.IDAccessTree,
-                                    Me._DomainControl.Domain.Language.ID
-                                ), "styles.css").Replace("\"c, "/"c)
+                            "<link type=""text/css"" rel=""stylesheet"" href=""{0}/styles.css"" />",
+                            Me._DomainControl.Domain.ContentsVirtualPath
                         )
                     )
 

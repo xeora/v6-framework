@@ -49,12 +49,7 @@ Namespace Xeora.Web.Controller
             Else
                 Select Case Me.InsideValue
                     Case "DomainContents"
-                        Me.DefineRenderedValue(
-                            Helpers.GetDomainContentsPath(
-                                Instance.IDAccessTree,
-                                Instance.Language.ID
-                            )
-                        )
+                        Me.DefineRenderedValue(Instance.ContentsVirtualPath)
                         Me._ObjectResult = CObj(Me.RenderedValue)
 
                     Case "PageRenderDuration"

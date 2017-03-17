@@ -96,6 +96,15 @@ Namespace Xeora.Web.Site
             End Get
         End Property
 
+        Public ReadOnly Property ContentsVirtualPath() As String Implements [Shared].IDomain.ContentsVirtualPath
+            Get
+                Return String.Format("{0}{1}_{2}",
+                            [Shared].Configurations.ApplicationRoot.BrowserImplementation,
+                            String.Join(Of String)("-", Me._Deployment.DomainIDAccessTree),
+                            Me._Deployment.Language.ID)
+            End Get
+        End Property
+
         Public ReadOnly Property Settings() As [Shared].IDomain.ISettings Implements [Shared].IDomain.Settings
             Get
                 Return Me._Deployment.Settings

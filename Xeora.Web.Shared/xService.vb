@@ -147,45 +147,6 @@ Namespace Xeora.Web.Shared
 
                             If Not String.IsNullOrEmpty(xType) Then
                                 Select Case xType
-                                    Case "RedirectOrder"
-                                        rMethodResult = New ControlResult.RedirectOrder(
-                                                                    xPathIter.Current.Value
-                                                                )
-                                    Case "Message"
-                                        rMethodResult = New ControlResult.Message(
-                                                                    xPathIter.Current.Value,
-                                                                    CType(
-                                                                        System.Enum.Parse(
-                                                                            GetType(ControlResult.Message.Types),
-                                                                            xPathIter.Current.GetAttribute("messagetype", xPathIter.Current.NamespaceURI)
-                                                                        ), ControlResult.Message.Types
-                                                                    )
-                                                                )
-                                    Case "VariableBlock"
-                                        Dim VariableBlock As New ControlResult.VariableBlock()
-
-                                        Dim CultureInfo As Globalization.CultureInfo =
-                                            New Globalization.CultureInfo(
-                                                xPathIter.Current.GetAttribute("cultureinfo", xPathIter.Current.NamespaceURI))
-
-                                        If xPathIter.Current.MoveToFirstChild() Then
-                                            Dim xPathIter_V As Xml.XPath.XPathNodeIterator = xPathIter.Clone()
-
-                                            If xPathIter_V.Current.MoveToFirstChild() Then
-                                                Do
-                                                    VariableBlock.Add(
-                                                        xPathIter_V.Current.GetAttribute("key", xPathIter_V.Current.NamespaceURI),
-                                                        Convert.ChangeType(
-                                                            xPathIter_V.Current.Value.ToString(CultureInfo),
-                                                            xService.LoadTypeFromDomain(
-                                                                AppDomain.CurrentDomain,
-                                                                xPathIter_V.Current.GetAttribute("type", xPathIter_V.Current.NamespaceURI)
-                                                            )
-                                                        )
-                                                    )
-                                                Loop While xPathIter_V.Current.MoveToNext()
-                                            End If
-                                        End If
                                     Case "Conditional"
                                         rMethodResult = New ControlResult.Conditional(
                                                                 CType(
@@ -196,6 +157,21 @@ Namespace Xeora.Web.Shared
                                                                     ControlResult.Conditional.Conditions
                                                                 )
                                                             )
+
+                                    Case "Message"
+                                        rMethodResult = New ControlResult.Message(
+                                                                    xPathIter.Current.Value,
+                                                                    CType(
+                                                                        System.Enum.Parse(
+                                                                            GetType(ControlResult.Message.Types),
+                                                                            xPathIter.Current.GetAttribute("messagetype", xPathIter.Current.NamespaceURI)
+                                                                        ), ControlResult.Message.Types
+                                                                    )
+                                                                )
+
+                                    Case "ObjectFeed"
+                                        ' TODO: Object Feed xService Implementation should be done!
+
                                     Case "PartialDataTable"
                                         Dim PartialDataTable As New ControlResult.PartialDataTable()
 
@@ -265,6 +241,38 @@ Namespace Xeora.Web.Shared
                                         End If
 
                                         rMethodResult = PartialDataTable
+
+                                    Case "RedirectOrder"
+                                        rMethodResult = New ControlResult.RedirectOrder(
+                                                                    xPathIter.Current.Value
+                                                                )
+
+                                    Case "VariableBlock"
+                                        Dim VariableBlock As New ControlResult.VariableBlock()
+
+                                        Dim CultureInfo As Globalization.CultureInfo =
+                                            New Globalization.CultureInfo(
+                                                xPathIter.Current.GetAttribute("cultureinfo", xPathIter.Current.NamespaceURI))
+
+                                        If xPathIter.Current.MoveToFirstChild() Then
+                                            Dim xPathIter_V As Xml.XPath.XPathNodeIterator = xPathIter.Clone()
+
+                                            If xPathIter_V.Current.MoveToFirstChild() Then
+                                                Do
+                                                    VariableBlock.Add(
+                                                        xPathIter_V.Current.GetAttribute("key", xPathIter_V.Current.NamespaceURI),
+                                                        Convert.ChangeType(
+                                                            xPathIter_V.Current.Value.ToString(CultureInfo),
+                                                            xService.LoadTypeFromDomain(
+                                                                AppDomain.CurrentDomain,
+                                                                xPathIter_V.Current.GetAttribute("type", xPathIter_V.Current.NamespaceURI)
+                                                            )
+                                                        )
+                                                    )
+                                                Loop While xPathIter_V.Current.MoveToNext()
+                                            End If
+                                        End If
+
                                     Case Else
                                         Dim xTypeObject As Type =
                                             xService.LoadTypeFromDomain(AppDomain.CurrentDomain, xType)
