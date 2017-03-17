@@ -48,12 +48,12 @@ Namespace Xeora.Web.Shared
                             AccessPathProp.SetValue(HelperInstance, SearchValue, Nothing)
                             Result = HelperInstance.GetType().GetMethod("GetRegistryValue").Invoke(HelperInstance, New Object() {CType("Content Type", Object)})
 
-                            If Result Is Nothing Then rString = "application/octet-stream"
+                            If Result Is Nothing Then rString = "application/octet-stream" Else rString = CType(Result, String)
                         Case MimeLookups.Extention
                             AccessPathProp.SetValue(HelperInstance, String.Format("Mime\Database\Content Type\{0}", SearchValue), Nothing)
                             Result = HelperInstance.GetType().GetMethod("GetRegistryValue").Invoke(HelperInstance, New Object() {CType("Extension", Object)})
 
-                            If Result Is Nothing Then rString = ".dat"
+                            If Result Is Nothing Then rString = ".dat" Else rString = CType(Result, String)
                     End Select
                 End If
             Catch ex As Exception
