@@ -2,8 +2,10 @@ Option Strict On
 
 Namespace Xeora.Web.Handler
     Public Class RequestHandler
-        Implements System.Web.IHttpAsyncHandler
+        Implements System.Web.IHttpHandler
         Implements System.Web.SessionState.IRequiresSessionState
+
+        Private _XeoraHandler As XeoraHandler
 
         Public ReadOnly Property IsReusable() As Boolean Implements System.Web.IHttpHandler.IsReusable
             Get
@@ -11,46 +13,17 @@ Namespace Xeora.Web.Handler
             End Get
         End Property
 
-        Public Function BeginProcessRequest(ByVal context As System.Web.HttpContext, ByVal CallBack As AsyncCallback, ByVal State As Object) As IAsyncResult Implements System.Web.IHttpAsyncHandler.BeginProcessRequest
-            ' Prepare Context
+        Public Sub ProcessRequest(ByVal context As System.Web.HttpContext) Implements System.Web.IHttpHandler.ProcessRequest
             Dim RequestID As String =
                 CType(context.Items.Item("RequestID"), String)
 
-            Dim XeoraHandler As DoXeoraDelegate =
-                New DoXeoraDelegate(AddressOf Me.DoXeora)
-
-            Return XeoraHandler.BeginInvoke(RequestID,
-                                            New AsyncCallback(
-                                                Sub(aR As IAsyncResult)
-                                                    Try
-                                                        XeoraHandler.EndInvoke(aR)
-                                                    Catch ex As System.Exception
-                                                        ' Just Handle Exceptions
-                                                        ' I catch this error when i was testing the videostream of Mayadroom
-                                                        ' w3wp.exe create an exception which is "Remote Host Close the Connection"
-                                                        ' that was causing to stop the Website...
-                                                    End Try
-
-                                                    CallBack.Invoke(aR)
-                                                End Sub), State)
-        End Function
-
-        Private Delegate Sub DoXeoraDelegate(ByVal RequestID As String)
-        Private Sub DoXeora(ByVal RequestID As String)
-            Dim XeoraHandler As New XeoraHandler(RequestID)
-            XeoraHandler.Start()
-        End Sub
-
-        Public Sub EndProcessRequest(ByVal result As IAsyncResult) Implements System.Web.IHttpAsyncHandler.EndProcessRequest
-            ' Do Nothing
-        End Sub
-
-        Public Sub ProcessRequest(ByVal context As System.Web.HttpContext) Implements System.Web.IHttpHandler.ProcessRequest
-            Throw New InvalidOperationException()
+            Me._XeoraHandler = New XeoraHandler(RequestID)
+            Me._XeoraHandler.Handle()
         End Sub
 
         Private Class XeoraHandler
             Private _RequestID As String
+            Private _Context As [Shared].IHttpContext
 
             Private _BeginRequestTime As Date
             Private _SupportCompression As Boolean
@@ -61,12 +34,12 @@ Namespace Xeora.Web.Handler
             Public Sub New(ByVal RequestID As String)
                 Me._RequestID = RequestID
                 Me._MessageResult = Nothing
+
+                Me._Context = RequestModule.Context(Me._RequestID)
             End Sub
 
-            Public Sub Start()
-                Dim Context As [Shared].IHttpContext =
-                    RequestModule.Context(Me._RequestID)
-                If Context Is Nothing Then Exit Sub
+            Public Sub Handle()
+                If Me._Context Is Nothing Then Exit Sub
 
                 Me._BeginRequestTime = Date.Now
                 Me._SupportCompression = False
@@ -75,11 +48,8 @@ Namespace Xeora.Web.Handler
                 [Shared].Helpers.AssignRequestID(Me._RequestID)
                 ' !--
 
-                Context.Content.Item("_sys_TemplateRequest") = False
-
-                Dim IsEO As Boolean = False
                 Try
-                    Me._DomainControl = New Site.DomainControl(Me._RequestID, Context.Request.URL)
+                    Me._DomainControl = New Site.DomainControl(Me._RequestID, Me._Context.Request.URL)
 
                     Dim DefaultCaching As [Shared].Enum.PageCachingTypes =
                         Me._DomainControl.Domain.Settings.Configurations.DefaultCaching
@@ -92,135 +62,151 @@ Namespace Xeora.Web.Handler
                             Case [Shared].Enum.PageCachingTypes.NoCache,
                                  [Shared].Enum.PageCachingTypes.NoCacheCookiless
 
-                                [Shared].Helpers.Context.Response.Header.Item("Cache-Control") = "no-store, must-revalidate"
+                                Me._Context.Response.Header.Item("Cache-Control") = "no-store, must-revalidate"
                             Case Else
-                                [Shared].Helpers.Context.Response.Header.Item("Cache-Control") = "no-cache"
-                                [Shared].Helpers.Context.Response.Header.Item("Pragma") = "no-cache"
+                                Me._Context.Response.Header.Item("Cache-Control") = "no-cache"
+                                Me._Context.Response.Header.Item("Pragma") = "no-cache"
                         End Select
 
-                        [Shared].Helpers.Context.Response.Header.Item("Expires") = "0"
+                        Me._Context.Response.Header.Item("Expires") = "0"
                     Else
                         ' 1 month cache
-                        [Shared].Helpers.Context.Response.Header.Item("Expires") = Date.Now.AddMonths(1).ToString("r")
+                        Me._Context.Response.Header.Item("Expires") = Date.Now.AddMonths(1).ToString("r")
                     End If
                     ' !---
 
-                    ' Empty Content-Encoding should be replaced
-                    If [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") Is Nothing Then _
-                        [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") = Text.Encoding.UTF8.WebName
-
                     Dim AcceptEncodings As String =
-                        [Shared].Helpers.Context.Request.Server.Item("HTTP_ACCEPT_ENCODING")
+                        Me._Context.Request.Server.Item("HTTP_ACCEPT_ENCODING")
                     If Not AcceptEncodings Is Nothing Then _
                         Me._SupportCompression = (AcceptEncodings.IndexOf("gzip") > -1)
 
                     If Me._DomainControl.ServicePathInfo Is Nothing Then
-                        ' Requested File is not a xService Or Template
-
-                        Dim DomainContentsPath As String =
-                            [Shared].Helpers.GetDomainContentsPath(Me._DomainControl.Domain.IDAccessTree, Me._DomainControl.Domain.Language.ID)
-                        Dim RequestedFileVirtualPath As String =
-                            [Shared].Helpers.Context.Request.URL.RelativePath
-
-                        If RequestedFileVirtualPath.IndexOf(DomainContentsPath) = -1 Then
-                            ' This is also not a request for default DomainContents
-
-                            ' Extract the ChildDomainIDAccessTree and LanguageID using RequestPath
-                            Dim RequestedDomainWebPath As String = RequestedFileVirtualPath
-                            Dim BrowserImplementation As String =
-                                [Shared].Configurations.ApplicationRoot.BrowserImplementation
-                            RequestedDomainWebPath = RequestedDomainWebPath.Remove(RequestedDomainWebPath.IndexOf(BrowserImplementation), BrowserImplementation.Length)
-
-                            If RequestedDomainWebPath.IndexOf([Shared].Helpers.Context.Request.HashCode) = 0 Then _
-                                RequestedDomainWebPath = RequestedDomainWebPath.Substring([Shared].Helpers.Context.Request.HashCode.Length + 1)
-
-                            If RequestedDomainWebPath.IndexOf("/"c) > -1 Then
-                                RequestedDomainWebPath = RequestedDomainWebPath.Split("/"c)(0)
-
-                                If Not String.IsNullOrEmpty(RequestedDomainWebPath) Then
-                                    Dim SplittedRequestedDomainWebPath As String() =
-                                        RequestedDomainWebPath.Split("_"c)
-
-                                    If SplittedRequestedDomainWebPath.Length = 2 Then
-                                        Dim ChildDomainIDAccessTree As String(), ChildDomainLanguageID As String = String.Empty
-
-                                        ChildDomainIDAccessTree = SplittedRequestedDomainWebPath(0).Split("-"c)
-                                        ChildDomainLanguageID = SplittedRequestedDomainWebPath(1)
-
-                                        Me._DomainControl.OverrideDomain(ChildDomainIDAccessTree, ChildDomainLanguageID)
-
-                                        DomainContentsPath = [Shared].Helpers.GetDomainContentsPath(ChildDomainIDAccessTree, ChildDomainLanguageID)
-                                    End If
-                                End If
-                            End If
-                        End If
-
-                        ' Provide Requested File Stream
-                        If RequestedFileVirtualPath.IndexOf(DomainContentsPath) > -1 Then
-                            ' This is a well known Domain Content file
-                            ' Clean Domain Contents pointer
-                            RequestedFileVirtualPath = RequestedFileVirtualPath.Remove(0, RequestedFileVirtualPath.IndexOf(DomainContentsPath) + DomainContentsPath.Length + 1)
-
-                            Me.PostDomainContentFileToClient(RequestedFileVirtualPath)
-                        Else
-                            Dim ScriptFileName As String =
-                                String.Format("_bi_sps_v{0}.js", Me._DomainControl.XeoraJSVersion)
-                            Dim ScriptFileNameIndex As Integer =
-                                RequestedFileVirtualPath.IndexOf(ScriptFileName)
-                            Dim IsScriptRequesting As Boolean =
-                                ScriptFileNameIndex > -1 AndAlso (RequestedFileVirtualPath.Length - ScriptFileName.Length) = ScriptFileNameIndex
-
-                            If IsScriptRequesting Then
-                                Me.PostBuildInJavaScriptToClient()
-                            Else
-                                Me.PostRequestedStaticFileToClient()
-                            End If
-                        End If
+                        ' This Static File that has the same level of Application folder or Domain Content File
+                        Me.HandleStaticFile()
                     Else
-                        ' Mark this request is for TemplateRequest, DO NOT USE General.Context for this line
-                        Context.Content.Item("_sys_TemplateRequest") = True
+                        ' This is Service Request (Template, xService, xSocket)
+                        Me.HandleServiceRequest()
+                    End If
+                Catch ex As System.Exception
+                    Me.HandleErrorLogging(ex)
+                Finally
+                    If Not Me._DomainControl Is Nothing Then Me._DomainControl.Dispose()
 
-                        [Shared].Helpers.SiteTitle = Me._DomainControl.Domain.Language.Get("SITETITLE")
+                    ' If Redirection has been assigned, handle it
+                    If Not Me._Context.Content.Item("RedirectLocation") Is Nothing Then
+                        If CType(Me._Context.Content.Item("RedirectLocation"), String).IndexOf("://") = -1 Then
+                            Dim RedirectLocation As String =
+                                String.Format("http://{0}{1}",
+                                        Me._Context.Request.Server("HTTP_HOST"),
+                                        Me._Context.Content.Item("RedirectLocation")
+                                    )
 
-                        ' TODO: Simplify
-                        If String.Compare([Shared].Helpers.Context.Request.Method, "GET", True) = 0 Then
-                            ' Check if hashcode is assign to the requested template
-                            Dim ParentURL As String =
-                                [Shared].Helpers.Context.Request.URL.RelativePath
-                            ParentURL = ParentURL.Remove(0, ParentURL.IndexOf([Shared].Configurations.ApplicationRoot.BrowserImplementation) + [Shared].Configurations.ApplicationRoot.BrowserImplementation.Length)
-
-                            Dim mR_Parent As Text.RegularExpressions.Match =
-                                Text.RegularExpressions.Regex.Match(ParentURL, String.Format("\d+/{0}", Me._DomainControl.ServicePathInfo.FullPath))
-
-                            ' Not assigned, so assign!
-                            If Not mR_Parent.Success Then
-                                Dim RewrittenPath As String =
-                                    String.Format("{0}{1}/{2}", [Shared].Configurations.ApplicationRoot.BrowserImplementation, [Shared].Helpers.Context.Request.HashCode, Me._DomainControl.ServicePathInfo.FullPath)
-                                Dim QueryString As String =
-                                    [Shared].Helpers.Context.Request.Server.Item("QUERY_STRING")
-
-                                If Not String.IsNullOrEmpty(QueryString) Then _
-                                    RewrittenPath = String.Format("{0}?{1}", RewrittenPath, QueryString)
-
-                                [Shared].Helpers.Context.Request.RewritePath(RewrittenPath)
-                            End If
+                            Me._Context.Content.Item("RedirectLocation") = RedirectLocation
                         End If
 
-                        If Me._DomainControl.IsAuthenticationRequired Then
-                            Me.RedirectToAuthenticationPage(Me._DomainControl.ServicePathInfo.FullPath)
+                        If Me._Context.Request.Header.Item("X-BlockRenderingID") Is Nothing Then
+                            Try
+                                Me._Context.Response.Redirect(
+                                    CType(Me._Context.Content.Item("RedirectLocation"), String))
+                            Catch ex As System.Web.HttpException
+                                ' Just Handle Exceptions (Remote host closed the connection )
+                            Catch ex As System.Exception
+                                Throw
+                            End Try
                         Else
-                            Dim MethodResultContent As String = Nothing
+                            Dim RedirectBytes As Byte() =
+                                Text.Encoding.UTF8.GetBytes(String.Format("rl:{0}", CType(Me._Context.Content.Item("RedirectLocation"), String)))
 
-                            ' If it is a template call with some postbackdata so you shoud handle the postback first before handling page.
-                            If Me._DomainControl.ServiceType = [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template AndAlso
-                                String.Compare([Shared].Helpers.Context.Request.Method, "POST", True) = 0 AndAlso
-                                Not String.IsNullOrEmpty([Shared].Helpers.Context.Request.Form.Item("PostBackInformation")) Then
+                            Me._Context.Response.Header.Item("Content-Type") = "text/html"
+                            Me._Context.Response.Header.Item("Content-Encoding") = "identity"
+
+                            Me._Context.Response.Stream.Write(RedirectBytes, 0, RedirectBytes.Length)
+                        End If
+                    End If
+                End Try
+            End Sub
+
+            Private Sub HandleStaticFile()
+                Dim DomainContentsPath As String =
+                    [Shared].Helpers.GetDomainContentsPath(Me._DomainControl.Domain.IDAccessTree, Me._DomainControl.Domain.Language.ID)
+                Dim RequestedFileVirtualPath As String =
+                    Me._Context.Request.URL.RelativePath
+
+                If RequestedFileVirtualPath.IndexOf(DomainContentsPath) = -1 Then
+                    ' This is also not a request for default DomainContents
+
+                    ' Extract the ChildDomainIDAccessTree and LanguageID using RequestPath
+                    Dim RequestedDomainWebPath As String = RequestedFileVirtualPath
+                    Dim BrowserImplementation As String =
+                        [Shared].Configurations.ApplicationRoot.BrowserImplementation
+                    RequestedDomainWebPath = RequestedDomainWebPath.Remove(RequestedDomainWebPath.IndexOf(BrowserImplementation), BrowserImplementation.Length)
+
+                    If RequestedDomainWebPath.IndexOf(Me._Context.Request.HashCode) = 0 Then _
+                        RequestedDomainWebPath = RequestedDomainWebPath.Substring(Me._Context.Request.HashCode.Length + 1)
+
+                    If RequestedDomainWebPath.IndexOf("/"c) > -1 Then
+                        RequestedDomainWebPath = RequestedDomainWebPath.Split("/"c)(0)
+
+                        If Not String.IsNullOrEmpty(RequestedDomainWebPath) Then
+                            Dim SplittedRequestedDomainWebPath As String() =
+                                RequestedDomainWebPath.Split("_"c)
+
+                            If SplittedRequestedDomainWebPath.Length = 2 Then
+                                Dim ChildDomainIDAccessTree As String(), ChildDomainLanguageID As String = String.Empty
+
+                                ChildDomainIDAccessTree = SplittedRequestedDomainWebPath(0).Split("-"c)
+                                ChildDomainLanguageID = SplittedRequestedDomainWebPath(1)
+
+                                Me._DomainControl.OverrideDomain(ChildDomainIDAccessTree, ChildDomainLanguageID)
+
+                                DomainContentsPath = [Shared].Helpers.GetDomainContentsPath(ChildDomainIDAccessTree, ChildDomainLanguageID)
+                            End If
+                        End If
+                    End If
+                End If
+
+                ' Provide Requested File Stream
+                If RequestedFileVirtualPath.IndexOf(DomainContentsPath) > -1 Then
+                    ' This is a well known Domain Content file
+                    ' Clean Domain Contents pointer
+                    RequestedFileVirtualPath = RequestedFileVirtualPath.Remove(0, RequestedFileVirtualPath.IndexOf(DomainContentsPath) + DomainContentsPath.Length + 1)
+
+                    Me.PostDomainContentFileToClient(RequestedFileVirtualPath)
+                Else
+                    Dim ScriptFileName As String =
+                        String.Format("_bi_sps_v{0}.js", Me._DomainControl.XeoraJSVersion)
+                    Dim ScriptFileNameIndex As Integer =
+                        RequestedFileVirtualPath.IndexOf(ScriptFileName)
+                    Dim IsScriptRequesting As Boolean =
+                        ScriptFileNameIndex > -1 AndAlso (RequestedFileVirtualPath.Length - ScriptFileName.Length) = ScriptFileNameIndex
+
+                    If IsScriptRequesting Then
+                        Me.PostBuildInJavaScriptToClient()
+                    Else
+                        Me.PostRequestedStaticFileToClient()
+                    End If
+                End If
+            End Sub
+
+            Private Sub HandleServiceRequest()
+                [Shared].Helpers.SiteTitle = Me._DomainControl.Domain.Language.Get("SITETITLE")
+
+                If Me._DomainControl.IsAuthenticationRequired Then
+                    Me.RedirectToAuthenticationPage(Me._DomainControl.ServicePathInfo.FullPath)
+                Else
+                    Select Case Me._DomainControl.ServiceType
+                        Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
+                            Dim MethodResultContent As String = String.Empty
+                            Dim PostBackInformation As String =
+                                Me._Context.Request.Form.Item("PostBackInformation")
+
+                            If String.Compare(Me._Context.Request.Method, "POST", True) = 0 AndAlso
+                                Not String.IsNullOrEmpty(PostBackInformation) Then
 
                                 ' Decode Encoded Call Function to Readable
                                 Dim BindInfo As [Shared].Execution.BindInfo =
                                     [Shared].Execution.BindInfo.Make(
-                                        Manager.Assembly.DecodeFunction(
-                                            [Shared].Helpers.Context.Request.Form.Item("PostBackInformation"))
+                                        Manager.Assembly.DecodeFunction(PostBackInformation)
                                     )
 
                                 BindInfo.PrepareProcedureParameters(
@@ -243,7 +229,8 @@ Namespace Xeora.Web.Handler
                                 If BindInvokeResult.ReloadRequired Then
                                     ' This is application dependency problem, force to apply auto recovery!
                                     Me._DomainControl.ClearCache()
-                                    RequestModule.ReloadApplication([Shared].Helpers.CurrentRequestID)
+
+                                    RequestModule.ReloadApplication(Me._RequestID)
 
                                     Exit Sub
                                 Else
@@ -252,272 +239,244 @@ Namespace Xeora.Web.Handler
 
                                         Me._MessageResult = New [Shared].ControlResult.Message(CType(BindInvokeResult.InvokeResult, System.Exception).ToString())
 
-                                        Me.WritePage(String.Empty)
                                     ElseIf Not BindInvokeResult.InvokeResult Is Nothing AndAlso
                                         TypeOf BindInvokeResult.InvokeResult Is [Shared].ControlResult.Message Then
 
                                         Me._MessageResult = CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.Message)
 
-                                        Me.WritePage(String.Empty)
                                     ElseIf Not BindInvokeResult.InvokeResult Is Nothing AndAlso
                                         TypeOf BindInvokeResult.InvokeResult Is [Shared].ControlResult.RedirectOrder Then
 
-                                        [Shared].Helpers.Context.Content.Item("RedirectLocation") =
+                                        Me._Context.Content.Item("RedirectLocation") =
                                             CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.RedirectOrder).Location
+
                                     Else
                                         MethodResultContent = [Shared].Execution.GetPrimitiveValue(BindInvokeResult.InvokeResult)
-
-                                        Select Case Me._DomainControl.ServiceType
-                                            Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
-                                                Me.WritePage(MethodResultContent)
-
-                                            Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
-                                                Me.WritePage()
-
-                                        End Select
                                     End If
                                 End If
-                            Else
-                                Select Case Me._DomainControl.ServiceType
-                                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
-                                        Me.WritePage(MethodResultContent)
-
-                                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
-                                        Me.WritePage()
-
-                                    Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket
-                                        Context.Response.Header.Item("Content-Type") = Me._DomainControl.ServiceMimeType
-                                        Context.Response.Header.Item("Content-Encoding") = "identity"
-
-                                        ' Decode Encoded Call Function to Readable
-                                        Dim BindInfo As [Shared].Execution.BindInfo =
-                                            Me._DomainControl.SocketEndPoint
-
-                                        BindInfo.PrepareProcedureParameters(
-                                            New [Shared].Execution.BindInfo.ProcedureParser(
-                                                Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
-                                                    ProcedureParameter.Value = Controller.PropertyController.ParseProperty(
-                                                                                    ProcedureParameter.Query,
-                                                                                    Nothing,
-                                                                                    Nothing,
-                                                                                    New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
-                                                                                                                                                                 Instance = Me._DomainControl.Domain
-                                                                                                                                                             End Sub)
-                                                                                )
-                                                End Sub)
-                                        )
-
-                                        Dim KeyValueList As New List(Of KeyValuePair(Of String, Object))
-                                        For Each Item As [Shared].Execution.BindInfo.ProcedureParameter In BindInfo.ProcedureParams
-                                            KeyValueList.Add(New KeyValuePair(Of String, Object)(Item.Key, Item.Value))
-                                        Next
-
-                                        Dim xSocketObject As [Shared].xSocketObject =
-                                            New [Shared].xSocketObject(
-                                                Context.Request.Header,
-                                                Context.Request.Stream,
-                                                Context.Response.Header,
-                                                Context.Response.Stream,
-                                                KeyValueList.ToArray(),
-                                                New [Shared].xSocketObject.FlushHandler(Sub()
-                                                                                            Context.Response.Stream.Flush()
-                                                                                        End Sub)
-                                            )
-
-                                        BindInfo.OverrideProcedureParameters(New String() {"xso"})
-                                        BindInfo.PrepareProcedureParameters(
-                                            New [Shared].Execution.BindInfo.ProcedureParser(
-                                                Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
-                                                    ProcedureParameter.Value = xSocketObject
-                                                End Sub)
-                                        )
-
-                                        Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
-                                            Manager.Assembly.InvokeBind(BindInfo, Manager.Assembly.ExecuterTypes.Undefined)
-
-                                        If BindInvokeResult.ReloadRequired Then
-                                            ' This is application dependency problem, force to apply auto recovery!
-                                            Me._DomainControl.ClearCache()
-                                            RequestModule.ReloadApplication([Shared].Helpers.CurrentRequestID)
-
-                                            Exit Sub
-                                        Else
-                                            If Not BindInvokeResult.InvokeResult Is Nothing Then
-                                                If TypeOf BindInvokeResult.InvokeResult Is System.Exception Then
-                                                    Throw New Exception.ServiceSocketException(CType(BindInvokeResult.InvokeResult, System.Exception).ToString())
-                                                ElseIf TypeOf BindInvokeResult.InvokeResult Is [Shared].ControlResult.Message Then
-                                                    Dim MessageResult As [Shared].ControlResult.Message =
-                                                        CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.Message)
-
-                                                    If MessageResult.Type = [Shared].ControlResult.Message.Types.Error Then _
-                                                        Throw New Exception.ServiceSocketException(CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.Message).Message)
-                                                Else
-                                                    ' Just Ignore any result other than Exception and Error Message Result Object
-                                                End If
-                                            End If
-                                        End If
-
-                                End Select
                             End If
-                        End If
-                    End If
-                    ' !--
-QUICKFINISH:
-                Catch ex As System.Exception
-                    If TypeOf ex Is System.Web.HttpException AndAlso Not [Shared].Configurations.LogHTTPExceptions Then Exit Try
 
-                    Dim CurrentContextCatch As [Shared].IHttpContext =
-                        [Shared].Helpers.Context
-                    If CurrentContextCatch Is Nothing Then CurrentContextCatch = Context
+                            If String.IsNullOrEmpty(CType(Me._Context.Content.Item("RedirectLocation"), String)) Then
+                                ' Create HashCode for request and apply to URL
+                                If String.Compare(Me._Context.Request.Method, "GET", True) = 0 Then
+                                    Dim ApplicationRootPath As String =
+                                        [Shared].Configurations.ApplicationRoot.BrowserImplementation
 
-                    ' Prepare For Exception List
-                    Dim CompiledExceptions As New Text.StringBuilder()
+                                    Dim CurrentURL As String = Me._Context.Request.URL.RelativePath
+                                    CurrentURL = CurrentURL.Remove(0, CurrentURL.IndexOf(ApplicationRootPath))
 
-                    CompiledExceptions.AppendLine("-- APPLICATION EXCEPTION --")
-                    CompiledExceptions.Append(ex.ToString())
-                    CompiledExceptions.AppendLine()
-                    ' ----
+                                    Dim mR As Text.RegularExpressions.Match =
+                                        Text.RegularExpressions.Regex.Match(CurrentURL, String.Format("{0}\d+/", ApplicationRootPath))
 
-                    Dim LogResult As New Text.StringBuilder()
+                                    ' Not assigned, so assign!
+                                    If Not mR.Success Then
+                                        Dim TailURL As String = Me._Context.Request.URL.RelativePath
+                                        TailURL = TailURL.Remove(0, TailURL.IndexOf(ApplicationRootPath) + ApplicationRootPath.Length)
 
-                    LogResult.AppendLine("-- Session Variables --")
-                    ' -- Session Log Text
-                    Dim SessionItems As KeyValuePair(Of String, Object)() =
-                        CurrentContextCatch.Session.Items
+                                        Dim RewrittenPath As String =
+                                            String.Format("{0}{1}/{2}", ApplicationRootPath, Me._Context.Request.HashCode, TailURL)
 
-                    If Not SessionItems Is Nothing Then
-                        Try
-                            For Each Item As KeyValuePair(Of String, Object) In SessionItems
-                                LogResult.AppendLine(String.Format(" {0} -> {1}", Item.Key, Item.Value))
+                                        If Not String.IsNullOrEmpty(Me._Context.Request.URL.QueryString) Then _
+                                            RewrittenPath = String.Format("{0}?{1}", RewrittenPath, Me._Context.Request.URL.QueryString)
+
+                                        Me._Context.Request.RewritePath(RewrittenPath)
+                                    End If
+                                End If
+
+                                Me.WritePage(MethodResultContent)
+                            End If
+
+                        Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
+                            Me.WritePage()
+
+                        Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xSocket
+                            Me._Context.Response.Header.Item("Content-Type") = Me._DomainControl.ServiceMimeType
+                            Me._Context.Response.Header.Item("Content-Encoding") = "identity"
+
+                            ' Decode Encoded Call Function to Readable
+                            Dim BindInfo As [Shared].Execution.BindInfo =
+                                Me._DomainControl.SocketEndPoint
+
+                            BindInfo.PrepareProcedureParameters(
+                                    New [Shared].Execution.BindInfo.ProcedureParser(
+                                        Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                                            ProcedureParameter.Value = Controller.PropertyController.ParseProperty(
+                                                                            ProcedureParameter.Query,
+                                                                            Nothing,
+                                                                            Nothing,
+                                                                            New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
+                                                                                                                                                         Instance = Me._DomainControl.Domain
+                                                                                                                                                     End Sub)
+                                                                        )
+                                        End Sub)
+                                )
+
+                            Dim KeyValueList As New List(Of KeyValuePair(Of String, Object))
+                            For Each Item As [Shared].Execution.BindInfo.ProcedureParameter In BindInfo.ProcedureParams
+                                KeyValueList.Add(New KeyValuePair(Of String, Object)(Item.Key, Item.Value))
                             Next
-                        Catch exSession As System.Exception
-                            ' The collection was modified after the enumerator was created.
 
-                            LogResult.AppendLine(String.Format(" Exception Occured -> {0}", exSession.Message))
-                        End Try
-                    End If
-                    ' !--
-                    LogResult.AppendLine()
-                    LogResult.AppendLine("-- Request POST Variables --")
-                    For Each KeyItem As String In CurrentContextCatch.Request.Form
-                        LogResult.AppendLine(
-                            String.Format(" {0} -> {1}", KeyItem, CurrentContextCatch.Request.Form.Item(KeyItem))
-                        )
-                    Next
-                    LogResult.AppendLine()
-                    LogResult.AppendLine("-- Request URL & Query String --")
-                    LogResult.AppendLine(
-                        String.Format("{0}?{1}",
-                            CurrentContextCatch.Request.Server.Item("URL"),
-                            CurrentContextCatch.Request.Server.Item("QUERY_STRING")
-                        )
-                    )
-                    LogResult.AppendLine()
-                    LogResult.AppendLine("-- Error Content --")
-                    LogResult.Append(ex.ToString())
+                            Dim xSocketObject As [Shared].xSocketObject =
+                                New [Shared].xSocketObject(
+                                    Me._Context.Request.Header,
+                                    Me._Context.Request.Stream,
+                                    Me._Context.Response.Header,
+                                    Me._Context.Response.Stream,
+                                    KeyValueList.ToArray(),
+                                    New [Shared].xSocketObject.FlushHandler(
+                                        Sub()
+                                            Me._Context.Response.Stream.Flush()
+                                        End Sub)
+                                )
 
+                            BindInfo.OverrideProcedureParameters(New String() {"xso"})
+                            BindInfo.PrepareProcedureParameters(
+                                New [Shared].Execution.BindInfo.ProcedureParser(
+                                    Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                                        ProcedureParameter.Value = xSocketObject
+                                    End Sub)
+                            )
+
+                            Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
+                                Manager.Assembly.InvokeBind(BindInfo, Manager.Assembly.ExecuterTypes.Undefined)
+
+                            If BindInvokeResult.ReloadRequired Then
+                                ' This is application dependency problem, force to apply auto recovery!
+                                Me._DomainControl.ClearCache()
+
+                                RequestModule.ReloadApplication(Me._RequestID)
+
+                                Exit Sub
+                            Else
+                                If Not BindInvokeResult.InvokeResult Is Nothing Then
+                                    If TypeOf BindInvokeResult.InvokeResult Is System.Exception Then
+                                        Throw New Exception.ServiceSocketException(CType(BindInvokeResult.InvokeResult, System.Exception).ToString())
+                                    ElseIf TypeOf BindInvokeResult.InvokeResult Is [Shared].ControlResult.Message Then
+                                        Dim MessageResult As [Shared].ControlResult.Message =
+                                            CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.Message)
+
+                                        If MessageResult.Type = [Shared].ControlResult.Message.Types.Error Then _
+                                            Throw New Exception.ServiceSocketException(CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.Message).Message)
+                                    End If
+                                End If
+                            End If
+
+                    End Select
+
+                End If
+            End Sub
+
+            Private Sub HandleErrorLogging(ByVal ex As System.Exception)
+                If TypeOf ex Is System.Web.HttpException AndAlso Not [Shared].Configurations.LogHTTPExceptions Then Exit Sub
+
+                ' Prepare For Exception List
+                Dim CompiledExceptions As New Text.StringBuilder()
+
+                CompiledExceptions.AppendLine("-- APPLICATION EXCEPTION --")
+                CompiledExceptions.Append(ex.ToString())
+                CompiledExceptions.AppendLine()
+                ' ----
+
+                Dim LogResult As New Text.StringBuilder()
+
+                LogResult.AppendLine("-- Session Variables --")
+                ' -- Session Log Text
+                Dim SessionItems As KeyValuePair(Of String, Object)() =
+                    Me._Context.Session.Items
+
+                If Not SessionItems Is Nothing Then
                     Try
-                        Helper.EventLogger.Log(LogResult.ToString())
-                    Catch exLogging As System.Exception
-                        CompiledExceptions.AppendLine("-- LOGGING EXCEPTION --")
-                        CompiledExceptions.Append(exLogging.ToString())
-                        CompiledExceptions.AppendLine()
+                        For Each Item As KeyValuePair(Of String, Object) In SessionItems
+                            LogResult.AppendLine(String.Format(" {0} -> {1}", Item.Key, Item.Value))
+                        Next
+                    Catch exSession As System.Exception
+                        ' The collection was modified after the enumerator was created.
 
-                        CompiledExceptions.AppendLine("-- ORIGINAL LOG CONTENT --")
-                        CompiledExceptions.Append(LogResult.ToString())
-                        CompiledExceptions.AppendLine()
-
-                        Helper.EventLogger.LogToSystemEvent(
-                            String.Format(" --- Logging Exception --- {0}{0}{1}{0}{0} --- Original Log Content --- {2}",
-                                  Environment.NewLine, exLogging.ToString(), LogResult.ToString()), EventLogEntryType.Error)
+                        LogResult.AppendLine(String.Format(" Exception Occured -> {0}", exSession.Message))
                     End Try
+                End If
+                ' !--
+                LogResult.AppendLine()
+                LogResult.AppendLine("-- Request POST Variables --")
+                For Each KeyItem As String In Me._Context.Request.Form
+                    LogResult.AppendLine(
+                        String.Format(" {0} -> {1}", KeyItem, Me._Context.Request.Form.Item(KeyItem))
+                    )
+                Next
+                LogResult.AppendLine()
+                LogResult.AppendLine("-- Request URL & Query String --")
+                LogResult.AppendLine(
+                    String.Format("{0}?{1}",
+                        Me._Context.Request.Server.Item("URL"),
+                        Me._Context.Request.Server.Item("QUERY_STRING")
+                    )
+                )
+                LogResult.AppendLine()
+                LogResult.AppendLine("-- Error Content --")
+                LogResult.Append(ex.ToString())
 
-                    If [Shared].Configurations.Debugging Then
+                Try
+                    Helper.EventLogger.Log(LogResult.ToString())
+                Catch exLogging As System.Exception
+                    CompiledExceptions.AppendLine("-- LOGGING EXCEPTION --")
+                    CompiledExceptions.Append(exLogging.ToString())
+                    CompiledExceptions.AppendLine()
+
+                    CompiledExceptions.AppendLine("-- ORIGINAL LOG CONTENT --")
+                    CompiledExceptions.Append(LogResult.ToString())
+                    CompiledExceptions.AppendLine()
+
+                    Helper.EventLogger.LogToSystemEvent(
+                        String.Format(" --- Logging Exception --- {0}{0}{1}{0}{0} --- Original Log Content --- {2}",
+                              Environment.NewLine, exLogging.ToString(), LogResult.ToString()), EventLogEntryType.Error)
+                End Try
+
+                If [Shared].Configurations.Debugging Then
+                    Dim OutputSB As New Text.StringBuilder()
+                    OutputSB.AppendFormat("<h2 align=""center"" style=""color:#CC0000"">{0}!</h2>", [Global].SystemMessages.SYSTEM_ERROROCCURED)
+                    OutputSB.Append("<hr size=""1px"">")
+                    OutputSB.AppendFormat("<pre>{0}</pre>", CompiledExceptions.ToString())
+
+                    Dim OutputBytes As Byte() =
+                        Text.Encoding.UTF8.GetBytes(OutputSB.ToString())
+
+                    Me._Context.Response.Header.Item("Content-Type") = "text/html"
+                    Me._Context.Response.Header.Item("Content-Encoding") = "identity"
+
+                    Me._Context.Response.Stream.Write(OutputBytes, 0, OutputBytes.Length)
+                Else
+                    If Not Me._DomainControl Is Nothing Then
+                        Me._Context.Content.Item("RedirectLocation") =
+                            String.Format("http://{0}{1}",
+                                Me._Context.Request.Server("HTTP_HOST"),
+                                [Shared].Helpers.GetRedirectURL(
+                                    False,
+                                    Me._DomainControl.Domain.Settings.Configurations.DefaultPage
+                                )
+                            )
+                    Else
                         Dim OutputSB As New Text.StringBuilder()
                         OutputSB.AppendFormat("<h2 align=""center"" style=""color:#CC0000"">{0}!</h2>", [Global].SystemMessages.SYSTEM_ERROROCCURED)
-                        OutputSB.Append("<hr size=""1px"">")
-                        OutputSB.AppendFormat("<pre>{0}</pre>", CompiledExceptions.ToString())
+                        OutputSB.AppendFormat("<h4 align=""center"">{0}</h4>", ex.Message)
 
                         Dim OutputBytes As Byte() =
                             Text.Encoding.UTF8.GetBytes(OutputSB.ToString())
 
-                        [Shared].Helpers.Context.Response.Header.Item("Content-Type") = "text/html"
-                        [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") = "identity"
+                        Me._Context.Response.Header.Item("Content-Type") = "text/html"
+                        Me._Context.Response.Header.Item("Content-Encoding") = "identity"
 
-                        CurrentContextCatch.Response.Stream.Write(OutputBytes, 0, OutputBytes.Length)
-
-                        IsEO = True
-                    Else
-                        If Not Me._DomainControl Is Nothing Then
-                            [Shared].Helpers.Context.Content.Item("RedirectLocation") =
-                                String.Format("http://{0}{1}",
-                                    CurrentContextCatch.Request.Server("HTTP_HOST"),
-                                    [Shared].Helpers.GetRedirectURL(
-                                        False,
-                                        Me._DomainControl.Domain.Settings.Configurations.DefaultPage
-                                    )
-                                )
-                        Else
-                            Dim OutputSB As New Text.StringBuilder()
-                            OutputSB.AppendFormat("<h2 align=""center"" style=""color:#CC0000"">{0}!</h2>", [Global].SystemMessages.SYSTEM_ERROROCCURED)
-                            OutputSB.AppendFormat("<h4 align=""center"">{0}</h4>", ex.Message)
-
-                            Dim OutputBytes As Byte() =
-                                Text.Encoding.UTF8.GetBytes(OutputSB.ToString())
-
-                            [Shared].Helpers.Context.Response.Header.Item("Content-Type") = "text/html"
-                            [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") = "identity"
-
-                            CurrentContextCatch.Response.Stream.Write(OutputBytes, 0, OutputBytes.Length)
-
-                            IsEO = True
-                        End If
+                        Me._Context.Response.Stream.Write(OutputBytes, 0, OutputBytes.Length)
                     End If
-                Finally
-                    If Not Me._DomainControl Is Nothing Then Me._DomainControl.Dispose()
-
-                    If Not [Shared].Helpers.Context.Content.Item("RedirectLocation") Is Nothing Then
-                        If CType([Shared].Helpers.Context.Content.Item("RedirectLocation"), String).IndexOf("://") = -1 Then
-                            Dim RedirectLocation As String =
-                                String.Format("http://{0}{1}",
-                                        [Shared].Helpers.Context.Request.Server("HTTP_HOST"),
-                                        [Shared].Helpers.Context.Content.Item("RedirectLocation")
-                                    )
-
-                            [Shared].Helpers.Context.Content.Item("RedirectLocation") = RedirectLocation
-                        End If
-
-                        If [Shared].Helpers.Context.Request.Header.Item("X-BlockRenderingID") Is Nothing Then
-                            Try
-                                [Shared].Helpers.Context.Response.Redirect(
-                                    CType([Shared].Helpers.Context.Content.Item("RedirectLocation"), String))
-                            Catch ex As System.Web.HttpException
-                                ' Just Handle Exceptions (Remote host closed the connection )
-                            Catch ex As System.Exception
-                                Throw
-                            End Try
-                        Else
-                            Dim RedirectBytes As Byte() =
-                                Text.Encoding.UTF8.GetBytes(String.Format("rl:{0}", CType([Shared].Helpers.Context.Content.Item("RedirectLocation"), String)))
-
-                            [Shared].Helpers.Context.Response.Header.Item("Content-Type") = "text/html"
-                            [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") = "identity"
-
-                            [Shared].Helpers.Context.Response.Stream.Write(RedirectBytes, 0, RedirectBytes.Length)
-                        End If
-                    End If
-                End Try
+                End If
             End Sub
 
             Private Sub PostRequestedStaticFileToClient()
                 ' This is a common file located somewhere in the webserver
-                Dim Context As [Shared].IHttpContext =
-                    [Shared].Helpers.Context
                 Dim RequestFilePath As String =
-                    Context.Request.PhysicalPath
+                    Me._Context.Request.PhysicalPath
 
                 If Not IO.File.Exists(RequestFilePath) Then
-                    Context.Response.StatusCode = 404
+                    Me._Context.Response.StatusCode = 404
                 Else
                     Dim ContentType As String =
                         [Shared].MimeType.GetMime(
@@ -525,20 +484,20 @@ QUICKFINISH:
                         )
 
                     Dim Range As String =
-                        Context.Request.Header.Item("Range")
+                        Me._Context.Request.Header.Item("Range")
                     Dim IsPartialRequest As Boolean =
                         Not String.IsNullOrEmpty(Range)
 
                     Dim RequestFileStream As IO.Stream = Nothing
 
                     If Not IsPartialRequest Then
-                        Context.Response.Header.Item("Accept-Ranges") = "bytes"
+                        Me._Context.Response.Header.Item("Accept-Ranges") = "bytes"
 
                         Try
                             RequestFileStream =
                                 New IO.FileStream(RequestFilePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
 
-                            Context.Response.Header.Item("Content-Length") = RequestFileStream.Length.ToString()
+                            Me._Context.Response.Header.Item("Content-Length") = RequestFileStream.Length.ToString()
 
                             Me.WriteOutput(ContentType, RequestFileStream, False)
                         Catch ex As System.Exception
@@ -556,9 +515,9 @@ QUICKFINISH:
                             If Not Integer.TryParse(Range.Split("-"c)(1), endRange) Then endRange = -1
                         End If
 
-                        Context.Response.Header.Item("Content-Type") = ContentType
-                        Context.Response.Header.Item("Content-Encoding") = "identity"
-                        Context.Response.StatusCode = 206
+                        Me._Context.Response.Header.Item("Content-Type") = ContentType
+                        Me._Context.Response.Header.Item("Content-Encoding") = "identity"
+                        Me._Context.Response.StatusCode = 206
 
                         Try
                             RequestFileStream = New IO.FileStream(RequestFilePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
@@ -568,13 +527,13 @@ QUICKFINISH:
                             If endRange = -1 Then
                                 requestingLength = requestingLength - beginRange
 
-                                Context.Response.Header.Item("Content-Range") = String.Format("bytes {0}-{1}/{2}", beginRange, requestingLength - 1, RequestFileStream.Length)
+                                Me._Context.Response.Header.Item("Content-Range") = String.Format("bytes {0}-{1}/{2}", beginRange, requestingLength - 1, RequestFileStream.Length)
                             Else
                                 requestingLength = endRange - beginRange
 
-                                Context.Response.Header.Item("Content-Range") = String.Format("bytes {0}-{1}/{2}", beginRange, endRange, RequestFileStream.Length)
+                                Me._Context.Response.Header.Item("Content-Range") = String.Format("bytes {0}-{1}/{2}", beginRange, endRange, RequestFileStream.Length)
                             End If
-                            Context.Response.Header.Item("Content-Length") = requestingLength.ToString()
+                            Me._Context.Response.Header.Item("Content-Length") = requestingLength.ToString()
 
                             RequestFileStream.Seek(beginRange, IO.SeekOrigin.Begin)
 
@@ -584,7 +543,7 @@ QUICKFINISH:
 
                                 If requestingLength < bR Then bR = CType(requestingLength, Integer)
 
-                                Context.Response.Stream.Write(buffer, 0, bR)
+                                Me._Context.Response.Stream.Write(buffer, 0, bR)
 
                                 requestingLength -= bR
                             Loop Until requestingLength = 0 OrElse bR = 0
@@ -619,7 +578,7 @@ QUICKFINISH:
 
                     RequestFileStream.Close() : GC.SuppressFinalize(RequestFileStream)
 
-                    [Shared].Helpers.Context.Content.Remove("RedirectLocation")
+                    Me._Context.Content.Remove("RedirectLocation")
                 End If
             End Sub
 
@@ -639,7 +598,7 @@ QUICKFINISH:
                 RequestFileStream.Close() : GC.SuppressFinalize(RequestFileStream)
 
                 ' Remove RedirectLocation if it exists
-                [Shared].Helpers.Context.Content.Remove("RedirectLocation")
+                Me._Context.Content.Remove("RedirectLocation")
             End Sub
 
             Private Sub RedirectToAuthenticationPage(Optional ByVal CurrentRequestedTemplate As String = Nothing)
@@ -653,13 +612,13 @@ QUICKFINISH:
                         If Not String.IsNullOrEmpty(CurrentRequestedTemplate) AndAlso
                             String.Compare(AuthenticationPage, CurrentRequestedTemplate, True) <> 0 Then
 
-                            ReferrerURLQueryString = New KeyValuePair(Of String, String)("xcRef", [Shared].Helpers.Context.Request.URL.Raw)
+                            ReferrerURLQueryString = New KeyValuePair(Of String, String)("xcRef", Me._Context.Request.URL.Raw)
                         End If
 
                         ' Remove Redirect Location IF Exists
-                        [Shared].Helpers.Context.Content.Remove("RedirectLocation")
+                        Me._Context.Content.Remove("RedirectLocation")
                         ' Reset Redirect Location to AuthenticationPage
-                        [Shared].Helpers.Context.Content.Item("RedirectLocation") =
+                        Me._Context.Content.Item("RedirectLocation") =
                             [Shared].Helpers.GetRedirectURL(
                                 True,
                                 AuthenticationPage,
@@ -695,7 +654,7 @@ QUICKFINISH:
 
             Private Overloads Sub WritePage(ByVal MethodResultContent As String)
                 Dim UpdateBlockControlID As String =
-                    [Shared].Helpers.Context.Request.Header.Item("X-BlockRenderingID")
+                    Me._Context.Request.Header.Item("X-BlockRenderingID")
 
                 Try
                     Me._DomainControl.RenderService(Me._MessageResult, UpdateBlockControlID)
@@ -705,8 +664,6 @@ QUICKFINISH:
 
                     Exit Sub
                 End Try
-
-                Dim CurrentContextCatch As [Shared].IHttpContext = [Shared].Helpers.Context
 
                 Dim sW As New IO.StringWriter
 
@@ -859,9 +816,9 @@ QUICKFINISH:
                         String.Format(
                             "<form method=""post"" action=""{0}{1}/{2}?{3}"" enctype=""multipart/form-data"" style=""margin: 0px; padding: 0px;"">",
                             [Shared].Configurations.ApplicationRoot.BrowserImplementation,
-                            CurrentContextCatch.Request.HashCode,
+                            Me._Context.Request.HashCode,
                             Me._DomainControl.ServicePathInfo.FullPath,
-                            CurrentContextCatch.Request.QueryString
+                            Me._Context.Request.QueryString
                         )
                     )
                     sW.WriteLine("<input type=""hidden"" name=""PostBackInformation"" id=""PostBackInformation"" />")
@@ -907,8 +864,8 @@ QUICKFINISH:
                 ' This header is for testing Response.End
                 Dim ResponseEndRaised As Boolean = False
                 Try
-                    [Shared].Helpers.Context.Response.Header.Item("_Dummy_") = "XCT"
-                    [Shared].Helpers.Context.Response.Header.Remove("_Dummy_")
+                    Me._Context.Response.Header.Item("_Dummy_") = "XCT"
+                    Me._Context.Response.Header.Remove("_Dummy_")
                 Catch ex As System.Web.HttpException
                     ResponseEndRaised = True
                 Catch ex As System.Exception
@@ -917,7 +874,7 @@ QUICKFINISH:
                 ' !--
 
                 If Not ResponseEndRaised AndAlso
-                    [Shared].Helpers.Context.Content.Item("RedirectLocation") Is Nothing Then
+                    Me._Context.Content.Item("RedirectLocation") Is Nothing Then
 
                     Dim OutputStream As IO.Stream =
                         New IO.MemoryStream(
@@ -955,8 +912,8 @@ QUICKFINISH:
                     End Try
 
                     If gzippedStream.Length < OutputStream.Length Then
-                        [Shared].Helpers.Context.Response.Header.Item("Content-Type") = ContentType
-                        [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") = "gzip"
+                        Me._Context.Response.Header.Item("Content-Type") = ContentType
+                        Me._Context.Response.Header.Item("Content-Encoding") = "gzip"
 
                         Me.WriteToSocket(CType(gzippedStream, IO.Stream))
 
@@ -965,15 +922,15 @@ QUICKFINISH:
                         Me.WriteOutput(ContentType, OutputStream, False)
                     End If
                 Else
-                    [Shared].Helpers.Context.Response.Header.Item("Content-Type") = ContentType
-                    [Shared].Helpers.Context.Response.Header.Item("Content-Encoding") = "identity"
+                    Me._Context.Response.Header.Item("Content-Type") = ContentType
+                    Me._Context.Response.Header.Item("Content-Encoding") = "identity"
 
                     Me.WriteToSocket(OutputStream)
                 End If
             End Sub
 
             Private Sub WriteToSocket(ByRef OutputStream As IO.Stream)
-                [Shared].Helpers.Context.Response.ReleaseHeader()
+                Me._Context.Response.ReleaseHeader()
 
                 Dim ContentBuffer As Byte() = CType(Array.CreateInstance(GetType(Byte), 4096), Byte()), bC As Integer
                 Dim Bandwidth As Long =
@@ -987,7 +944,7 @@ QUICKFINISH:
                     bC = OutputStream.Read(ContentBuffer, 0, ContentBuffer.Length)
 
                     If bC > 0 Then
-                        [Shared].Helpers.Context.Response.Stream.Write(ContentBuffer, 0, bC)
+                        Me._Context.Response.Stream.Write(ContentBuffer, 0, bC)
 
                         If Bandwidth > 0 AndAlso bC = Bandwidth Then Threading.Thread.Sleep(1000)
                     End If
