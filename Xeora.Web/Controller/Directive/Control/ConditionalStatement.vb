@@ -59,17 +59,14 @@ Namespace Xeora.Web.Controller.Directive.Control
             ' Parse Block Content
             Dim controlValueSplitted As String() =
                 Me.InsideValue.Split(":"c)
-            Dim BlockContent As String = String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
+            Dim BlockContent As String =
+                String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
 
             ' Check This Control has a Content
             Dim idxCon As Integer = BlockContent.IndexOf(":"c)
 
-            ' Get ControlID Accourding to idxCon Value -1 = no content, else has content
-            If idxCon = -1 Then
-                ' No Content
-
+            If idxCon = -1 Then _
                 Throw New Exception.GrammerException()
-            End If
 
             ' ConditionalStatment does not have any ContentArguments, That's why it copies it's parent Arguments
             If Not Me.Parent Is Nothing Then _
@@ -87,96 +84,91 @@ Namespace Xeora.Web.Controller.Directive.Control
             idxCoreContStart = BlockContent.IndexOf(OpeningTag) + OpeningTag.Length
             idxCoreContEnd = BlockContent.LastIndexOf(ClosingTag, BlockContent.Length)
 
-            If idxCoreContStart = OpeningTag.Length AndAlso
-                idxCoreContEnd = (BlockContent.Length - OpeningTag.Length) Then
-
-                Dim ContentTrue As String = Nothing, ContentFalse As String = Nothing
-
-                CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
-
-                Dim ContentDescription As [Global].ContentDescription =
-                    New [Global].ContentDescription(CoreContent, ControlIDWithIndex)
-
-                If ContentDescription.HasParts Then
-                    ContentTrue = ContentDescription.Parts.Item(0)
-
-                    If ContentDescription.Parts.Count > 1 Then _
-                        ContentFalse = ContentDescription.Parts.Item(1)
-
-                    ' Call Related Function and Exam It
-                    Dim ControllerLevel As ControllerBase = Me
-                    Dim Leveling As Integer = Me.Level
-
-                    Do
-                        If Leveling > 0 Then
-                            ControllerLevel = ControllerLevel.Parent
-
-                            If TypeOf ControllerLevel Is RenderlessController Then _
-                                ControllerLevel = ControllerLevel.Parent
-
-                            Leveling -= 1
-                        End If
-                    Loop Until ControllerLevel Is Nothing OrElse Leveling = 0
-
-                    ' Execution preparation should be done at the same level with it's parent. Because of that, send parent as parameters
-                    Me.BindInfo.PrepareProcedureParameters(
-                        New [Shared].Execution.BindInfo.ProcedureParser(
-                            Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
-                                ProcedureParameter.Value = PropertyController.ParseProperty(
-                                                               ProcedureParameter.Query,
-                                                               ControllerLevel.Parent,
-                                                               CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
-                                                               New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
-                                                                                                                       RaiseEvent InstanceRequested(Instance)
-                                                                                                                   End Sub)
-                                                           )
-                            End Sub)
-                    )
-
-                    Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
-                        Manager.Assembly.InvokeBind(Me.BindInfo, Manager.Assembly.ExecuterTypes.Control)
-
-                    Dim ConditionResult As ControlResult.Conditional = Nothing
-
-                    If BindInvokeResult.ReloadRequired Then
-                        Throw New Exception.ReloadRequiredException(BindInvokeResult.ApplicationPath)
-                    Else
-                        If Not BindInvokeResult.InvokeResult Is Nothing AndAlso
-                            TypeOf BindInvokeResult.InvokeResult Is System.Exception Then
-
-                            Throw New Exception.ExecutionException(
-                                CType(BindInvokeResult.InvokeResult, System.Exception).Message,
-                                CType(BindInvokeResult.InvokeResult, System.Exception).InnerException
-                            )
-                        Else
-                            ConditionResult = CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.Conditional)
-                        End If
-                    End If
-                    ' ----
-
-                    ' if ConditionResult is not nothing, Render Results
-                    If Not ConditionResult Is Nothing Then
-                        Select Case ConditionResult.Result
-                            Case ControlResult.Conditional.Conditions.True
-                                If Not String.IsNullOrEmpty(ContentTrue) Then _
-                                    Me.RequestParse(ContentTrue, Me)
-
-                            Case ControlResult.Conditional.Conditions.False
-                                If Not String.IsNullOrEmpty(ContentFalse) Then _
-                                    Me.RequestParse(ContentFalse, Me)
-
-                            Case ControlResult.Conditional.Conditions.UnKnown
-                                ' Reserved For Future Uses
-                        End Select
-
-                        Me.DefineRenderedValue(Me.Create())
-                    End If
-                    ' ----
-                Else
-                    Throw New Exception.ParseException()
-                End If
-            Else
+            If idxCoreContStart <> OpeningTag.Length OrElse idxCoreContEnd <> (BlockContent.Length - OpeningTag.Length) Then _
                 Throw New Exception.ParseException()
+
+            Dim ContentTrue As String = Nothing, ContentFalse As String = Nothing
+
+            CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
+            CoreContent = CoreContent.Trim()
+
+            Dim ContentDescription As [Global].ContentDescription =
+                New [Global].ContentDescription(CoreContent, ControlIDWithIndex)
+
+            If Not ContentDescription.HasParts Then _
+                Throw New Exception.ParseException()
+
+            ContentTrue = ContentDescription.Parts.Item(0)
+
+            If ContentDescription.Parts.Count > 1 Then _
+                ContentFalse = ContentDescription.Parts.Item(1)
+
+            ' Call Related Function and Exam It
+            Dim ControllerLevel As ControllerBase = Me
+            Dim Leveling As Integer = Me.Level
+
+            Do
+                If Leveling > 0 Then
+                    ControllerLevel = ControllerLevel.Parent
+
+                    If TypeOf ControllerLevel Is RenderlessController Then _
+                        ControllerLevel = ControllerLevel.Parent
+
+                    Leveling -= 1
+                End If
+            Loop Until ControllerLevel Is Nothing OrElse Leveling = 0
+
+            ' Execution preparation should be done at the same level with it's parent. Because of that, send parent as parameters
+            Me.BindInfo.PrepareProcedureParameters(
+                New [Shared].Execution.BindInfo.ProcedureParser(
+                    Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                        ProcedureParameter.Value = PropertyController.ParseProperty(
+                                                       ProcedureParameter.Query,
+                                                       ControllerLevel.Parent,
+                                                       CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
+                                                       New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
+                                                                                                               RaiseEvent InstanceRequested(Instance)
+                                                                                                           End Sub)
+                                                   )
+                    End Sub)
+            )
+
+            Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
+                Manager.Assembly.InvokeBind(Me.BindInfo, Manager.Assembly.ExecuterTypes.Control)
+
+            Dim ConditionResult As ControlResult.Conditional = Nothing
+
+            If BindInvokeResult.ReloadRequired Then
+                Throw New Exception.ReloadRequiredException(BindInvokeResult.ApplicationPath)
+            Else
+                If Not BindInvokeResult.InvokeResult Is Nothing AndAlso
+                    TypeOf BindInvokeResult.InvokeResult Is System.Exception Then
+
+                    Throw New Exception.ExecutionException(
+                        CType(BindInvokeResult.InvokeResult, System.Exception).Message,
+                        CType(BindInvokeResult.InvokeResult, System.Exception).InnerException
+                    )
+                Else
+                    ConditionResult = CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.Conditional)
+                End If
+            End If
+            ' ----
+
+            If Not ConditionResult Is Nothing Then
+                Select Case ConditionResult.Result
+                    Case ControlResult.Conditional.Conditions.True
+                        If Not String.IsNullOrEmpty(ContentTrue) Then _
+                            Me.RequestParse(ContentTrue, Me)
+
+                    Case ControlResult.Conditional.Conditions.False
+                        If Not String.IsNullOrEmpty(ContentFalse) Then _
+                            Me.RequestParse(ContentFalse, Me)
+
+                    Case ControlResult.Conditional.Conditions.UnKnown
+                        ' Reserved For Future Uses
+                End Select
+
+                Me.DefineRenderedValue(Me.Create())
             End If
 
             Me.UnRegisterFromRenderCompletedOf(Me.BoundControlID)

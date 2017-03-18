@@ -51,12 +51,8 @@ Namespace Xeora.Web.Controller.Directive
             ' Check This Control has a Content
             Dim idxCon As Integer = BlockContent.IndexOf(":"c)
 
-            ' Get ControlID Accourding to idxCon Value -1 = no content, else has content
-            If idxCon = -1 Then
-                ' No Content
-
+            If idxCon = -1 Then _
                 Throw New Exception.GrammerException()
-            End If
 
             ' UpdateBlock does not have any ContentArguments, That's why it copies it's parent Arguments
             If Not Me.Parent Is Nothing Then _
@@ -74,39 +70,40 @@ Namespace Xeora.Web.Controller.Directive
             idxCoreContStart = BlockContent.IndexOf(OpeningTag) + OpeningTag.Length
             idxCoreContEnd = BlockContent.LastIndexOf(ClosingTag, BlockContent.Length)
 
-            If idxCoreContStart = OpeningTag.Length AndAlso
-                idxCoreContEnd = (BlockContent.Length - OpeningTag.Length) Then
-
-                CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
-
-                Dim RenderOnRequestMarker As String = "!RENDERONREQUEST"
-
-                If CoreContent.IndexOf(RenderOnRequestMarker) = 0 Then
-                    If String.Compare(Me.UpdateBlockControlID, Me.ControlID) = 0 Then
-                        CoreContent = CoreContent.Substring(RenderOnRequestMarker.Length)
-                    Else
-                        Me.DefineRenderedValue(String.Format("<div id=""{0}""></div>", Me.ControlID))
-
-                        Exit Sub
-                    End If
-                End If
-
-                If Not CoreContent Is Nothing AndAlso
-                    CoreContent.Trim().Length > 0 Then
-
-                    RaiseEvent ParseRequested(CoreContent, Me)
-
-                    If Me.IsUpdateBlockRequest AndAlso Me.InRequestedUpdateBlock Then
-                        Me.DefineRenderedValue(Me.Create())
-                        Me.UpdateBlockRendered = True
-                    Else
-                        Me.DefineRenderedValue(String.Format("<div id=""{0}"">{1}</div>", Me.ControlID, Me.Create()))
-                    End If
-                Else
-                    Throw New Exception.EmptyBlockException()
-                End If
-            Else
+            If idxCoreContStart <> OpeningTag.Length OrElse idxCoreContEnd <> (BlockContent.Length - OpeningTag.Length) Then _
                 Throw New Exception.ParseException()
+
+            CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
+            CoreContent = CoreContent.Trim()
+
+            If String.IsNullOrEmpty(CoreContent) Then _
+                Throw New Exception.EmptyBlockException()
+
+            Dim RenderOnRequestMarker As String = "!RENDERONREQUEST"
+
+            If CoreContent.IndexOf(RenderOnRequestMarker) = 0 Then
+                If String.Compare(Me.UpdateBlockControlID, Me.ControlID) = 0 Then
+                    CoreContent = CoreContent.Substring(RenderOnRequestMarker.Length)
+                Else
+                    Me.DefineRenderedValue(String.Format("<div id=""{0}""></div>", Me.ControlID))
+
+                    Exit Sub
+                End If
+            End If
+
+            RaiseEvent ParseRequested(CoreContent, Me)
+
+            If Me.IsUpdateBlockRequest AndAlso Me.InRequestedUpdateBlock Then
+                Me.DefineRenderedValue(Me.Create())
+                Me.UpdateBlockRendered = True
+            Else
+                Me.DefineRenderedValue(
+                    String.Format(
+                        "<div id=""{0}"">{1}</div>",
+                        Me.ControlID,
+                        Me.Create()
+                    )
+                )
             End If
         End Sub
     End Class

@@ -62,7 +62,7 @@ Namespace Xeora.Web.Global
             End Get
         End Property
 
-        Public Function GetEnumerator() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
+        Public Function GetEnumerator() As IEnumerator Implements IEnumerable.GetEnumerator
             Return Me._SessionItems.GetEnumerator()
         End Function
     End Class

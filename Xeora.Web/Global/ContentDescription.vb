@@ -33,11 +33,10 @@ Namespace Xeora.Web.Global
                 End If
 
                 If ContentPart.IndexOf(ContentDescription.TemplatePointerText) = 0 Then
-                    If String.IsNullOrEmpty(Me._MessageTemplate) Then
-                        Me._MessageTemplate = ContentPart.Substring(ContentDescription.TemplatePointerText.Length)
-                    Else
+                    If Not String.IsNullOrEmpty(Me._MessageTemplate) Then _
                         Throw New Exception.MultipleBlockException("Only One Message Template Block Allowed!")
-                    End If
+
+                    Me._MessageTemplate = ContentPart.Substring(ContentDescription.TemplatePointerText.Length)
                 Else
                     Me._Parts.Add(ContentPart)
                 End If

@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="ScriptVersion" Type="System.String" Scope="Application">
-      <Value Profile="(Default)">1.0.015</Value>
+      <Value Profile="(Default)">1.0.017</Value>
     </Setting>
   </Settings>
 </SettingsFile>

@@ -17,7 +17,7 @@ Namespace Xeora.Web.Controller
 
             ' Change ~/ values with the exact application root path
             Dim RootPathMatches As Text.RegularExpressions.MatchCollection =
-                Text.RegularExpressions.Regex.Matches(Me.InsideValue, "[""']+(~|¨)/", Text.RegularExpressions.RegexOptions.Multiline)
+                Text.RegularExpressions.Regex.Matches(Me.DraftValue, "[""']+(~|¨)/", Text.RegularExpressions.RegexOptions.Multiline)
             Dim ApplicationRoot As String = [Shared].Configurations.ApplicationRoot.BrowserImplementation
             Dim VirtualRoot As String = [Shared].Configurations.VirtualRoot
 
@@ -29,7 +29,7 @@ Namespace Xeora.Web.Controller
                 Dim MatchItem As Text.RegularExpressions.Match =
                     CType(Enumerator.Current, Text.RegularExpressions.Match)
 
-                WorkingValue.Append(Me.InsideValue.Substring(LastIndex, MatchItem.Index - LastIndex))
+                WorkingValue.Append(Me.DraftValue.Substring(LastIndex, MatchItem.Index - LastIndex))
 
                 If MatchItem.Value.IndexOf("~") > -1 Then
                     ' ApplicationRoot Match
@@ -41,7 +41,7 @@ Namespace Xeora.Web.Controller
 
                 LastIndex = MatchItem.Index + MatchItem.Length
             Loop
-            WorkingValue.Append(Me.InsideValue.Substring(LastIndex))
+            WorkingValue.Append(Me.DraftValue.Substring(LastIndex))
 
             If WorkingValue.Length > 0 Then
                 ' This is renderless content

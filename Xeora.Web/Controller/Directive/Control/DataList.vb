@@ -62,17 +62,14 @@ Namespace Xeora.Web.Controller.Directive.Control
             ' Parse Block Content
             Dim controlValueSplitted As String() =
                 Me.InsideValue.Split(":"c)
-            Dim BlockContent As String = String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
+            Dim BlockContent As String =
+                String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
 
             ' Check This Control has a Content
             Dim idxCon As Integer = BlockContent.IndexOf(":"c)
 
-            ' Get ControlID Accourding to idxCon Value -1 = no content, else has content
-            If idxCon = -1 Then
-                ' No Content
-
+            If idxCon = -1 Then _
                 Throw New Exception.GrammerException()
-            End If
 
             ' ControlIDWithIndex Like ControlID~INDEX
             Dim ControlIDWithIndex As String = BlockContent.Substring(0, idxCon)
@@ -86,334 +83,344 @@ Namespace Xeora.Web.Controller.Directive.Control
             idxCoreContStart = BlockContent.IndexOf(OpeningTag) + OpeningTag.Length
             idxCoreContEnd = BlockContent.LastIndexOf(ClosingTag, BlockContent.Length)
 
-            If idxCoreContStart = OpeningTag.Length AndAlso
-                idxCoreContEnd = (BlockContent.Length - OpeningTag.Length) Then
+            If idxCoreContStart <> OpeningTag.Length OrElse idxCoreContEnd <> (BlockContent.Length - OpeningTag.Length) Then _
+                Throw New Exception.ParseException()
 
-                CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
+            CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
+            CoreContent = CoreContent.Trim()
 
-                Dim ContentDescription As [Global].ContentDescription =
-                    New [Global].ContentDescription(CoreContent, ControlIDWithIndex)
+            Dim ContentDescription As [Global].ContentDescription =
+                New [Global].ContentDescription(CoreContent, ControlIDWithIndex)
 
-                If ContentDescription.HasParts Then
-                    ' Reset Variables
-                    Helpers.VariablePool.Set(Me.ControlID, Nothing)
+            If Not ContentDescription.HasParts Then _
+                Throw New Exception.ParseException()
 
-                    ' Call Related Function and Exam It
-                    Dim ControllerLevel As ControllerBase = Me
-                    Dim Leveling As Integer = Me.Level
+            ' Reset Variables
+            Helpers.VariablePool.Set(Me.ControlID, Nothing)
 
-                    Do
-                        If Leveling > 0 Then
-                            ControllerLevel = ControllerLevel.Parent
+            ' Call Related Function and Exam It
+            Dim ControllerLevel As ControllerBase = Me
+            Dim Leveling As Integer = Me.Level
 
-                            If TypeOf ControllerLevel Is RenderlessController Then _
-                                ControllerLevel = ControllerLevel.Parent
+            Do
+                If Leveling > 0 Then
+                    ControllerLevel = ControllerLevel.Parent
 
-                            Leveling -= 1
-                        End If
-                    Loop Until ControllerLevel Is Nothing OrElse Leveling = 0
+                    If TypeOf ControllerLevel Is RenderlessController Then _
+                        ControllerLevel = ControllerLevel.Parent
 
-                    ' Execution preparation should be done at the same level with it's parent. Because of that, send parent as parameters
-                    Me.BindInfo.PrepareProcedureParameters(
-                        New [Shared].Execution.BindInfo.ProcedureParser(
-                            Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
-                                ProcedureParameter.Value = PropertyController.ParseProperty(
-                                                               ProcedureParameter.Query,
-                                                               ControllerLevel.Parent,
-                                                               CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
-                                                               New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
-                                                                                                                       RaiseEvent InstanceRequested(Instance)
-                                                                                                                   End Sub)
-                                                           )
-                            End Sub)
-                    )
+                    Leveling -= 1
+                End If
+            Loop Until ControllerLevel Is Nothing OrElse Leveling = 0
 
-                    Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
-                        Manager.Assembly.InvokeBind(Me.BindInfo, Manager.Assembly.ExecuterTypes.Control)
+            ' Execution preparation should be done at the same level with it's parent. Because of that, send parent as parameters
+            Me.BindInfo.PrepareProcedureParameters(
+                New [Shared].Execution.BindInfo.ProcedureParser(
+                    Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
+                        ProcedureParameter.Value = PropertyController.ParseProperty(
+                                                        ProcedureParameter.Query,
+                                                        ControllerLevel.Parent,
+                                                        CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
+                                                        New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
+                                                                                                                RaiseEvent InstanceRequested(Instance)
+                                                                                                            End Sub)
+                                                    )
+                    End Sub)
+            )
 
-                    If BindInvokeResult.ReloadRequired Then
-                        Throw New Exception.ReloadRequiredException(BindInvokeResult.ApplicationPath)
+            Dim BindInvokeResult As [Shared].Execution.BindInvokeResult =
+                Manager.Assembly.InvokeBind(Me.BindInfo, Manager.Assembly.ExecuterTypes.Control)
+
+            If BindInvokeResult.ReloadRequired Then
+                Throw New Exception.ReloadRequiredException(BindInvokeResult.ApplicationPath)
+            Else
+                If Not BindInvokeResult.InvokeResult Is Nothing AndAlso
+                    TypeOf BindInvokeResult.InvokeResult Is System.Exception Then
+
+                    Throw New Exception.ExecutionException(
+                            CType(BindInvokeResult.InvokeResult, System.Exception).Message,
+                            CType(BindInvokeResult.InvokeResult, System.Exception).InnerException
+                        )
+                Else
+                    If BindInvokeResult.InvokeResult Is Nothing OrElse
+                        (
+                            Not TypeOf BindInvokeResult.InvokeResult Is ControlResult.PartialDataTable AndAlso
+                            Not TypeOf BindInvokeResult.InvokeResult Is ControlResult.DirectDataAccess AndAlso
+                            Not TypeOf BindInvokeResult.InvokeResult Is ControlResult.ObjectFeed
+                        ) Then
+
+                        Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
                     Else
-                        If Not BindInvokeResult.InvokeResult Is Nothing AndAlso
-                            TypeOf BindInvokeResult.InvokeResult Is System.Exception Then
-
-                            Throw New Exception.ExecutionException(
-                                CType(BindInvokeResult.InvokeResult, System.Exception).Message,
-                                CType(BindInvokeResult.InvokeResult, System.Exception).InnerException
-                            )
-                        Else
-                            If BindInvokeResult.InvokeResult Is Nothing OrElse
-                                (
-                                    Not TypeOf BindInvokeResult.InvokeResult Is ControlResult.PartialDataTable AndAlso
-                                    Not TypeOf BindInvokeResult.InvokeResult Is ControlResult.DirectDataAccess AndAlso
-                                    Not TypeOf BindInvokeResult.InvokeResult Is ControlResult.ObjectFeed
-                                ) Then
-
-                                Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
-                            Else
-                                Dim CompareCulture As New Globalization.CultureInfo("en-US")
-
-                                If TypeOf BindInvokeResult.InvokeResult Is ControlResult.PartialDataTable Then
-                                    Dim RepeaterList As ControlResult.PartialDataTable =
-                                        CType(BindInvokeResult.InvokeResult, ControlResult.PartialDataTable)
-
-                                    Dim DataListArgs As New [Global].ArgumentInfoCollection
-
-                                    If Not RepeaterList.Message Is Nothing Then
-                                        Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
-
-                                        If Not ContentDescription.HasMessageTemplate Then
-                                            Me.DefineRenderedValue(RepeaterList.Message.Message)
-                                        Else
-                                            DataListArgs.AppendKeyWithValue("MessageType", RepeaterList.Message.Type)
-                                            DataListArgs.AppendKeyWithValue("Message", RepeaterList.Message.Message)
-
-                                            Dim DummyControllerContainer As ControllerBase =
-                                                ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                            Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
-                                            DummyControllerContainer.Render(Me)
-
-                                            Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
-                                        End If
-                                    Else
-                                        Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(RepeaterList.Rows.Count, RepeaterList.Total))
-
-                                        Dim RenderedContent As New Text.StringBuilder
-                                        Dim ContentIndex As Integer = 0, rC As Integer = 0
-                                        Dim IsItemIndexColumnExists As Boolean = False
-
-                                        For Each dC As DataColumn In RepeaterList.Columns
-                                            If CompareCulture.CompareInfo.Compare(dC.ColumnName, "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
-
-                                            DataListArgs.AppendKey(dC.ColumnName)
-                                        Next
-                                        DataListArgs.AppendKey("_sys_ItemIndex") : RepeaterList.Columns.Add("_sys_ItemIndex", GetType(Integer))
-                                        ' this is for user interaction
-                                        If Not IsItemIndexColumnExists Then DataListArgs.AppendKey("ItemIndex") : RepeaterList.Columns.Add("ItemIndex", GetType(Integer))
-
-                                        For Each dR As DataRow In RepeaterList.Rows
-                                            Dim dRValues As Object() = dR.ItemArray
-
-                                            If Not IsItemIndexColumnExists Then
-                                                dRValues(dRValues.Length - 2) = rC
-                                                dRValues(dRValues.Length - 1) = rC
-                                            Else
-                                                dRValues(dRValues.Length - 1) = rC
-                                            End If
-
-                                            DataListArgs.Reset(dRValues)
-
-                                            ContentIndex = rC Mod ContentDescription.Parts.Count
-
-                                            Dim DummyControllerContainer As ControllerBase =
-                                                ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                            Me.RequestParse(ContentDescription.Parts.Item(ContentIndex), DummyControllerContainer)
-                                            DummyControllerContainer.Render(Me)
-
-                                            RenderedContent.Append(DummyControllerContainer.RenderedValue)
-
-                                            rC += 1
-                                        Next
-
-                                        Me.DefineRenderedValue(RenderedContent.ToString())
-                                    End If
-                                ElseIf TypeOf BindInvokeResult.InvokeResult Is ControlResult.DirectDataAccess Then
-                                    Dim DataReaderInfo As ControlResult.DirectDataAccess =
-                                        CType(BindInvokeResult.InvokeResult, ControlResult.DirectDataAccess)
-
-                                    Dim DataListArgs As New [Global].ArgumentInfoCollection
-
-                                    If DataReaderInfo.DatabaseCommand Is Nothing Then
-                                        If Not DataReaderInfo.Message Is Nothing Then
-                                            Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
-
-                                            If Not ContentDescription.HasMessageTemplate Then
-                                                Me.DefineRenderedValue(DataReaderInfo.Message.Message)
-                                            Else
-                                                DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
-                                                DataListArgs.AppendKeyWithValue("Message", DataReaderInfo.Message.Message)
-
-                                                Dim DummyControllerContainer As ControllerBase =
-                                                    ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                                Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
-                                                DummyControllerContainer.Render(Me)
-
-                                                Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
-                                            End If
-
-                                            Helper.EventLogger.Log(
-                                                String.Format("DirectDataAccess [{0}] failed! DatabaseCommand must not be null!", Me.ControlID))
-                                        Else
-                                            Throw New NullReferenceException(
-                                                String.Format("DirectDataAccess [{0}] failed! DatabaseCommand must not be null!", Me.ControlID))
-                                        End If
-                                    Else
-                                        Dim DBConnection As IDbConnection =
-                                            DataReaderInfo.DatabaseCommand.Connection
-                                        Dim DBCommand As IDbCommand =
-                                            DataReaderInfo.DatabaseCommand
-                                        Dim DBReader As IDataReader
-
-                                        Try
-                                            DBConnection.Open()
-                                            DBReader = DBCommand.ExecuteReader()
-
-                                            Dim RenderedContent As New Text.StringBuilder
-                                            Dim ContentIndex As Integer = 0, rC As Integer = 0
-                                            Dim IsItemIndexColumnExists As Boolean = False
-
-                                            If DBReader.Read() Then
-                                                Do
-                                                    DataListArgs.Reset()
-
-                                                    For cC As Integer = 0 To DBReader.FieldCount - 1
-                                                        If CompareCulture.CompareInfo.Compare(DBReader.GetName(cC), "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
-
-                                                        DataListArgs.AppendKeyWithValue(DBReader.GetName(cC), DBReader.GetValue(cC))
-                                                    Next
-                                                    DataListArgs.AppendKeyWithValue("_sys_ItemIndex", rC)
-                                                    ' this is for user interaction
-                                                    If Not IsItemIndexColumnExists Then DataListArgs.AppendKeyWithValue("ItemIndex", rC)
-
-                                                    ContentIndex = rC Mod ContentDescription.Parts.Count
-
-                                                    Dim DummyControllerContainer As ControllerBase =
-                                                        ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                                    Me.RequestParse(ContentDescription.Parts.Item(ContentIndex), DummyControllerContainer)
-                                                    DummyControllerContainer.Render(Me)
-
-                                                    RenderedContent.Append(DummyControllerContainer.RenderedValue)
-
-                                                    rC += 1
-                                                Loop While DBReader.Read()
-
-                                                Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(rC, rC))
-                                                Me.DefineRenderedValue(RenderedContent.ToString())
-                                            Else
-                                                Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
-
-                                                If Not DataReaderInfo.Message Is Nothing Then
-                                                    If Not ContentDescription.HasMessageTemplate Then
-                                                        Me.DefineRenderedValue(DataReaderInfo.Message.Message)
-                                                    Else
-                                                        DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
-                                                        DataListArgs.AppendKeyWithValue("Message", DataReaderInfo.Message.Message)
-
-                                                        Dim DummyControllerContainer As ControllerBase =
-                                                            ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                                        Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
-                                                        DummyControllerContainer.Render(Me)
-
-                                                        Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
-                                                    End If
-                                                Else
-                                                    Me.DefineRenderedValue(String.Empty)
-                                                End If
-                                            End If
-
-                                            ' Close and Dispose Database Reader
-                                            DBReader.Close()
-                                            DBReader.Dispose()
-                                            GC.SuppressFinalize(DBReader)
-                                            ' ----
-
-                                            ' Close and Dispose Database Command
-                                            DBCommand.Dispose()
-                                            GC.SuppressFinalize(DBCommand)
-                                            ' ----
-
-                                            ' Close and Dispose Database Connection
-                                            DBConnection.Close()
-                                            DBConnection.Dispose()
-                                            GC.SuppressFinalize(DBConnection)
-                                            ' ----
-                                        Catch ex As System.Exception
-                                            If Not DataReaderInfo.Message Is Nothing Then
-                                                Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
-
-                                                If Not ContentDescription.HasMessageTemplate Then
-                                                    Me.DefineRenderedValue(DataReaderInfo.Message.Message)
-                                                Else
-                                                    DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
-                                                    DataListArgs.AppendKeyWithValue("Message", DataReaderInfo.Message.Message)
-
-                                                    Dim DummyControllerContainer As ControllerBase =
-                                                        ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                                    Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
-                                                    DummyControllerContainer.Render(Me)
-
-                                                    Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
-                                                End If
-
-                                                Helper.EventLogger.Log(ex)
-                                            Else
-                                                Throw New Exception.DirectDataAccessException(ex)
-                                            End If
-                                        End Try
-                                    End If
-                                ElseIf TypeOf BindInvokeResult.InvokeResult Is ControlResult.ObjectFeed Then
-                                    Dim ObjectList As ControlResult.ObjectFeed =
-                                        CType(BindInvokeResult.InvokeResult, ControlResult.ObjectFeed)
-
-                                    Dim DataListArgs As New [Global].ArgumentInfoCollection
-
-                                    If Not ObjectList.Message Is Nothing Then
-                                        Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
-
-                                        If Not ContentDescription.HasMessageTemplate Then
-                                            Me.DefineRenderedValue(ObjectList.Message.Message)
-                                        Else
-                                            DataListArgs.AppendKeyWithValue("MessageType", ObjectList.Message.Type)
-                                            DataListArgs.AppendKeyWithValue("Message", ObjectList.Message.Message)
-
-                                            Dim DummyControllerContainer As ControllerBase =
-                                                ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                            Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
-                                            DummyControllerContainer.Render(Me)
-
-                                            Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
-                                        End If
-                                    Else
-                                        Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(ObjectList.Count, ObjectList.Total))
-
-                                        Dim RenderedContent As New Text.StringBuilder
-                                        Dim ContentIndex As Integer = 0, rC As Integer = 0
-
-                                        For Each Current As Object In ObjectList.Objects
-                                            DataListArgs.Reset()
-
-                                            DataListArgs.AppendKeyWithValue("_sys_ItemIndex", rC)
-                                            DataListArgs.AppendKeyWithValue("ItemIndex", rC)
-
-                                            DataListArgs.AppendKeyWithValue("CurrentObject", Current)
-
-                                            ContentIndex = rC Mod ContentDescription.Parts.Count
-
-                                            Dim DummyControllerContainer As ControllerBase =
-                                                ControllerBase.ProvideDummyController(Me, DataListArgs)
-                                            Me.RequestParse(ContentDescription.Parts.Item(ContentIndex), DummyControllerContainer)
-                                            DummyControllerContainer.Render(Me)
-
-                                            RenderedContent.Append(DummyControllerContainer.RenderedValue)
-
-                                            rC += 1
-                                        Next
-
-                                        Me.DefineRenderedValue(RenderedContent.ToString())
-                                    End If
-                                End If
-                            End If
+                        If TypeOf BindInvokeResult.InvokeResult Is ControlResult.PartialDataTable Then
+                            Me.RenderPartialDataTable(BindInvokeResult, ContentDescription)
+                        ElseIf TypeOf BindInvokeResult.InvokeResult Is ControlResult.DirectDataAccess Then
+                            Me.RenderDirectDataAccess(BindInvokeResult, ContentDescription)
+                        ElseIf TypeOf BindInvokeResult.InvokeResult Is ControlResult.ObjectFeed Then
+                            Me.RenderObjectFeed(BindInvokeResult, ContentDescription)
                         End If
                     End If
-                    ' ----
-                Else
-                    Throw New Exception.ParseException()
                 End If
-            Else
-                Throw New Exception.ParseException()
             End If
+            ' ----
 
             Me.UnRegisterFromRenderCompletedOf(Me.BoundControlID)
+        End Sub
+
+        Private Sub RenderPartialDataTable(BindInvokeResult As [Shared].Execution.BindInvokeResult, ContentDescription As [Global].ContentDescription)
+            Dim RepeaterList As ControlResult.PartialDataTable =
+                CType(BindInvokeResult.InvokeResult, ControlResult.PartialDataTable)
+
+            Dim DataListArgs As New [Global].ArgumentInfoCollection
+
+            If Not RepeaterList.Message Is Nothing Then
+                Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
+
+                If Not ContentDescription.HasMessageTemplate Then
+                    Me.DefineRenderedValue(RepeaterList.Message.Message)
+                Else
+                    DataListArgs.AppendKeyWithValue("MessageType", RepeaterList.Message.Type)
+                    DataListArgs.AppendKeyWithValue("Message", RepeaterList.Message.Message)
+
+                    Dim DummyControllerContainer As ControllerBase =
+                        ControllerBase.ProvideDummyController(Me, DataListArgs)
+                    Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
+                    DummyControllerContainer.Render(Me)
+
+                    Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
+                End If
+            Else
+                Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(RepeaterList.Rows.Count, RepeaterList.Total))
+
+                Dim CompareCulture As New Globalization.CultureInfo("en-US")
+
+                Dim RenderedContent As New Text.StringBuilder
+                Dim ContentIndex As Integer = 0, rC As Integer = 0
+                Dim IsItemIndexColumnExists As Boolean = False
+
+                For Each dC As DataColumn In RepeaterList.Columns
+                    If CompareCulture.CompareInfo.Compare(dC.ColumnName, "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
+
+                    DataListArgs.AppendKey(dC.ColumnName)
+                Next
+                DataListArgs.AppendKey("_sys_ItemIndex") : RepeaterList.Columns.Add("_sys_ItemIndex", GetType(Integer))
+                ' this is for user interaction
+                If Not IsItemIndexColumnExists Then DataListArgs.AppendKey("ItemIndex") : RepeaterList.Columns.Add("ItemIndex", GetType(Integer))
+
+                For Each dR As DataRow In RepeaterList.Rows
+                    Dim dRValues As Object() = dR.ItemArray
+
+                    If Not IsItemIndexColumnExists Then
+                        dRValues(dRValues.Length - 2) = rC
+                        dRValues(dRValues.Length - 1) = rC
+                    Else
+                        dRValues(dRValues.Length - 1) = rC
+                    End If
+
+                    DataListArgs.Reset(dRValues)
+
+                    ContentIndex = rC Mod ContentDescription.Parts.Count
+
+                    Dim DummyControllerContainer As ControllerBase =
+                        ControllerBase.ProvideDummyController(Me, DataListArgs)
+                    Me.RequestParse(ContentDescription.Parts.Item(ContentIndex), DummyControllerContainer)
+                    DummyControllerContainer.Render(Me)
+
+                    RenderedContent.Append(DummyControllerContainer.RenderedValue)
+
+                    rC += 1
+                Next
+
+                Me.DefineRenderedValue(RenderedContent.ToString())
+            End If
+        End Sub
+
+        Private Sub RenderDirectDataAccess(BindInvokeResult As [Shared].Execution.BindInvokeResult, ContentDescription As [Global].ContentDescription)
+            Dim DataReaderInfo As ControlResult.DirectDataAccess =
+                CType(BindInvokeResult.InvokeResult, ControlResult.DirectDataAccess)
+
+            Dim DataListArgs As New [Global].ArgumentInfoCollection
+
+            If DataReaderInfo.DatabaseCommand Is Nothing Then
+                If Not DataReaderInfo.Message Is Nothing Then
+                    Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
+
+                    If Not ContentDescription.HasMessageTemplate Then
+                        Me.DefineRenderedValue(DataReaderInfo.Message.Message)
+                    Else
+                        DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
+                        DataListArgs.AppendKeyWithValue("Message", DataReaderInfo.Message.Message)
+
+                        Dim DummyControllerContainer As ControllerBase =
+                            ControllerBase.ProvideDummyController(Me, DataListArgs)
+                        Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
+                        DummyControllerContainer.Render(Me)
+
+                        Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
+                    End If
+
+                    Helper.EventLogger.Log(
+                        String.Format("DirectDataAccess [{0}] failed! DatabaseCommand must not be null!", Me.ControlID))
+                Else
+                    Throw New NullReferenceException(
+                            String.Format("DirectDataAccess [{0}] failed! DatabaseCommand must not be null!", Me.ControlID))
+                End If
+            Else
+                Dim DBConnection As IDbConnection =
+                    DataReaderInfo.DatabaseCommand.Connection
+                Dim DBCommand As IDbCommand =
+                    DataReaderInfo.DatabaseCommand
+                Dim DBReader As IDataReader
+
+                Try
+                    DBConnection.Open()
+                    DBReader = DBCommand.ExecuteReader()
+
+                    Dim CompareCulture As New Globalization.CultureInfo("en-US")
+
+                    Dim RenderedContent As New Text.StringBuilder
+                    Dim ContentIndex As Integer = 0, rC As Integer = 0
+                    Dim IsItemIndexColumnExists As Boolean = False
+
+                    If DBReader.Read() Then
+                        Do
+                            DataListArgs.Reset()
+
+                            For cC As Integer = 0 To DBReader.FieldCount - 1
+                                If CompareCulture.CompareInfo.Compare(DBReader.GetName(cC), "ItemIndex", Globalization.CompareOptions.IgnoreCase) = 0 Then IsItemIndexColumnExists = True
+
+                                DataListArgs.AppendKeyWithValue(DBReader.GetName(cC), DBReader.GetValue(cC))
+                            Next
+                            DataListArgs.AppendKeyWithValue("_sys_ItemIndex", rC)
+                            ' this is for user interaction
+                            If Not IsItemIndexColumnExists Then DataListArgs.AppendKeyWithValue("ItemIndex", rC)
+
+                            ContentIndex = rC Mod ContentDescription.Parts.Count
+
+                            Dim DummyControllerContainer As ControllerBase =
+                                ControllerBase.ProvideDummyController(Me, DataListArgs)
+                            Me.RequestParse(ContentDescription.Parts.Item(ContentIndex), DummyControllerContainer)
+                            DummyControllerContainer.Render(Me)
+
+                            RenderedContent.Append(DummyControllerContainer.RenderedValue)
+
+                            rC += 1
+                        Loop While DBReader.Read()
+
+                        Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(rC, rC))
+                        Me.DefineRenderedValue(RenderedContent.ToString())
+                    Else
+                        Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
+
+                        If Not DataReaderInfo.Message Is Nothing Then
+                            If Not ContentDescription.HasMessageTemplate Then
+                                Me.DefineRenderedValue(DataReaderInfo.Message.Message)
+                            Else
+                                DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
+                                DataListArgs.AppendKeyWithValue("Message", DataReaderInfo.Message.Message)
+
+                                Dim DummyControllerContainer As ControllerBase =
+                                    ControllerBase.ProvideDummyController(Me, DataListArgs)
+                                Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
+                                DummyControllerContainer.Render(Me)
+
+                                Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
+                            End If
+                        Else
+                            Me.DefineRenderedValue(String.Empty)
+                        End If
+                    End If
+
+                    ' Close and Dispose Database Reader
+                    DBReader.Close()
+                    DBReader.Dispose()
+                    GC.SuppressFinalize(DBReader)
+                    ' ----
+
+                    ' Close and Dispose Database Command
+                    DBCommand.Dispose()
+                    GC.SuppressFinalize(DBCommand)
+                    ' ----
+
+                    ' Close and Dispose Database Connection
+                    DBConnection.Close()
+                    DBConnection.Dispose()
+                    GC.SuppressFinalize(DBConnection)
+                    ' ----
+                Catch ex As System.Exception
+                    Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
+
+                    If DataReaderInfo.Message Is Nothing Then _
+                        Throw New Exception.DirectDataAccessException(ex)
+
+                    If Not ContentDescription.HasMessageTemplate Then
+                        Me.DefineRenderedValue(DataReaderInfo.Message.Message)
+                    Else
+                        DataListArgs.AppendKeyWithValue("MessageType", DataReaderInfo.Message.Type)
+                        DataListArgs.AppendKeyWithValue("Message", DataReaderInfo.Message.Message)
+
+                        Dim DummyControllerContainer As ControllerBase =
+                            ControllerBase.ProvideDummyController(Me, DataListArgs)
+                        Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
+                        DummyControllerContainer.Render(Me)
+
+                        Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
+                    End If
+
+                    Helper.EventLogger.Log(ex)
+                End Try
+            End If
+        End Sub
+
+        Private Sub RenderObjectFeed(BindInvokeResult As [Shared].Execution.BindInvokeResult, ContentDescription As [Global].ContentDescription)
+            Dim ObjectList As ControlResult.ObjectFeed =
+                CType(BindInvokeResult.InvokeResult, ControlResult.ObjectFeed)
+
+            Dim DataListArgs As New [Global].ArgumentInfoCollection
+
+            If Not ObjectList.Message Is Nothing Then
+                Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(0, 0))
+
+                If Not ContentDescription.HasMessageTemplate Then
+                    Me.DefineRenderedValue(ObjectList.Message.Message)
+                Else
+                    DataListArgs.AppendKeyWithValue("MessageType", ObjectList.Message.Type)
+                    DataListArgs.AppendKeyWithValue("Message", ObjectList.Message.Message)
+
+                    Dim DummyControllerContainer As ControllerBase =
+                        ControllerBase.ProvideDummyController(Me, DataListArgs)
+                    Me.RequestParse(ContentDescription.MessageTemplate, DummyControllerContainer)
+                    DummyControllerContainer.Render(Me)
+
+                    Me.DefineRenderedValue(DummyControllerContainer.RenderedValue)
+                End If
+            Else
+                Helpers.VariablePool.Set(Me.ControlID, New [Global].DataListOutputInfo(ObjectList.Count, ObjectList.Total))
+
+                Dim RenderedContent As New Text.StringBuilder
+                Dim ContentIndex As Integer = 0, rC As Integer = 0
+
+                For Each Current As Object In ObjectList.Objects
+                    DataListArgs.Reset()
+
+                    DataListArgs.AppendKeyWithValue("_sys_ItemIndex", rC)
+                    DataListArgs.AppendKeyWithValue("ItemIndex", rC)
+
+                    DataListArgs.AppendKeyWithValue("CurrentObject", Current)
+
+                    ContentIndex = rC Mod ContentDescription.Parts.Count
+
+                    Dim DummyControllerContainer As ControllerBase =
+                        ControllerBase.ProvideDummyController(Me, DataListArgs)
+                    Me.RequestParse(ContentDescription.Parts.Item(ContentIndex), DummyControllerContainer)
+                    DummyControllerContainer.Render(Me)
+
+                    RenderedContent.Append(DummyControllerContainer.RenderedValue)
+
+                    rC += 1
+                Next
+
+                Me.DefineRenderedValue(RenderedContent.ToString())
+            End If
         End Sub
     End Class
 End Namespace

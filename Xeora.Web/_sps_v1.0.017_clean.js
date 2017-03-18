@@ -1,11 +1,17 @@
 function XeoraJS()
 {
+    this.bindId = "_sys_bind_";
     this.httprequests = new Array();
 };
 
-XeoraJS.prototype.postForm = function (AssemblyInfo)
+XeoraJS.prototype.pushCode = function (callCode)
 {
-    document.getElementById("PostBackInformation").value = AssemblyInfo;
+    this.bindId += new String(callCode);
+};
+
+XeoraJS.prototype.post = function (AssemblyInfo)
+{
+    document.getElementById(this.bindId).value = AssemblyInfo;
     document.forms[0].submit();
 };
 
@@ -32,7 +38,7 @@ XeoraJS.prototype.createHttpRequest = function ()
     return httprequest;
 };
 
-XeoraJS.prototype.doRequest = function (UpdateLocation, AssemblyInfo)
+XeoraJS.prototype.update = function (UpdateLocation, AssemblyInfo)
 {
     var httprequestIndex = this.httprequests.length;
 
@@ -56,11 +62,11 @@ XeoraJS.prototype.doRequest = function (UpdateLocation, AssemblyInfo)
             var postContent = "";
 
             if (AssemblyInfo != null && AssemblyInfo != "")
-            { postContent = "PostBackInformation=" + AssemblyInfo + "&"; }
+            { postContent = this.bindId + "=" + AssemblyInfo + "&"; }
 
             for (var iC = 0; iC < document.forms[0].length; iC++)
             {
-                if (document.forms[0][iC].name != "PostBackInformation")
+                if (document.forms[0][iC].name != this.bindId)
                 {
                     if (document.forms[0][iC].type.toLowerCase() == "checkbox" || document.forms[0][iC].type.toLowerCase() == "radio")
                     {
@@ -80,10 +86,10 @@ XeoraJS.prototype.doRequest = function (UpdateLocation, AssemblyInfo)
             this.httprequests[httprequestIndex].send(postContent);
         }
         else
-        { this.doRequest(nextUpdateLocations, AssemblyInfo); }
+        { this.update(nextUpdateLocations, AssemblyInfo); }
     }
     else
-    { this.postForm(AssemblyInfo); }
+    { this.post(AssemblyInfo); }
 };
 
 XeoraJS.prototype.processstate = function (divID, nextDivIDs, AssemblyInfo, httprequestindex)
@@ -123,7 +129,7 @@ XeoraJS.prototype.processstate = function (divID, nextDivIDs, AssemblyInfo, http
         this.httprequests[httprequestindex] = null;
 
         if (continueOperation && nextDivIDs != null && nextDivIDs != "")
-        { this.doRequest(nextDivIDs, AssemblyInfo); }
+        { this.update(nextDivIDs, AssemblyInfo); }
     }
 };
 

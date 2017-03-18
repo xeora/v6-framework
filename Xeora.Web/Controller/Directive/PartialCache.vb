@@ -37,63 +37,60 @@ Namespace Xeora.Web.Controller.Directive
             Dim matchMI As Text.RegularExpressions.Match =
                 Text.RegularExpressions.Regex.Match(Me.InsideValue, "PC~\d+\:\{")
 
-            If matchMI.Success Then
-                If String.Compare(matchMI.Value.Split("~"c)(0), "PC") = 0 Then
-                    ' Cache Handling will be here!
-                    Dim Instance As IDomain = Nothing
-                    RaiseEvent InstanceRequested(Instance)
-
-                    Dim UniqueCacheID As String = CacheObject.ProvideUniqueCacheID(Me, Instance)
-
-                    If Me.PartialCaches.ContainsKey(Instance.IDAccessTree) AndAlso
-                        CType(Me.PartialCaches.Item(Instance.IDAccessTree), Hashtable).ContainsKey(UniqueCacheID) Then
-
-                        Me.DefineRenderedValue(CType(CType(Me.PartialCaches.Item(Instance.IDAccessTree), Hashtable).Item(UniqueCacheID), CacheObject).Content)
-                    Else
-                        Dim controlValueSplitted As String() =
-                            Me.InsideValue.Split(":"c)
-                        Dim BlockContent As String =
-                            String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 2)
-
-                        If Not BlockContent Is Nothing AndAlso
-                            BlockContent.Trim().Length >= 2 Then
-
-                            BlockContent = BlockContent.Substring(1, BlockContent.Length - 2)
-
-                            RaiseEvent ParseRequested(BlockContent, Me)
-
-                            Dim CacheObject As CacheObject
-
-                            Threading.Monitor.Enter(Me.PartialCaches.SyncRoot)
-                            Try
-
-                                If Not Me.PartialCaches.ContainsKey(Instance.IDAccessTree) Then _
-                                    Me.PartialCaches.Item(Instance.IDAccessTree) = New Hashtable()
-
-                                Dim WorkingCacheGroup As Hashtable =
-                                    CType(Me.PartialCaches.Item(Instance.IDAccessTree), Hashtable)
-
-                                If Not WorkingCacheGroup.ContainsKey(UniqueCacheID) Then
-                                    CacheObject = New CacheObject(UniqueCacheID, Me.Create())
-
-                                    WorkingCacheGroup.Item(UniqueCacheID) = CacheObject
-                                Else
-                                    CacheObject = CType(WorkingCacheGroup.Item(UniqueCacheID), CacheObject)
-                                End If
-
-                                Me.PartialCaches.Item(Instance.IDAccessTree) = WorkingCacheGroup
-                            Finally
-                                Threading.Monitor.Exit(Me.PartialCaches.SyncRoot)
-                            End Try
-
-                            Me.DefineRenderedValue(CacheObject.Content)
-                        End If
-                    End If
-                Else ' Standart Value
-                    Throw New Exception.DirectivePointerException()
-                End If
-            Else
+            If Not matchMI.Success Then _
                 Throw New Exception.UnknownDirectiveException()
+
+            If String.Compare(matchMI.Value.Split("~"c)(0), "PC") <> 0 Then _
+                Throw New Exception.DirectivePointerException()
+
+            Dim Instance As IDomain = Nothing
+            RaiseEvent InstanceRequested(Instance)
+
+            Dim UniqueCacheID As String = CacheObject.ProvideUniqueCacheID(Me, Instance)
+
+            If Me.PartialCaches.ContainsKey(Instance.IDAccessTree) AndAlso
+                CType(Me.PartialCaches.Item(Instance.IDAccessTree), Hashtable).ContainsKey(UniqueCacheID) Then
+
+                Me.DefineRenderedValue(CType(CType(Me.PartialCaches.Item(Instance.IDAccessTree), Hashtable).Item(UniqueCacheID), CacheObject).Content)
+            Else
+                Dim controlValueSplitted As String() =
+                    Me.InsideValue.Split(":"c)
+                Dim BlockContent As String =
+                    String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 2)
+
+                BlockContent = BlockContent.Trim()
+
+                If BlockContent.Trim().Length < 2 Then Me.DefineRenderedValue(String.Empty) : Exit Sub
+
+                BlockContent = BlockContent.Substring(1, BlockContent.Length - 2)
+                BlockContent = BlockContent.Trim()
+
+                RaiseEvent ParseRequested(BlockContent, Me)
+
+                Dim CacheObject As CacheObject
+
+                Threading.Monitor.Enter(Me.PartialCaches.SyncRoot)
+                Try
+                    If Not Me.PartialCaches.ContainsKey(Instance.IDAccessTree) Then _
+                        Me.PartialCaches.Item(Instance.IDAccessTree) = New Hashtable()
+
+                    Dim WorkingCacheGroup As Hashtable =
+                        CType(Me.PartialCaches.Item(Instance.IDAccessTree), Hashtable)
+
+                    If Not WorkingCacheGroup.ContainsKey(UniqueCacheID) Then
+                        CacheObject = New CacheObject(UniqueCacheID, Me.Create())
+
+                        WorkingCacheGroup.Item(UniqueCacheID) = CacheObject
+                    Else
+                        CacheObject = CType(WorkingCacheGroup.Item(UniqueCacheID), CacheObject)
+                    End If
+
+                    Me.PartialCaches.Item(Instance.IDAccessTree) = WorkingCacheGroup
+                Finally
+                    Threading.Monitor.Exit(Me.PartialCaches.SyncRoot)
+                End Try
+
+                Me.DefineRenderedValue(CacheObject.Content)
             End If
         End Sub
 

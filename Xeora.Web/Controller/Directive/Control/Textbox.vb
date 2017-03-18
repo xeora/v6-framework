@@ -178,29 +178,29 @@ Namespace Xeora.Web.Controller.Directive.Control
 
                     If Not String.IsNullOrEmpty(Me.Attributes.Item("onkeydown")) Then
                         If Not String.IsNullOrEmpty(Me.Attributes.Item("DefaultButtonOnClick")) Then
-                            Me.Attributes.Item("onkeydown") = String.Format("javascript:var eO=false;try{{{2}; {3}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.doRequest('{0}', '{1}')}};", String.Join(Of String)(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onkeydown"), Me.Attributes.Item("DefaultButtonOnClick"))
+                            Me.Attributes.Item("onkeydown") = String.Format("javascript:var eO=false;try{{{2}; {3}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.update('{0}', '{1}')}};", String.Join(Of String)(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onkeydown"), Me.Attributes.Item("DefaultButtonOnClick"))
                         Else
-                            Me.Attributes.Item("onkeydown") = String.Format("javascript:var eO=false;try{{{2}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.doRequest('{0}', '{1}')}};", String.Join(Of String)(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onkeydown"))
+                            Me.Attributes.Item("onkeydown") = String.Format("javascript:var eO=false;try{{{2}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.update('{0}', '{1}')}};", String.Join(Of String)(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onkeydown"))
                         End If
                     Else
                         If Not String.IsNullOrEmpty(Me.Attributes.Item("DefaultButtonOnClick")) Then
-                            Me.Attributes.Item("onkeydown") = String.Format("javascript:if(event.keyCode==13){{var eO=false;try{{{2}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.doRequest('{0}', '{1}')}};}}", String.Join(Of String)(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("DefaultButtonOnClick"))
+                            Me.Attributes.Item("onkeydown") = String.Format("javascript:if(event.keyCode==13){{var eO=false;try{{{2}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.update('{0}', '{1}')}};}}", String.Join(Of String)(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("DefaultButtonOnClick"))
                         Else
-                            Me.Attributes.Item("onkeydown") = String.Format("javascript:if(event.keyCode==13){{__XeoraJS.doRequest('{0}', '{1}');}}", String.Join(Of String)(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()))
+                            Me.Attributes.Item("onkeydown") = String.Format("javascript:if(event.keyCode==13){{__XeoraJS.update('{0}', '{1}');}}", String.Join(Of String)(",", Me.BlockIDsToUpdate.ToArray()), Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()))
                         End If
                     End If
                 Else
                     If Not String.IsNullOrEmpty(Me.Attributes.Item("onkeydown")) Then
                         If Not String.IsNullOrEmpty(Me.Attributes.Item("DefaultButtonOnClick")) Then
-                            Me.Attributes.Item("onkeydown") = String.Format("javascript:var eO=false;try{{{1}; {2}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.postForm('{0}')}};", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onkeydown"), Me.Attributes.Item("DefaultButtonOnClick"))
+                            Me.Attributes.Item("onkeydown") = String.Format("javascript:var eO=false;try{{{1}; {2}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.post('{0}')}};", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onkeydown"), Me.Attributes.Item("DefaultButtonOnClick"))
                         Else
-                            Me.Attributes.Item("onkeydown") = String.Format("javascript:var eO=false;try{{{1}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.postForm('{0}')}};", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onkeydown"))
+                            Me.Attributes.Item("onkeydown") = String.Format("javascript:var eO=false;try{{{1}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.post('{0}')}};", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("onkeydown"))
                         End If
                     Else
                         If Not String.IsNullOrEmpty(Me.Attributes.Item("DefaultButtonOnClick")) Then
-                            Me.Attributes.Item("onkeydown") = String.Format("javascript:if(event.keyCode==13){{var eO=false;try{{{1}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.postForm('{0}')}};}}", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("DefaultButtonOnClick"))
+                            Me.Attributes.Item("onkeydown") = String.Format("javascript:if(event.keyCode==13){{var eO=false;try{{{1}}}catch(ex){{eO=true}};if(!eO){{__XeoraJS.post('{0}')}};}}", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()), Me.Attributes.Item("DefaultButtonOnClick"))
                         Else
-                            Me.Attributes.Item("onkeydown") = String.Format("javascript:if(event.keyCode==13){{__XeoraJS.postForm('{0}');}}", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()))
+                            Me.Attributes.Item("onkeydown") = String.Format("javascript:if(event.keyCode==13){{__XeoraJS.post('{0}');}}", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, Me.BindInfo.ToString()))
                         End If
                     End If
                 End If

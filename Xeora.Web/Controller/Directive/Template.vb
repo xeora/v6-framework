@@ -165,19 +165,18 @@ Namespace Xeora.Web.Controller.Directive
 
             Dim DomainDeployment As DomainDeployment = Nothing
             RaiseEvent DeploymentAccessRequested(WorkingInstance, DomainDeployment)
-            If Not DomainDeployment Is Nothing Then
-                Try
-                    TemplateContent = DomainDeployment.ProvideTemplateContent(Me.ControlID)
-
-                    RaiseEvent ParseRequested(TemplateContent, Me)
-
-                    Me.DefineRenderedValue(Me.Create())
-                Catch ex As System.Exception
-                    Throw New System.Exception("Parsing Error!", ex)
-                End Try
-            Else
+            If DomainDeployment Is Nothing Then _
                 Throw New System.Exception("Domain Deployment access is failed!")
-            End If
+
+            Try
+                TemplateContent = DomainDeployment.ProvideTemplateContent(Me.ControlID)
+
+                RaiseEvent ParseRequested(TemplateContent, Me)
+
+                Me.DefineRenderedValue(Me.Create())
+            Catch ex As System.Exception
+                Throw New System.Exception("Parsing Error!", ex)
+            End Try
         End Sub
     End Class
 End Namespace

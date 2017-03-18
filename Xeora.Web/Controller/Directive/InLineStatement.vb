@@ -92,12 +92,8 @@ Namespace Xeora.Web.Controller.Directive
             ' Check This Control has a Content
             Dim idxCon As Integer = BlockContent.IndexOf(":"c)
 
-            ' Get ControlID Accourding to idxCon Value -1 = no content, else has content
-            If idxCon = -1 Then
-                ' No Content
-
+            If idxCon = -1 Then _
                 Throw New Exception.GrammerException()
-            End If
 
             ' InLineStatement does not have any ContentArguments, That's why it copies it's parent Arguments
             If Not Me.Parent Is Nothing Then _
@@ -115,53 +111,51 @@ Namespace Xeora.Web.Controller.Directive
             idxCoreContStart = BlockContent.IndexOf(OpeningTag) + OpeningTag.Length
             idxCoreContEnd = BlockContent.LastIndexOf(ClosingTag, BlockContent.Length)
 
-            If idxCoreContStart = OpeningTag.Length AndAlso
-                idxCoreContEnd = (BlockContent.Length - OpeningTag.Length) Then
-
-                CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
-
-                Dim NoCacheMarker As String = "!NOCACHE", NoCache As Boolean = False
-
-                If CoreContent.IndexOf(NoCacheMarker) = 0 Then _
-                    NoCache = True : CoreContent = CoreContent.Substring(NoCacheMarker.Length)
-
-                If Not CoreContent Is Nothing AndAlso
-                    CoreContent.Trim().Length > 0 Then
-
-                    RaiseEvent ParseRequested(CoreContent, Me)
-
-                    CoreContent = Me.Create()
-
-                    Dim Instance As IDomain = Nothing
-                    RaiseEvent InstanceRequested(Instance)
-
-                    Dim MethodResultInfo As Object =
-                        Manager.Assembly.ExecuteStatement(Instance.IDAccessTree, Me.ControlID, CoreContent.Trim(), NoCache)
-
-                    If Not MethodResultInfo Is Nothing AndAlso
-                        TypeOf MethodResultInfo Is System.Exception Then
-
-                        Throw New Exception.ExecutionException(
-                            CType(MethodResultInfo, System.Exception).Message,
-                            CType(MethodResultInfo, System.Exception).InnerException
-                        )
-                    Else
-                        If Not MethodResultInfo Is Nothing AndAlso
-                            TypeOf MethodResultInfo Is ControlResult.RedirectOrder Then
-
-                            Helpers.Context.Content.Item("RedirectLocation") =
-                                CType(MethodResultInfo, ControlResult.RedirectOrder).Location
-
-                            Me.DefineRenderedValue(String.Empty)
-                        Else
-                            Me.DefineRenderedValue([Shared].Execution.GetPrimitiveValue(MethodResultInfo))
-                        End If
-                    End If
-                Else
-                    Throw New Exception.EmptyBlockException()
-                End If
-            Else
+            If idxCoreContStart <> OpeningTag.Length OrElse idxCoreContEnd <> (BlockContent.Length - OpeningTag.Length) Then _
                 Throw New Exception.GrammerException()
+
+            CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
+
+            Dim NoCacheMarker As String = "!NOCACHE", NoCache As Boolean = False
+
+            If CoreContent.IndexOf(NoCacheMarker) = 0 Then _
+                NoCache = True : CoreContent = CoreContent.Substring(NoCacheMarker.Length)
+
+            CoreContent = CoreContent.Trim()
+
+            If String.IsNullOrEmpty(CoreContent) Then _
+                Throw New Exception.EmptyBlockException()
+
+            RaiseEvent ParseRequested(CoreContent, Me)
+
+            CoreContent = Me.Create()
+
+            Dim Instance As IDomain = Nothing
+            RaiseEvent InstanceRequested(Instance)
+
+            Dim MethodResultInfo As Object =
+                Manager.Assembly.ExecuteStatement(Instance.IDAccessTree, Me.ControlID, CoreContent.Trim(), NoCache)
+
+            If Not MethodResultInfo Is Nothing AndAlso TypeOf MethodResultInfo Is System.Exception Then
+                Throw New Exception.ExecutionException(
+                        CType(MethodResultInfo, System.Exception).Message,
+                        CType(MethodResultInfo, System.Exception).InnerException
+                    )
+            End If
+
+            If Not MethodResultInfo Is Nothing Then
+                Dim RenderResult As String = String.Empty
+
+                If TypeOf MethodResultInfo Is ControlResult.RedirectOrder Then
+                    Helpers.Context.Content.Item("RedirectLocation") =
+                        CType(MethodResultInfo, ControlResult.RedirectOrder).Location
+                Else
+                    RenderResult = [Shared].Execution.GetPrimitiveValue(MethodResultInfo)
+                End If
+
+                Me.DefineRenderedValue(RenderResult)
+            Else
+                Me.DefineRenderedValue(String.Empty)
             End If
         End Sub
     End Class

@@ -32,11 +32,10 @@ Namespace Xeora.Web.Global
             Me._ValueList = New Object(Length - 1) {}
 
             If Not Values Is Nothing Then
-                If Values.Length <> Length Then
+                If Values.Length <> Length Then _
                     Throw New ArgumentOutOfRangeException(SystemMessages.ARGUMENT_KEYVALUELENGTHMATCH)
-                Else
-                    Me._ValueList = Values
-                End If
+
+                Me._ValueList = Values
             End If
         End Sub
 
@@ -90,15 +89,12 @@ Namespace Xeora.Web.Global
                 Return rValue
             End Get
             Set(ByVal value As Object)
-                If Not String.IsNullOrEmpty(Key) AndAlso
-                    Me._ArgumentInfoIndexes.ContainsKey(Key) Then
-
-                    Dim Index As Integer = Me._ArgumentInfoIndexes.Item(Key)
-
-                    Me._ValueList(Index) = value
-                Else
+                If String.IsNullOrEmpty(Key) OrElse Not Me._ArgumentInfoIndexes.ContainsKey(Key) Then _
                     Throw New ArgumentException(SystemMessages.ARGUMENT_NOTEXISTS)
-                End If
+
+                Dim Index As Integer = Me._ArgumentInfoIndexes.Item(Key)
+
+                Me._ValueList(Index) = value
             End Set
         End Property
 

@@ -24,38 +24,35 @@ Namespace Xeora.Web.Controller.Directive
             Dim matchMI As Text.RegularExpressions.Match =
                 Text.RegularExpressions.Regex.Match(Me.InsideValue, "MB~\d+\:\{")
 
-            If matchMI.Success Then
-                If String.Compare(matchMI.Value.Split("~"c)(0), "MB") = 0 Then
-                    If Me.MessageResult Is Nothing Then
-                        Me.DefineRenderedValue(String.Empty)
-                    Else
-                        Dim controlValueSplitted As String() =
-                            Me.InsideValue.Split(":"c)
-                        Dim BlockContent As String =
-                            String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 2)
-
-                        If Not BlockContent Is Nothing AndAlso
-                            BlockContent.Trim().Length >= 2 Then
-
-                            BlockContent = BlockContent.Substring(1, BlockContent.Length - 2)
-
-                            If Not BlockContent Is Nothing AndAlso
-                                BlockContent.Trim().Length > 0 Then
-
-                                Me.ContentArguments.AppendKeyWithValue("MessageType", Me.MessageResult.Type)
-                                Me.ContentArguments.AppendKeyWithValue("Message", Me.MessageResult.Message)
-
-                                RaiseEvent ParseRequested(BlockContent, Me)
-
-                                Me.DefineRenderedValue(Me.Create())
-                            End If
-                        End If
-                    End If
-                Else ' Standart Value
-                    Throw New Exception.DirectivePointerException()
-                End If
-            Else
+            If Not matchMI.Success Then _
                 Throw New Exception.UnknownDirectiveException()
+
+            If String.Compare(matchMI.Value.Split("~"c)(0), "MB") <> 0 Then _
+                Throw New Exception.DirectivePointerException()
+
+            If Me.MessageResult Is Nothing Then
+                Me.DefineRenderedValue(String.Empty)
+            Else
+                Dim controlValueSplitted As String() =
+                    Me.InsideValue.Split(":"c)
+                Dim BlockContent As String =
+                    String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 2)
+
+                BlockContent = BlockContent.Trim()
+
+                If BlockContent.Length < 2 Then Me.DefineRenderedValue(String.Empty) : Exit Sub
+
+                BlockContent = BlockContent.Substring(1, BlockContent.Length - 2)
+                BlockContent = BlockContent.Trim()
+
+                If String.IsNullOrEmpty(BlockContent) Then Me.DefineRenderedValue(String.Empty) : Exit Sub
+
+                Me.ContentArguments.AppendKeyWithValue("MessageType", Me.MessageResult.Type)
+                Me.ContentArguments.AppendKeyWithValue("Message", Me.MessageResult.Message)
+
+                RaiseEvent ParseRequested(BlockContent, Me)
+
+                Me.DefineRenderedValue(Me.Create())
             End If
         End Sub
     End Class

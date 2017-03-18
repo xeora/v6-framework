@@ -247,9 +247,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="_sps_v1.0.015.js" />
+    <EmbeddedResource Include="_sps_v1.0.017.js" />
     <None Include="app.config" />
-    <None Include="_sps_v1.0.015_clean.js" />
+    <None Include="_sps_v1.0.017_clean.js" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

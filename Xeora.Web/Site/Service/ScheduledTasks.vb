@@ -86,15 +86,16 @@ RETRYREMOTEBIND:
 
                 If Not rRemoteTasks Is Nothing Then
                     Dim PingError As Boolean = True
-                    Dim PingThread As New Threading.Thread(Sub()
-                                                               Try
-                                                                   rRemoteTasks.PingToRemoteEndPoint()
+                    Dim PingThread As New Threading.Thread(
+                        Sub()
+                            Try
+                                rRemoteTasks.PingToRemoteEndPoint()
 
-                                                                   PingError = False
-                                                               Catch ex As System.Exception
-                                                                   PingError = True
-                                                               End Try
-                                                           End Sub)
+                                PingError = False
+                            Catch ex As System.Exception
+                                PingError = True
+                            End Try
+                        End Sub)
                     PingThread.Start()
                     PingThread.Join(2000)
 

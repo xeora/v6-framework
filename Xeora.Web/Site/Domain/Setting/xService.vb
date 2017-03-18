@@ -100,15 +100,18 @@ Namespace Xeora.Web.Site.Setting
                     xmlWriter.WriteAttributeString("type", MethodResult.GetType().Name)
 
                     xmlWriter.WriteCData(CType(MethodResult, [Shared].ControlResult.RedirectOrder).Location)
+
                 ElseIf TypeOf MethodResult Is [Shared].ControlResult.Message Then
                     xmlWriter.WriteAttributeString("type", MethodResult.GetType().Name)
                     xmlWriter.WriteAttributeString("messagetype", CType(MethodResult, [Shared].ControlResult.Message).Type.ToString())
 
                     xmlWriter.WriteCData(CType(MethodResult, [Shared].ControlResult.Message).Message)
+
                 ElseIf TypeOf MethodResult Is [Shared].ControlResult.Conditional Then
                     xmlWriter.WriteAttributeString("type", MethodResult.GetType().Name)
 
                     xmlWriter.WriteCData(CType(MethodResult, [Shared].ControlResult.Conditional).Result.ToString())
+
                 ElseIf TypeOf MethodResult Is [Shared].ControlResult.VariableBlock Then
                     Dim VariableBlockResult As [Shared].ControlResult.VariableBlock =
                         CType(MethodResult, [Shared].ControlResult.VariableBlock)
@@ -149,11 +152,16 @@ Namespace Xeora.Web.Site.Setting
                         xmlWriter.WriteEndElement()
                     Next
                     xmlWriter.WriteEndElement()
+
                 ElseIf TypeOf MethodResult Is [Shared].ControlResult.DirectDataAccess Then
                     Dim ex As New System.Exception("DirectDataAccess is not a transferable object!")
 
                     xmlWriter.WriteAttributeString("type", ex.GetType().FullName)
                     xmlWriter.WriteCData(ex.Message)
+
+                ElseIf TypeOf MethodResult Is [Shared].ControlResult.ObjectFeed Then
+                    ' TODO: Object Feed xService Implementation should be done!
+
                 ElseIf TypeOf MethodResult Is [Shared].ControlResult.PartialDataTable Then
                     xmlWriter.WriteAttributeString("type", MethodResult.GetType().Name)
                     xmlWriter.WriteAttributeString("total", CType(MethodResult, [Shared].ControlResult.PartialDataTable).Total.ToString())
@@ -196,10 +204,12 @@ Namespace Xeora.Web.Site.Setting
                         )
                         xmlWriter.WriteEndElement()
                     End If
+
                 ElseIf TypeOf MethodResult Is System.Exception Then
                     xmlWriter.WriteAttributeString("type", MethodResult.GetType().FullName)
 
                     xmlWriter.WriteCData(CType(MethodResult, System.Exception).Message)
+
                 Else
                     If MethodResult.GetType().IsPrimitive Then
                         xmlWriter.WriteAttributeString("type", MethodResult.GetType().FullName)
@@ -219,6 +229,7 @@ Namespace Xeora.Web.Site.Setting
                             xmlWriter.WriteCData(ex.Message)
                         End Try
                     End If
+
                 End If
             Else
                 xmlWriter.WriteAttributeString("type", GetType(String).FullName)

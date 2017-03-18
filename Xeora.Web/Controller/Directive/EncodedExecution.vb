@@ -28,67 +28,58 @@ Namespace Xeora.Web.Controller.Directive
             Dim matchXF As Text.RegularExpressions.Match =
                 Text.RegularExpressions.Regex.Match(Me.InsideValue, "XF~\d+\:\{")
 
-            If matchXF.Success Then
-                ' Encode Direct Call Function
-                If String.Compare(matchXF.Value.Split("~"c)(0), "XF") = 0 Then
-                    Dim controlValueSplitted As String() =
-                        Me.InsideValue.Split(":"c)
-                    Dim BlockContent As String =
-                        String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 2)
-
-                    If Not BlockContent Is Nothing AndAlso
-                        BlockContent.Trim().Length >= 2 Then
-
-                        BlockContent = BlockContent.Substring(1, BlockContent.Length - 2)
-
-                        If Not BlockContent Is Nothing AndAlso
-                            BlockContent.Trim().Length > 0 Then
-
-                            RaiseEvent ParseRequested(BlockContent, Me)
-
-                            BlockContent = Me.Create()
-
-                            If Not BlockContent Is Nothing AndAlso
-                                BlockContent.Trim().Length > 0 Then
-
-                                ' Check for Parent UpdateBlock
-                                Dim WorkingControl As ControllerBase = Me.Parent
-                                Dim ParentUpdateBlockID As String = String.Empty
-
-                                Do Until WorkingControl Is Nothing
-                                    If TypeOf WorkingControl Is UpdateBlock Then
-                                        ParentUpdateBlockID = CType(WorkingControl, UpdateBlock).ControlID
-
-                                        Exit Do
-                                    End If
-
-                                    WorkingControl = WorkingControl.Parent
-                                Loop
-                                ' !--
-
-                                If Not String.IsNullOrEmpty(ParentUpdateBlockID) Then
-                                    Me.DefineRenderedValue(
-                                        String.Format("javascript:__XeoraJS.doRequest('{0}', '{1}');", ParentUpdateBlockID, Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, BlockContent.Trim()))
-                                    )
-                                Else
-                                    Me.DefineRenderedValue(
-                                        String.Format("javascript:__XeoraJS.postForm('{0}');", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, BlockContent.Trim()))
-                                    )
-                                End If
-                            Else
-                                Throw New Exception.EmptyBlockException()
-                            End If
-                        Else
-                            Throw New Exception.EmptyBlockException()
-                        End If
-                    Else
-                        Throw New Exception.EmptyBlockException()
-                    End If
-                Else ' Standart Value
-                    Throw New Exception.DirectivePointerException()
-                End If
-            Else
+            If Not matchXF.Success Then _
                 Throw New Exception.UnknownDirectiveException()
+
+            ' Encode Direct Call Function
+            If String.Compare(matchXF.Value.Split("~"c)(0), "XF") <> 0 Then _
+                Throw New Exception.DirectivePointerException()
+
+            Dim controlValueSplitted As String() =
+                Me.InsideValue.Split(":"c)
+            Dim BlockContent As String =
+                String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 2)
+
+            If BlockContent Is Nothing OrElse BlockContent.Trim().Length < 2 Then _
+                Throw New Exception.EmptyBlockException()
+
+            BlockContent = BlockContent.Substring(1, BlockContent.Length - 2)
+            BlockContent = BlockContent.Trim()
+
+            If String.IsNullOrEmpty(BlockContent) Then _
+                Throw New Exception.EmptyBlockException()
+
+            RaiseEvent ParseRequested(BlockContent, Me)
+
+            BlockContent = Me.Create()
+            BlockContent = BlockContent.Trim()
+
+            If String.IsNullOrEmpty(BlockContent) Then _
+                Throw New Exception.EmptyBlockException()
+
+            ' Check for Parent UpdateBlock
+            Dim WorkingControl As ControllerBase = Me.Parent
+            Dim ParentUpdateBlockID As String = String.Empty
+
+            Do Until WorkingControl Is Nothing
+                If TypeOf WorkingControl Is UpdateBlock Then
+                    ParentUpdateBlockID = CType(WorkingControl, UpdateBlock).ControlID
+
+                    Exit Do
+                End If
+
+                WorkingControl = WorkingControl.Parent
+            Loop
+            ' !--
+
+            If Not String.IsNullOrEmpty(ParentUpdateBlockID) Then
+                Me.DefineRenderedValue(
+                    String.Format("javascript:__XeoraJS.update('{0}', '{1}');", ParentUpdateBlockID, Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, BlockContent.Trim()))
+                )
+            Else
+                Me.DefineRenderedValue(
+                    String.Format("javascript:__XeoraJS.post('{0}');", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, BlockContent.Trim()))
+                )
             End If
         End Sub
     End Class

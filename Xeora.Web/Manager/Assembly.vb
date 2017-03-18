@@ -203,14 +203,14 @@ Namespace Xeora.Web.Manager
                 New [Shared].Execution.BindInvokeResult(BindInfo)
 
             Dim ApplicationPath As String =
-                    IO.Path.Combine(
-                        [Shared].Configurations.TemporaryRoot,
-                        String.Format("{0}{2}{1}",
-                            [Shared].Configurations.WorkingPath.WorkingPathID,
-                            [Shared].Helpers.Context.Content.Item("ApplicationID"),
-                            IO.Path.DirectorySeparatorChar
-                        )
+                IO.Path.Combine(
+                    [Shared].Configurations.TemporaryRoot,
+                    String.Format("{0}{2}{1}",
+                        [Shared].Configurations.WorkingPath.WorkingPathID,
+                        [Shared].Helpers.Context.Content.Item("ApplicationID"),
+                        IO.Path.DirectorySeparatorChar
                     )
+                )
 
             Dim AssemblyKey As String =
                 String.Format("KEY-{0}_{1}", ApplicationPath, BindInfo.ExecutableName)
@@ -257,36 +257,6 @@ QUICKEXIT:
             Return rBindInvokeResult
         End Function
 
-        'Private Shared Function GetAssemblyMethod(ByRef AssemblyObject As Type, ByVal CallFunctionName As String, ByVal CallFunctionParams As Object()) As Reflection.MethodInfo
-        '    Dim rAssemblyMethod As Reflection.MethodInfo = Nothing
-
-        '    For Each mI As Reflection.MethodInfo In AssemblyObject.GetMethods()
-        '        If String.Compare(mI.Name, CallFunctionName, True) = 0 AndAlso
-        '            (
-        '                mI.GetParameters().Length = CallFunctionParams.Length OrElse
-        '                (
-        '                    mI.GetParameters().Length = 1 AndAlso
-        '                    mI.GetParameters()(0).ParameterType Is GetType(Object())
-        '                )
-        '            ) Then
-
-        '            rAssemblyMethod = mI
-
-        '            Exit For
-        '        End If
-        '    Next
-
-        '    If rAssemblyMethod Is Nothing AndAlso
-        '        Not AssemblyObject.BaseType Is Nothing Then
-
-        '        rAssemblyMethod = Assembly.GetAssemblyMethod(AssemblyObject.BaseType, CallFunctionName, CallFunctionParams)
-
-        '        If Not rAssemblyMethod Is Nothing Then AssemblyObject = AssemblyObject.BaseType
-        '    End If
-
-        '    Return rAssemblyMethod
-        'End Function
-
         Public Shared Function ExecuteStatement(ByVal DomainIDAccessTree As String(), ByVal StatementBlockID As String, ByVal Statement As String, ByVal NoCache As Boolean) As Object
             Dim rMethodResult As Object = Nothing
 
@@ -314,127 +284,6 @@ QUICKEXIT:
 
             Return rMethodResult
         End Function
-
-        'Private Shared Function ExamChildrenExecutables(ByVal ExecutablesLocation As String, ByRef Version As String) As Boolean
-        '    Dim AssemblyAppDomain As AppDomain = Nothing, DomainLoader As Loader = Nothing
-
-        '    Dim FI As New IO.FileInfo(ExecutablesLocation)
-
-        '    Assembly.LoadPlugInsLoader(
-        '                FI.Directory.FullName,
-        '                IO.Path.GetFileNameWithoutExtension(FI.Name),
-        '                AssemblyAppDomain,
-        '                DomainLoader
-        '            )
-
-        '    Dim IsInterfaceFound As Boolean = False
-        '    If Not DomainLoader Is Nothing Then _
-        '        IsInterfaceFound = DomainLoader.ExamInterface("Xeora.Web.PGlobals+IDomainExecutable")
-
-        '    Dim ApplicationCachePath As String =
-        '        IO.Path.Combine(
-        '            AssemblyAppDomain.SetupInformation.CachePath,
-        '            AssemblyAppDomain.SetupInformation.ApplicationName
-        '        )
-
-        '    AppDomain.Unload(AssemblyAppDomain)
-
-        '    ' CleanUp Addon Temporary Files In a Thread for not waiting their cleanup process finished...
-        '    Threading.ThreadPool.QueueUserWorkItem(
-        '        New Threading.WaitCallback(AddressOf Assembly.CleanUpAppDomainTemporaryFiles), ApplicationCachePath)
-        '    ' !--
-
-        '    Return IsInterfaceFound
-        'End Function
-
-        'Private Shared Sub CleanUpAppDomainTemporaryFiles(ByVal state As Object)
-        '    Try
-        '        IO.Directory.Delete(CType(state, String), True)
-        '    Catch ex As Exception
-        '        ' Just Handle Exceptions
-        '    End Try
-        'End Sub
-
-        'Private Shared Sub LoadPlugInsLoader(ByVal PlugInsPath As String, ByVal DllName As String, ByRef AssemblyAppDomain As AppDomain, ByRef DomainLoader As Loader)
-        '    Dim AssemblyAppDomainFriendlyName As String =
-        '        String.Format("{0}_{1}", AppDomain.CurrentDomain.FriendlyName, Date.Now.Ticks.ToString())
-
-        '    Dim AssemblyAppDomainSetup As New System.AppDomainSetup
-
-        '    With AssemblyAppDomainSetup
-        '        .ApplicationName = Guid.NewGuid().ToString()
-        '        .ApplicationBase = AppDomain.CurrentDomain.BaseDirectory
-        '        .PrivateBinPath = String.Format("{0};{1}", AppDomain.CurrentDomain.SetupInformation.PrivateBinPath, PlugInsPath)
-        '        .PrivateBinPathProbe = "*"
-
-        '        .CachePath = AppDomain.CurrentDomain.SetupInformation.CachePath
-        '        .ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
-        '        .DisallowCodeDownload = True
-        '        .DynamicBase = AppDomain.CurrentDomain.SetupInformation.DynamicBase
-        '        .ShadowCopyDirectories = .PrivateBinPath
-        '        .ShadowCopyFiles = "true"
-        '    End With
-
-        '    AssemblyAppDomain =
-        '        AppDomain.CreateDomain(
-        '            AssemblyAppDomainFriendlyName,
-        '            Nothing,
-        '            AssemblyAppDomainSetup
-        '        )
-        '    AddHandler AssemblyAppDomain.UnhandledException, New UnhandledExceptionEventHandler(AddressOf Assembly.OnUnhandledAppDomainExceptions)
-
-        '    Try
-        '        Dim LoaderName As New Reflection.AssemblyName
-        '        LoaderName.CodeBase = IO.Path.Combine(
-        '                                    AppDomain.CurrentDomain.BaseDirectory,
-        '                                    String.Format("bin{0}Xeora.Web.Manager.Loader.dll", IO.Path.DirectorySeparatorChar)
-        '                                )
-
-        '        Dim LoaderDll As Reflection.Assembly = AssemblyAppDomain.Load(LoaderName)
-        '        Dim LoaderType As Type = LoaderDll.GetExportedTypes()(0)
-
-        '        DomainLoader =
-        '            CType(
-        '                AssemblyAppDomain.CreateInstanceAndUnwrap(
-        '                    LoaderDll.FullName,
-        '                    LoaderType.FullName,
-        '                    True,
-        '                    Reflection.BindingFlags.CreateInstance,
-        '                    Nothing,
-        '                    New Object() {
-        '                        PlugInsPath,
-        '                        DllName
-        '                    },
-        '                    Globalization.CultureInfo.CurrentCulture,
-        '                    Nothing
-        '                ),
-        '                Loader
-        '            )
-        '    Catch ex As Exception
-        '        DomainLoader = Nothing
-        '    End Try
-        'End Sub
-
-        '' For Logging Purposes UnHandled Application Domain Exception Event Function
-        'Private Shared Sub OnUnhandledAppDomainExceptions(ByVal source As Object, ByVal args As UnhandledExceptionEventArgs)
-        '    If Not args.ExceptionObject Is Nothing AndAlso
-        '        TypeOf args.ExceptionObject Is Exception Then
-
-        '        Try
-        '            If Not EventLog.SourceExists("XeoraCube") Then EventLog.CreateEventSource("XeoraCube", "XeoraCube")
-
-        '            EventLog.WriteEntry("XeoraCube",
-        '                " --- Loaded PlugIn Exception --- " & Environment.NewLine & Environment.NewLine &
-        '                CType(
-        '                    args.ExceptionObject, Exception).ToString(),
-        '                    EventLogEntryType.Error
-        '            )
-        '        Catch ex As Exception
-        '            ' Just Handle Exception
-        '        End Try
-        '    End If
-        'End Sub
-        '' !---
 
         Public Shared Sub ClearCache()
             If Not Assembly._ExecutableLibrary Is Nothing Then

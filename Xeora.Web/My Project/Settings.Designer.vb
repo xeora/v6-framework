@@ -56,7 +56,7 @@ Namespace My
         
         <Global.System.Configuration.ApplicationScopedSettingAttribute(),  _
          Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
-         Global.System.Configuration.DefaultSettingValueAttribute("1.0.015")>  _
+         Global.System.Configuration.DefaultSettingValueAttribute("1.0.017")>  _
         Public ReadOnly Property ScriptVersion() As String
             Get
                 Return CType(Me("ScriptVersion"),String)

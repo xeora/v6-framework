@@ -142,10 +142,8 @@ Namespace Xeora.Web.Site
         End Sub
 
         Public Sub ClearCache() Implements [Shared].IDomain.ClearCache
-            ' Clear Template Partial Render Cache
             Controller.Directive.PartialCache.ClearCache(Me.IDAccessTree)
 
-            ' Clear Deployment Template Cache
             Me._Deployment.ClearCache()
         End Sub
 
@@ -579,30 +577,6 @@ Namespace Xeora.Web.Site
             '            End Function
 #End Region
         End Class
-
-        'Public Class DomainCollection
-        '    Inherits Generic.List(Of Domain)
-
-        '    Private _ParentHolder As Domain
-
-        '    Public Sub New(ByVal Parent As Domain)
-        '        Me._ParentHolder = Parent
-        '    End Sub
-
-        '    Public Shadows Sub Add(ByVal Item As Domain)
-        '        Item._Parent = Me._ParentHolder
-
-        '        MyBase.Add(Item)
-        '    End Sub
-
-        '    Public Shadows Sub AddRange(ByVal Collection As DomainCollection)
-        '        For Each Item As Domain In Collection
-        '            Item._Parent = Me._ParentHolder
-        '        Next
-
-        '        MyBase.AddRange(Collection)
-        '    End Sub
-        'End Class
 
         Private disposedValue As Boolean = False        ' To detect redundant calls
 

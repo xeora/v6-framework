@@ -195,16 +195,16 @@ Namespace Xeora.Web.Handler
                     Select Case Me._DomainControl.ServiceType
                         Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.Template
                             Dim MethodResultContent As String = String.Empty
-                            Dim PostBackInformation As String =
-                                Me._Context.Request.Form.Item("PostBackInformation")
+                            Dim BindInformation As String =
+                                Me._Context.Request.Form.Item(String.Format("_sys_bind_{0}", Me._Context.Request.HashCode))
 
                             If String.Compare(Me._Context.Request.Method, "POST", True) = 0 AndAlso
-                                Not String.IsNullOrEmpty(PostBackInformation) Then
+                                Not String.IsNullOrEmpty(BindInformation) Then
 
                                 ' Decode Encoded Call Function to Readable
                                 Dim BindInfo As [Shared].Execution.BindInfo =
                                     [Shared].Execution.BindInfo.Make(
-                                        Manager.Assembly.DecodeFunction(PostBackInformation)
+                                        Manager.Assembly.DecodeFunction(BindInformation)
                                     )
 
                                 BindInfo.PrepareProcedureParameters(
@@ -798,9 +798,15 @@ Namespace Xeora.Web.Handler
 
                     sW.WriteLine(
                         String.Format(
-                            "<script language=""javascript"" src=""{0}_bi_sps_v{1}.js"" type=""text/javascript""></script>",
+                            "<script type=""text/javascript"" src=""{0}_bi_sps_v{1}.js""></script>",
                             [Shared].Configurations.ApplicationRoot.BrowserImplementation,
                             Me._DomainControl.XeoraJSVersion
+                        )
+                    )
+                    sW.WriteLine(
+                        String.Format(
+                            "<script type=""text/javascript"">__XeoraJS.pushCode({0});</script>",
+                            Me._Context.Request.HashCode
                         )
                     )
 
@@ -815,7 +821,12 @@ Namespace Xeora.Web.Handler
                             Me._Context.Request.QueryString
                         )
                     )
-                    sW.WriteLine("<input type=""hidden"" name=""PostBackInformation"" id=""PostBackInformation"" />")
+                    sW.WriteLine(
+                        String.Format(
+                            "<input type=""hidden"" name=""_sys_bind_{0}"" id=""_sys_bind_{0}"" />",
+                            Me._Context.Request.HashCode
+                        )
+                    )
                 End If
 
                 sW.Write("{0}")

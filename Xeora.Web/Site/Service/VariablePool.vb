@@ -136,16 +136,16 @@ Namespace Xeora.Web.Site.Service
 
                     If Not rRemoteVariablePool Is Nothing Then
                         Dim PingError As Boolean = True
-                        Dim PingThread As New Threading.Thread(Sub()
-                                                                   Try
-                                                                       rRemoteVariablePool.PingToRemoteEndPoint()
+                        Dim PingThread As New Threading.Thread(
+                            Sub()
+                                Try
+                                    rRemoteVariablePool.PingToRemoteEndPoint()
 
-                                                                       PingError = False
-                                                                   Catch ex As System.Exception
-                                                                       PingError = True
-                                                                   End Try
-                                                               End Sub)
-
+                                    PingError = False
+                                Catch ex As System.Exception
+                                    PingError = True
+                                End Try
+                            End Sub)
                         PingThread.Priority = Threading.ThreadPriority.Highest
                         PingThread.Start()
 
@@ -176,34 +176,14 @@ Namespace Xeora.Web.Site.Service
                                 ' It can throw exception because of not registered connection
                             End Try
 
-
                             RemoteVariablePoolServiceConnection = Nothing
                         End If
-
-                        '' Try to get the ownership of being host
-                        'Try
-                        '    Me.CreateVariablePoolHostForRemoteConnections()
-
-                        '    If Me._VariablePoolTypeStatus = VariablePoolTypeStatus.Host Then _
-                        '        rRemoteVariablePool = Me
-                        'Catch ex As Exception
-                        '    Throw ex
-                        'End Try
                     End If
                 End Try
             End If
 
             Return rRemoteVariablePool
         End Function
-
-        'Private Sub DestroyConnectionFromRemoteVariablePool(ByRef RemoteVariablePoolServiceConnection As System.Runtime.Remoting.Channels.Tcp.TcpClientChannel)
-        '    Try
-        '        If Not RemoteVariablePoolServiceConnection Is Nothing Then _
-        '            System.Runtime.Remoting.Channels.ChannelServices.UnregisterChannel(RemoteVariablePoolServiceConnection)
-        '    Catch ex As Exception
-        '        ' Just Handle Exceptions
-        '    End Try
-        'End Sub
 
         Private ReadOnly Property FileAccessQueue(ByVal SessionKeyID As String) As Concurrent.ConcurrentQueue(Of String)
             Get
@@ -335,7 +315,7 @@ Namespace Xeora.Web.Site.Service
                 vpsFS.CanSeek AndAlso vpsFS.CanRead Then
 
                 ' "Expires: " length is 9
-                ' it's value length is 14 bytes
+                ' its value length is 14 bytes
                 Dim bytes As Byte() = CType(Array.CreateInstance(GetType(Byte), 14), Byte())
 
                 vpsFS.Seek(9, IO.SeekOrigin.Begin)
@@ -374,15 +354,15 @@ Namespace Xeora.Web.Site.Service
             Dim rValue As Byte() = Nothing
 
             Dim vpService As String =
-                        IO.Path.Combine(
-                            [Shared].Configurations.TemporaryRoot,
-                            String.Format(
-                                    "{0}{2}PoolSessions{2}{1}{2}vmap.dat",
-                                    [Shared].Configurations.WorkingPath.WorkingPathID,
-                                    SessionKeyID,
-                                    IO.Path.DirectorySeparatorChar
-                                )
+                IO.Path.Combine(
+                    [Shared].Configurations.TemporaryRoot,
+                    String.Format(
+                            "{0}{2}PoolSessions{2}{1}{2}vmap.dat",
+                            [Shared].Configurations.WorkingPath.WorkingPathID,
+                            SessionKeyID,
+                            IO.Path.DirectorySeparatorChar
                         )
+                )
 
             If IO.File.Exists(vpService) Then
                 Dim RequestKey As String =
@@ -461,21 +441,21 @@ Namespace Xeora.Web.Site.Service
 
         Private Sub WriteVariableValueToFile(ByVal SessionKeyID As String, ByVal name As String, ByVal value As Byte())
             Dim vpService As String =
-                    IO.Path.Combine(
-                        [Shared].Configurations.TemporaryRoot,
-                        String.Format(
-                                "{0}{2}PoolSessions{2}{1}{2}vmap.dat",
-                                [Shared].Configurations.WorkingPath.WorkingPathID,
-                                SessionKeyID,
-                                IO.Path.DirectorySeparatorChar
-                            )
-                    )
+                IO.Path.Combine(
+                    [Shared].Configurations.TemporaryRoot,
+                    String.Format(
+                            "{0}{2}PoolSessions{2}{1}{2}vmap.dat",
+                            [Shared].Configurations.WorkingPath.WorkingPathID,
+                            SessionKeyID,
+                            IO.Path.DirectorySeparatorChar
+                        )
+                )
 
             If Not IO.Directory.Exists(IO.Path.GetDirectoryName(vpService)) Then _
                 IO.Directory.CreateDirectory(IO.Path.GetDirectoryName(vpService))
 
             Dim RequestKey As String =
-                    String.Format("{0}_{1}", Date.Now.Ticks, name)
+                String.Format("{0}_{1}", Date.Now.Ticks, name)
             Me.FileAccessQueue(SessionKeyID).Enqueue(RequestKey)
 
             Dim vpsFS As IO.FileStream = Nothing
@@ -591,7 +571,7 @@ Namespace Xeora.Web.Site.Service
             Select Case Me._VariablePoolTypeStatus
                 Case [Shared].Service.IVariablePool.VariablePoolTypeStatus.Host
                     If Not serializedSerializableDictionary Is Nothing AndAlso
-                    serializedSerializableDictionary.Length > 0 Then
+                        serializedSerializableDictionary.Length > 0 Then
 
                         Dim forStream As IO.Stream = Nothing
                         Dim tObject As Object = Nothing
@@ -643,7 +623,6 @@ Namespace Xeora.Web.Site.Service
             End Select
         End Sub
 
-        'Private Delegate Sub RegisterVariableToPoolDelegate(ByVal SessionKeyID As String, ByVal name As String, ByVal serializedValue As Byte())
         Public Sub RegisterVariableToPool(ByVal SessionKeyID As String, ByVal name As String, ByVal serializedValue As Byte()) Implements [Shared].Service.IVariablePool.RegisterVariableToPool
             Select Case Me._VariablePoolTypeStatus
                 Case [Shared].Service.IVariablePool.VariablePoolTypeStatus.Host
@@ -709,8 +688,7 @@ Namespace Xeora.Web.Site.Service
             Select Case Me._VariablePoolTypeStatus
                 Case [Shared].Service.IVariablePool.VariablePoolTypeStatus.Host
                     If Me._VariableCache.ContainsKey(FromSessionKeyID) Then _
-                        Me._VariableCache.Item(CurrentSessionKeyID) =
-                            Me._VariableCache.Item(FromSessionKeyID)
+                        Me._VariableCache.Item(CurrentSessionKeyID) = Me._VariableCache.Item(FromSessionKeyID)
                 Case Else
                     Dim eO As Boolean = False
                     Try
@@ -731,24 +709,24 @@ Namespace Xeora.Web.Site.Service
             End Select
         End Sub
 
-        Private Sub ConfirmRegistrations() 'Implements PGlobals.Execution.IVariablePool.ConfirmRegistrations
+        Private Sub ConfirmRegistrations()
             If Me._VariablePoolTypeStatus <> [Shared].Service.IVariablePool.VariablePoolTypeStatus.Host Then Exit Sub
 
             Threading.Monitor.Enter(Me._VariableCache.SyncRoot)
             Try
                 For Each SessionKeyID As String In Me._VariableCache.Keys
                     Dim SessionKeysObject As Object() =
-                            CType(Me._VariableCache.Item(SessionKeyID), Object())
+                        CType(Me._VariableCache.Item(SessionKeyID), Object())
                     If SessionKeysObject Is Nothing OrElse
-                            SessionKeysObject.Length <> 2 Then Continue For
+                        SessionKeysObject.Length <> 2 Then Continue For
 
                     Dim SessionKeysDate As Date =
-                            CType(SessionKeysObject(0), Date)
+                        CType(SessionKeysObject(0), Date)
                     SessionKeysDate = SessionKeysDate.AddMinutes(Me._VariableTimeout)
                     If Date.Compare(SessionKeysDate, Date.Now) < 0 Then Continue For
 
                     Dim SessionKeysHash As Hashtable =
-                            CType(SessionKeysObject(1), Hashtable)
+                        CType(SessionKeysObject(1), Hashtable)
                     If SessionKeysHash Is Nothing Then Continue For
 
                     For Each varName As String In SessionKeysHash.Keys
