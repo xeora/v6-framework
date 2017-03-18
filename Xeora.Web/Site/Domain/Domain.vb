@@ -207,10 +207,10 @@ Namespace Xeora.Web.Site
                 Else
                     Dim LastIndex As Integer = 0
 
-                    Dim lMatchItem01 As Text.RegularExpressions.Match, lMatchItem02 As Text.RegularExpressions.Match
-                    Dim tMatchItem01 As Text.RegularExpressions.Match, MatchDirectiveType01 As String = Nothing, MatchedID01 As String = Nothing ' For Opening Brackets
-                    Dim tMatchItem02 As Text.RegularExpressions.Match ' For Separator Brackets
-                    Dim tMatchItem03 As Text.RegularExpressions.Match ' For Closing Brackets
+                    Dim MainSearchMatch As Text.RegularExpressions.Match
+                    Dim BracketOpenExamMatch As Text.RegularExpressions.Match, DirectiveType As String = Nothing, DirectiveID As String = Nothing ' For Opening Brackets
+                    Dim BracketSeparatorExamMatch As Text.RegularExpressions.Match ' For Separator Brackets
+                    Dim BracketCloseExamMatch As Text.RegularExpressions.Match ' For Closing Brackets
 
                     Dim REMEnum As IEnumerator =
                         MainPatternMatches.GetEnumerator()
@@ -220,141 +220,150 @@ Namespace Xeora.Web.Site
                     Dim BracketedClosePattern As New RegularExpressions.BracketedControllerClosePattern()
 
                     Do While REMEnum.MoveNext()
-                        lMatchItem01 = CType(REMEnum.Current, Text.RegularExpressions.Match)
+                        MainSearchMatch = CType(REMEnum.Current, Text.RegularExpressions.Match)
 
                         ' Check till this match any renderless content exists
-                        If lMatchItem01.Index > LastIndex Then
+                        If MainSearchMatch.Index > LastIndex Then
                             ContainerController.Children.Add(
-                                New Controller.RenderlessController(LastIndex, DraftValue.Substring(LastIndex, lMatchItem01.Index - LastIndex), ContainerController.ContentArguments)
+                                New Controller.RenderlessController(LastIndex, DraftValue.Substring(LastIndex, MainSearchMatch.Index - LastIndex), ContainerController.ContentArguments)
                             )
-                            LastIndex = lMatchItem01.Index
+                            LastIndex = MainSearchMatch.Index
                         End If
 
                         ' Exam For Bracketed Regex Result
-                        tMatchItem01 = BracketedOpenPattern.Match(lMatchItem01.Value)
+                        BracketOpenExamMatch = BracketedOpenPattern.Match(MainSearchMatch.Value)
 
-                        If tMatchItem01.Success Then
-                            MatchDirectiveType01 = tMatchItem01.Result("${DirectiveType}")
-                            MatchedID01 = tMatchItem01.Result("${ItemID}")
+                        If BracketOpenExamMatch.Success Then
+                            DirectiveType = BracketOpenExamMatch.Result("${DirectiveType}")
+                            DirectiveID = BracketOpenExamMatch.Result("${ItemID}")
 
-                            If Not MatchedID01 Is Nothing Then
+                            If Not DirectiveID Is Nothing Then
                                 Dim InnerMatch As Integer = 0
                                 Dim SeparatorIndexes As New Generic.List(Of Integer)
 
                                 Do While REMEnum.MoveNext()
-                                    lMatchItem02 = CType(REMEnum.Current, Text.RegularExpressions.Match)
+                                    Dim MainSearchMatchExam As Text.RegularExpressions.Match =
+                                        CType(REMEnum.Current, Text.RegularExpressions.Match)
 
                                     ' Exam For Opening Bracketed Regex Result
-                                    tMatchItem01 = BracketedOpenPattern.Match(lMatchItem02.Value)
-
-                                    ' Exam For Separator Bracketed Regex Result
-                                    tMatchItem02 = BracketedSeparatorPattern.Match(lMatchItem02.Value)
-
-                                    ' Exam For Closing Bracketed Regex Result
-                                    tMatchItem03 = BracketedClosePattern.Match(lMatchItem02.Value)
-
-                                    If tMatchItem01.Success AndAlso
-                                        String.Compare(MatchedID01, tMatchItem01.Result("${ItemID}")) = 0 Then ' Check is Another Same Named Control Internally Opened Bracket
+                                    BracketOpenExamMatch = BracketedOpenPattern.Match(MainSearchMatchExam.Value)
+                                    If BracketOpenExamMatch.Success AndAlso
+                                        String.Compare(DirectiveID, BracketOpenExamMatch.Result("${ItemID}")) = 0 Then ' Check is Another Same Named Control Internally Opened Bracket
 
                                         InnerMatch += 1
-                                    ElseIf tMatchItem02.Success AndAlso
-                                        String.Compare(MatchedID01, tMatchItem02.Result("${ItemID}")) = 0 AndAlso
+
+                                        Continue Do
+                                    End If
+
+                                    ' Exam For Separator Bracketed Regex Result
+                                    BracketSeparatorExamMatch = BracketedSeparatorPattern.Match(MainSearchMatchExam.Value)
+                                    If BracketSeparatorExamMatch.Success AndAlso
+                                        String.Compare(DirectiveID, BracketSeparatorExamMatch.Result("${ItemID}")) = 0 AndAlso
                                         InnerMatch = 0 Then ' Check is Same Named Highlevel Control Separator Bracket
 
                                         ' Point the location of Separator Bracket index
-                                        SeparatorIndexes.Add(lMatchItem02.Index - lMatchItem01.Index)
-                                    ElseIf tMatchItem03.Success AndAlso
-                                        String.Compare(MatchedID01, tMatchItem03.Result("${ItemID}")) = 0 Then ' Check is Same Named Control Internally Closed Bracket
+                                        SeparatorIndexes.Add(MainSearchMatchExam.Index - MainSearchMatch.Index)
 
-                                        If InnerMatch = 0 Then
-                                            Dim ModifierText As String = String.Format("~{0}", lMatchItem01.Index)
-                                            Dim PointedOriginalValue As String =
-                                                DraftValue.Substring(
-                                                    lMatchItem01.Index,
-                                                    (lMatchItem02.Index + lMatchItem02.Length) - lMatchItem01.Index
-                                                )
+                                        Continue Do
+                                    End If
 
-                                            PointedOriginalValue = PointedOriginalValue.Insert(PointedOriginalValue.Length - 1, ModifierText)
-                                            For idxID As Integer = SeparatorIndexes.Count - 1 To 0 Step -1
-                                                PointedOriginalValue = PointedOriginalValue.Insert(
-                                                                            (SeparatorIndexes(idxID) + String.Format("}}:{0}", MatchedID01).Length),
-                                                                            ModifierText
-                                                                        )
-                                            Next
-                                            PointedOriginalValue = PointedOriginalValue.Insert(lMatchItem01.Length - 2, ModifierText)
+                                    ' Exam For Closing Bracketed Regex Result
+                                    BracketCloseExamMatch = BracketedClosePattern.Match(MainSearchMatchExam.Value)
+                                    If BracketCloseExamMatch.Success AndAlso
+                                        String.Compare(DirectiveID, BracketCloseExamMatch.Result("${ItemID}")) = 0 Then ' Check is Same Named Control Internally Closed Bracket
 
-                                            Dim WorkingDirective As Controller.DirectiveControllerBase = Nothing
-
-                                            Select Case Controller.DirectiveControllerBase.CaptureDirectiveType(String.Format("${0}:", IIf(String.IsNullOrEmpty(MatchDirectiveType01), MatchedID01, MatchDirectiveType01)))
-                                                Case Controller.DirectiveControllerBase.DirectiveTypes.Control
-                                                    WorkingDirective = Controller.Directive.ControlBase.MakeControl(lMatchItem01.Index, PointedOriginalValue, Nothing, AddressOf Me.OnControlResolveRequest)
-                                                Case Controller.DirectiveControllerBase.DirectiveTypes.InLineStatement
-                                                    WorkingDirective = New Controller.Directive.InLineStatement(lMatchItem01.Index, PointedOriginalValue, Nothing)
-                                                Case Controller.DirectiveControllerBase.DirectiveTypes.UpdateBlock
-                                                    WorkingDirective = New Controller.Directive.UpdateBlock(lMatchItem01.Index, PointedOriginalValue, Nothing)
-                                                Case Controller.DirectiveControllerBase.DirectiveTypes.EncodedExecution
-                                                    WorkingDirective = New Controller.Directive.EncodedExecution(lMatchItem01.Index, PointedOriginalValue, Nothing)
-                                                Case Controller.DirectiveControllerBase.DirectiveTypes.MessageBlock
-                                                    WorkingDirective = New Controller.Directive.MessageBlock(lMatchItem01.Index, PointedOriginalValue, Nothing)
-                                                Case Controller.DirectiveControllerBase.DirectiveTypes.PartialCache
-                                                    WorkingDirective = New Controller.Directive.PartialCache(lMatchItem01.Index, PointedOriginalValue, Nothing)
-                                            End Select
-
-                                            If Not WorkingDirective Is Nothing Then
-                                                If TypeOf WorkingDirective Is Controller.Directive.IParsingRequires Then _
-                                                    AddHandler CType(WorkingDirective, Controller.Directive.IParsingRequires).ParseRequested, AddressOf Me.OnParseRequest
-
-                                                If TypeOf WorkingDirective Is Controller.Directive.IDeploymentAccessRequires Then _
-                                                    AddHandler CType(WorkingDirective, Controller.Directive.IDeploymentAccessRequires).DeploymentAccessRequested, AddressOf Me.OnDeploymentAccessRequest
-
-                                                If TypeOf WorkingDirective Is Controller.Directive.IInstanceRequires Then _
-                                                    AddHandler CType(WorkingDirective, Controller.Directive.IInstanceRequires).InstanceRequested, AddressOf Me.OnInstanceRequest
-
-                                                If TypeOf WorkingDirective Is Controller.Directive.Control.IControl Then _
-                                                    AddHandler CType(WorkingDirective, Controller.Directive.Control.IControl).ControlResolveRequested, AddressOf Me.OnControlResolveRequest
-
-                                                ContainerController.Children.Add(WorkingDirective)
-                                            End If
-
-                                            LastIndex = (lMatchItem02.Index + lMatchItem02.Length)
-
-                                            Exit Do
-                                        Else
+                                        If InnerMatch > 0 Then
                                             InnerMatch -= 1
+
+                                            Continue Do
                                         End If
+
+                                        Dim ModifierText As String = String.Format("~{0}", MainSearchMatch.Index)
+                                        Dim PointedOriginalValue As String =
+                                            DraftValue.Substring(
+                                                MainSearchMatch.Index,
+                                                (MainSearchMatchExam.Index + MainSearchMatchExam.Length) - MainSearchMatch.Index
+                                            )
+
+                                        PointedOriginalValue = PointedOriginalValue.Insert(PointedOriginalValue.Length - 1, ModifierText)
+                                        For idxID As Integer = SeparatorIndexes.Count - 1 To 0 Step -1
+                                            PointedOriginalValue = PointedOriginalValue.Insert(
+                                                                        (SeparatorIndexes(idxID) + String.Format("}}:{0}", DirectiveID).Length),
+                                                                        ModifierText
+                                                                    )
+                                        Next
+                                        PointedOriginalValue = PointedOriginalValue.Insert(MainSearchMatch.Length - 2, ModifierText)
+
+                                        Dim WorkingDirective As Controller.DirectiveControllerBase = Nothing
+
+                                        Select Case Controller.DirectiveControllerBase.CaptureDirectiveType(String.Format("${0}:", IIf(String.IsNullOrEmpty(DirectiveType), DirectiveID, DirectiveType)))
+                                            Case Controller.DirectiveControllerBase.DirectiveTypes.Control
+                                                WorkingDirective = Controller.Directive.ControlBase.MakeControl(MainSearchMatch.Index, PointedOriginalValue, Nothing, AddressOf Me.OnControlResolveRequest)
+                                            Case Controller.DirectiveControllerBase.DirectiveTypes.InLineStatement
+                                                WorkingDirective = New Controller.Directive.InLineStatement(MainSearchMatch.Index, PointedOriginalValue, Nothing)
+                                            Case Controller.DirectiveControllerBase.DirectiveTypes.UpdateBlock
+                                                WorkingDirective = New Controller.Directive.UpdateBlock(MainSearchMatch.Index, PointedOriginalValue, Nothing)
+                                            Case Controller.DirectiveControllerBase.DirectiveTypes.EncodedExecution
+                                                WorkingDirective = New Controller.Directive.EncodedExecution(MainSearchMatch.Index, PointedOriginalValue, Nothing)
+                                            Case Controller.DirectiveControllerBase.DirectiveTypes.MessageBlock
+                                                WorkingDirective = New Controller.Directive.MessageBlock(MainSearchMatch.Index, PointedOriginalValue, Nothing)
+                                            Case Controller.DirectiveControllerBase.DirectiveTypes.PartialCache
+                                                WorkingDirective = New Controller.Directive.PartialCache(MainSearchMatch.Index, PointedOriginalValue, Nothing)
+                                        End Select
+
+                                        If Not WorkingDirective Is Nothing Then
+                                            If TypeOf WorkingDirective Is Controller.Directive.IParsingRequires Then _
+                                                AddHandler CType(WorkingDirective, Controller.Directive.IParsingRequires).ParseRequested, AddressOf Me.OnParseRequest
+
+                                            If TypeOf WorkingDirective Is Controller.Directive.IDeploymentAccessRequires Then _
+                                                AddHandler CType(WorkingDirective, Controller.Directive.IDeploymentAccessRequires).DeploymentAccessRequested, AddressOf Me.OnDeploymentAccessRequest
+
+                                            If TypeOf WorkingDirective Is Controller.Directive.IInstanceRequires Then _
+                                                AddHandler CType(WorkingDirective, Controller.Directive.IInstanceRequires).InstanceRequested, AddressOf Me.OnInstanceRequest
+
+                                            If TypeOf WorkingDirective Is Controller.Directive.Control.IControl Then _
+                                                AddHandler CType(WorkingDirective, Controller.Directive.Control.IControl).ControlResolveRequested, AddressOf Me.OnControlResolveRequest
+
+                                            ContainerController.Children.Add(WorkingDirective)
+                                        End If
+
+                                        LastIndex = (MainSearchMatchExam.Index + MainSearchMatchExam.Length)
+
+                                        Exit Do
                                     End If
                                 Loop
                             End If
                         Else
-                            Select Case Controller.ControllerBase.CaptureControllerType(lMatchItem01.Value)
+                            Select Case Controller.ControllerBase.CaptureControllerType(MainSearchMatch.Value)
                                 Case Controller.ControllerBase.ControllerTypes.Property
                                     Dim PropertyDirective As Controller.PropertyController =
-                                        New Controller.PropertyController(lMatchItem01.Index, lMatchItem01.Value, ContainerController.ContentArguments)
+                                        New Controller.PropertyController(MainSearchMatch.Index, MainSearchMatch.Value, ContainerController.ContentArguments)
                                     AddHandler PropertyDirective.InstanceRequested, AddressOf Me.OnInstanceRequest
 
                                     ContainerController.Children.Add(PropertyDirective)
+
                                 Case Controller.ControllerBase.ControllerTypes.Directive
                                     Dim WorkingDirective As Controller.DirectiveControllerBase = Nothing
 
-                                    Select Case Controller.DirectiveControllerBase.CaptureDirectiveType(lMatchItem01.Value)
+                                    Select Case Controller.DirectiveControllerBase.CaptureDirectiveType(MainSearchMatch.Value)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Control
-                                            WorkingDirective = Controller.Directive.ControlBase.MakeControl(lMatchItem01.Index, lMatchItem01.Value, Nothing, AddressOf Me.OnControlResolveRequest)
+                                            WorkingDirective = Controller.Directive.ControlBase.MakeControl(MainSearchMatch.Index, MainSearchMatch.Value, Nothing, AddressOf Me.OnControlResolveRequest)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Template
-                                            WorkingDirective = New Controller.Directive.Template(lMatchItem01.Index, lMatchItem01.Value, Nothing)
+                                            WorkingDirective = New Controller.Directive.Template(MainSearchMatch.Index, MainSearchMatch.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Translation
-                                            WorkingDirective = New Controller.Directive.Translation(lMatchItem01.Index, lMatchItem01.Value, Nothing)
+                                            WorkingDirective = New Controller.Directive.Translation(MainSearchMatch.Index, MainSearchMatch.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.HashCodePointedTemplate
-                                            WorkingDirective = New Controller.Directive.HashCodePointedTemplate(lMatchItem01.Index, lMatchItem01.Value, Nothing)
+                                            WorkingDirective = New Controller.Directive.HashCodePointedTemplate(MainSearchMatch.Index, MainSearchMatch.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.Execution
-                                            WorkingDirective = New Controller.Directive.Execution(lMatchItem01.Index, lMatchItem01.Value, Nothing)
+                                            WorkingDirective = New Controller.Directive.Execution(MainSearchMatch.Index, MainSearchMatch.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.InLineStatement
-                                            WorkingDirective = New Controller.Directive.InLineStatement(lMatchItem01.Index, lMatchItem01.Value, Nothing)
+                                            WorkingDirective = New Controller.Directive.InLineStatement(MainSearchMatch.Index, MainSearchMatch.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.UpdateBlock
-                                            WorkingDirective = New Controller.Directive.UpdateBlock(lMatchItem01.Index, lMatchItem01.Value, Nothing)
+                                            WorkingDirective = New Controller.Directive.UpdateBlock(MainSearchMatch.Index, MainSearchMatch.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.EncodedExecution
-                                            WorkingDirective = New Controller.Directive.EncodedExecution(lMatchItem01.Index, lMatchItem01.Value, Nothing)
+                                            WorkingDirective = New Controller.Directive.EncodedExecution(MainSearchMatch.Index, MainSearchMatch.Value, Nothing)
                                         Case Controller.DirectiveControllerBase.DirectiveTypes.PartialCache
-                                            WorkingDirective = New Controller.Directive.PartialCache(lMatchItem01.Index, lMatchItem01.Value, Nothing)
+                                            WorkingDirective = New Controller.Directive.PartialCache(MainSearchMatch.Index, MainSearchMatch.Value, Nothing)
                                     End Select
 
                                     If Not WorkingDirective Is Nothing Then
@@ -372,9 +381,10 @@ Namespace Xeora.Web.Site
 
                                         ContainerController.Children.Add(WorkingDirective)
                                     End If
+
                             End Select
 
-                            LastIndex = (lMatchItem01.Index + lMatchItem01.Value.Length)
+                            LastIndex = (MainSearchMatch.Index + MainSearchMatch.Value.Length)
                         End If
                     Loop
 

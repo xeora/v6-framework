@@ -8,6 +8,7 @@ Namespace Xeora.Web.Shared
             Extention
         End Enum
 
+        Private Shared _RegistryType As Type = Nothing
         Private Shared Function ResolveMime(ByVal MimeLookup As MimeLookups, ByVal SearchValue As String) As String
             Dim rString As String = String.Empty
 
@@ -21,13 +22,16 @@ Namespace Xeora.Web.Shared
             If String.IsNullOrEmpty(SearchValue) Then Return rString
 
             Try
-                Dim HelperAsm As Reflection.Assembly, objHelper As Type
+                If MimeType._RegistryType Is Nothing Then
+                    Dim HelperAsm As Reflection.Assembly =
+                        Reflection.Assembly.Load("Xeora.Web")
+
+                    MimeType._RegistryType = HelperAsm.GetType("Xeora.Web.Helper.Registry")
+                End If
+
                 Dim HelperInstance As Object = Nothing
 
-                HelperAsm = Reflection.Assembly.Load("Xeora.Web")
-                objHelper = HelperAsm.GetType("Xeora.Web.Helper.Registry")
-
-                For Each _ctorInfo As Reflection.ConstructorInfo In objHelper.GetConstructors()
+                For Each _ctorInfo As Reflection.ConstructorInfo In MimeType._RegistryType.GetConstructors()
                     If _ctorInfo.IsConstructor AndAlso
                         _ctorInfo.IsPublic AndAlso
                         _ctorInfo.GetParameters().Length = 1 Then

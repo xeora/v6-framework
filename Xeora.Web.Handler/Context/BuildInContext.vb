@@ -28,12 +28,13 @@ Namespace Xeora.Web.Context
             Me._Session = New HttpSession(HttpContext.Session)
             Me._Request = New HttpRequest(HttpContext.Request, Me._XeoraRequestID)
             AddHandler Me._Request.RewritePathRaised,
-                New IHttpContext.IHttpRequest.RewritePathRaisedEventHandler(Sub(ByVal RawURL As String)
-                                                                                Me._UnderlyingContext.RewritePath(RawURL)
+                New IHttpContext.IHttpRequest.RewritePathRaisedEventHandler(
+                    Sub(ByVal RawURL As String)
+                        Me._UnderlyingContext.RewritePath(RawURL)
 
-                                                                                Me._Request = New HttpRequest(Me._UnderlyingContext.Request, Me._XeoraRequestID)
-                                                                                CType(Me._Request, HttpRequest).Build()
-                                                                            End Sub)
+                        Me._Request = New HttpRequest(Me._UnderlyingContext.Request, Me._XeoraRequestID)
+                        CType(Me._Request, HttpRequest).Build()
+                    End Sub)
             CType(Me._Request, HttpRequest).Build()
             Me._Response = New HttpResponse(HttpContext.Response)
         End Sub

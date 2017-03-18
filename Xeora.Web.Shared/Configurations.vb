@@ -23,45 +23,57 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
+        Private Shared _DefaultDomain As String() = Nothing
         Public Shared ReadOnly Property DefaultDomain() As String()
             Get
-                Dim WorkingObject As Object =
-                    Configurations.XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
+                If Configurations._DefaultDomain Is Nothing Then
+                    Dim WorkingObject As Object =
+                        Configurations.XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
 
-                Return CType(WorkingObject.GetType().InvokeMember("DefaultDomain", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String())
-            End Get
-        End Property
-
-        Public Shared ReadOnly Property PhysicalRoot() As String
-            Get
-                Dim WorkingObject As Object =
-                    Configurations.XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
-
-                Return CType(WorkingObject.GetType().InvokeMember("PhysicalRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
-            End Get
-        End Property
-
-        Public Shared ReadOnly Property VirtualRoot() As String
-            Get
-                Dim WorkingObject As Object =
-                    Configurations.XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
-
-                Dim virRootValue As String =
-                    CType(WorkingObject.GetType().InvokeMember("VirtualRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
-
-                If String.IsNullOrEmpty(virRootValue) Then
-                    virRootValue = "/"
-                Else
-                    virRootValue = virRootValue.Replace("\"c, "/"c)
-
-                    If virRootValue.IndexOf("/"c) <> 0 Then _
-                        virRootValue = String.Format("/{0}", virRootValue)
-
-                    If String.Compare(virRootValue.Substring(virRootValue.Length - 1), "/") <> 0 Then _
-                        virRootValue = String.Format("{0}/", virRootValue)
+                    Configurations._DefaultDomain = CType(WorkingObject.GetType().InvokeMember("DefaultDomain", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String())
                 End If
 
-                Return virRootValue
+                Return Configurations._DefaultDomain
+            End Get
+        End Property
+
+        Private Shared _PhysicalRoot As String = Nothing
+        Public Shared ReadOnly Property PhysicalRoot() As String
+            Get
+                If Configurations._PhysicalRoot Is Nothing Then
+                    Dim WorkingObject As Object =
+                        Configurations.XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
+
+                    Configurations._PhysicalRoot = CType(WorkingObject.GetType().InvokeMember("PhysicalRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
+                End If
+
+                Return Configurations._PhysicalRoot
+            End Get
+        End Property
+
+        Private Shared _VirtualRoot As String = Nothing
+        Public Shared ReadOnly Property VirtualRoot() As String
+            Get
+                If Configurations._VirtualRoot Is Nothing Then
+                    Dim WorkingObject As Object =
+                        Configurations.XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
+
+                    Configurations._VirtualRoot = CType(WorkingObject.GetType().InvokeMember("VirtualRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
+
+                    If String.IsNullOrEmpty(Configurations._VirtualRoot) Then
+                        Configurations._VirtualRoot = "/"
+                    Else
+                        Configurations._VirtualRoot = Configurations._VirtualRoot.Replace("\"c, "/"c)
+
+                        If Configurations._VirtualRoot.IndexOf("/"c) <> 0 Then _
+                            Configurations._VirtualRoot = String.Format("/{0}", Configurations._VirtualRoot)
+
+                        If String.Compare(Configurations._VirtualRoot.Substring(Configurations._VirtualRoot.Length - 1), "/") <> 0 Then _
+                            Configurations._VirtualRoot = String.Format("{0}/", Configurations._VirtualRoot)
+                    End If
+                End If
+
+                Return Configurations._VirtualRoot
             End Get
         End Property
 
@@ -130,10 +142,8 @@ Namespace Xeora.Web.Shared
         Private Shared _ApplicationRootFormat As ApplicationRootFormat = Nothing
         Public Shared ReadOnly Property ApplicationRoot() As ApplicationRootFormat
             Get
-                Dim rApplicationRootFormat As ApplicationRootFormat = Configurations._ApplicationRootFormat
-
-                If rApplicationRootFormat Is Nothing Then
-                    rApplicationRootFormat = New ApplicationRootFormat()
+                If Configurations._ApplicationRootFormat Is Nothing Then
+                    Configurations._ApplicationRootFormat = New ApplicationRootFormat()
 
                     Dim WorkingObject As Object =
                         Configurations.XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
@@ -142,8 +152,8 @@ Namespace Xeora.Web.Shared
                         CType(WorkingObject.GetType().InvokeMember("ApplicationRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
 
                     If String.IsNullOrEmpty(appRootValue) Then
-                        rApplicationRootFormat.FileSystemImplementation = ".\"
-                        rApplicationRootFormat.BrowserImplementation = Configurations.VirtualRoot
+                        Configurations._ApplicationRootFormat.FileSystemImplementation = ".\"
+                        Configurations._ApplicationRootFormat.BrowserImplementation = Configurations.VirtualRoot
                     Else
                         If appRootValue.IndexOf("\"c) = 0 Then _
                             appRootValue = String.Format(".{0}", appRootValue)
@@ -154,15 +164,13 @@ Namespace Xeora.Web.Shared
                         If String.Compare(appRootValue.Substring(appRootValue.Length - 1), "\") <> 0 Then _
                             appRootValue = String.Format("{0}\", appRootValue)
 
-                        rApplicationRootFormat.FileSystemImplementation = appRootValue
-                        rApplicationRootFormat.BrowserImplementation =
+                        Configurations._ApplicationRootFormat.FileSystemImplementation = appRootValue
+                        Configurations._ApplicationRootFormat.BrowserImplementation =
                             String.Format("{0}{1}", Configurations.VirtualRoot, appRootValue.Substring(2).Replace("\"c, "/"c))
                     End If
-
-                    Configurations._ApplicationRootFormat = rApplicationRootFormat
                 End If
 
-                Return rApplicationRootFormat
+                Return Configurations._ApplicationRootFormat
             End Get
         End Property
 
@@ -197,14 +205,12 @@ Namespace Xeora.Web.Shared
         Private Shared _WorkingPathFormat As WorkingPathFormat = Nothing
         Public Shared ReadOnly Property WorkingPath() As WorkingPathFormat
             Get
-                Dim rWorkingPathFormat As WorkingPathFormat = Configurations._WorkingPathFormat
-
-                If rWorkingPathFormat Is Nothing Then
-                    rWorkingPathFormat = New WorkingPathFormat()
+                If Configurations._WorkingPathFormat Is Nothing Then
+                    Configurations._WorkingPathFormat = New WorkingPathFormat()
 
                     Dim wPath As String =
                         IO.Path.Combine(Configurations.PhysicalRoot, Configurations.ApplicationRoot.FileSystemImplementation)
-                    rWorkingPathFormat.WorkingPath = wPath
+                    Configurations._WorkingPathFormat.WorkingPath = wPath
 
                     For Each match As Text.RegularExpressions.Match In Text.RegularExpressions.Regex.Matches(wPath, "\W")
                         If match.Success Then
@@ -212,12 +218,10 @@ Namespace Xeora.Web.Shared
                             wPath = wPath.Insert(match.Index, "_")
                         End If
                     Next
-                    rWorkingPathFormat.WorkingPathID = wPath
-
-                    Configurations._WorkingPathFormat = rWorkingPathFormat
+                    Configurations._WorkingPathFormat.WorkingPathID = wPath
                 End If
 
-                Return rWorkingPathFormat
+                Return Configurations._WorkingPathFormat
             End Get
         End Property
 
@@ -263,34 +267,26 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
+        Private Shared _RequestTagFiltering As String = Nothing
         Public Shared ReadOnly Property RequestTagFiltering() As [Enum].RequestTagFilteringTypes
             Get
                 Dim rRequestTagFilteringType As [Enum].RequestTagFilteringTypes =
                     [Enum].RequestTagFilteringTypes.None
 
-                Dim WorkingObject As Object =
-                    Configurations.XeoraSettingsObject.GetType().InvokeMember("RequestTagFilter", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
+                If Configurations._RequestTagFiltering Is Nothing Then
+                    Dim WorkingObject As Object =
+                        Configurations.XeoraSettingsObject.GetType().InvokeMember("RequestTagFilter", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
 
-                Dim _RequestTagFiltering As String =
-                    CType(WorkingObject.GetType().InvokeMember("Direction", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
-                Dim _RequestTagFilteringItems As String =
-                    CType(WorkingObject.GetType().InvokeMember("Items", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
+                    Dim RequestTagFilteringDirection As String =
+                        CType(WorkingObject.GetType().InvokeMember("Direction", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
 
-                If Not String.IsNullOrEmpty(_RequestTagFiltering) AndAlso
-                    Not String.IsNullOrEmpty(_RequestTagFilteringItems) Then
+                    If String.IsNullOrEmpty(RequestTagFilteringDirection) Then _
+                        RequestTagFilteringDirection = [Enum].RequestTagFilteringTypes.None.ToString()
 
-                    Try
-                        rRequestTagFilteringType =
-                            CType(
-                                System.Enum.Parse(
-                                    GetType([Enum].RequestTagFilteringTypes),
-                                    _RequestTagFiltering
-                                ), [Enum].RequestTagFilteringTypes
-                            )
-                    Catch ex As Exception
-                        ' Just Handle Exception
-                    End Try
+                    Configurations._RequestTagFiltering = RequestTagFilteringDirection
                 End If
+
+                System.Enum.TryParse(Of [Enum].RequestTagFilteringTypes)(Configurations._RequestTagFiltering, rRequestTagFilteringType)
 
                 Return rRequestTagFilteringType
             End Get
@@ -299,9 +295,7 @@ Namespace Xeora.Web.Shared
         Private Shared _RequestTagFilteringItemList As String() = Nothing
         Public Shared ReadOnly Property RequestTagFilteringItems() As String()
             Get
-                Dim rStringList As String() = Configurations._RequestTagFilteringItemList
-
-                If rStringList Is Nothing Then
+                If Configurations._RequestTagFilteringItemList Is Nothing Then
                     Dim WorkingObject As Object =
                         Configurations.XeoraSettingsObject.GetType().InvokeMember("RequestTagFilter", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
 
@@ -317,24 +311,24 @@ Namespace Xeora.Web.Shared
                                     RequestTagFilteringItemList.Add(item.Trim().ToLower(New Globalization.CultureInfo("en-US")))
                             Next
 
-                            rStringList = RequestTagFilteringItemList.ToArray()
+                            Configurations._RequestTagFilteringItemList = RequestTagFilteringItemList.ToArray()
                         Catch ex As Exception
                             ' Just Handle Exception
                         End Try
                     End If
-                    If rStringList Is Nothing Then rStringList = New String() {}
+
+                    If Configurations._RequestTagFilteringItemList Is Nothing Then _
+                        Configurations._RequestTagFilteringItemList = New String() {}
                 End If
 
-                Return rStringList
+                Return Configurations._RequestTagFilteringItemList
             End Get
         End Property
 
         Private Shared _RequestTagFilteringExceptionsList As String() = Nothing
         Public Shared ReadOnly Property RequestTagFilteringExceptions() As String()
             Get
-                Dim rStringList As String() = Configurations._RequestTagFilteringExceptionsList
-
-                If rStringList Is Nothing Then
+                If Configurations._RequestTagFilteringExceptionsList Is Nothing Then
                     Dim WorkingObject As Object =
                         Configurations.XeoraSettingsObject.GetType().InvokeMember("RequestTagFilter", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
 
@@ -350,15 +344,17 @@ Namespace Xeora.Web.Shared
                                     RequestTagFilteringExceptionList.Add(item.Trim().ToLower(New Globalization.CultureInfo("en-US")))
                             Next
 
-                            rStringList = RequestTagFilteringExceptionList.ToArray()
+                            Configurations._RequestTagFilteringExceptionsList = RequestTagFilteringExceptionList.ToArray()
                         Catch ex As Exception
                             ' Just Handle Exception
                         End Try
                     End If
-                    If rStringList Is Nothing Then rStringList = New String() {}
+
+                    If Configurations._RequestTagFilteringExceptionsList Is Nothing Then _
+                        Configurations._RequestTagFilteringExceptionsList = New String() {}
                 End If
 
-                Return rStringList
+                Return Configurations._RequestTagFilteringExceptionsList
             End Get
         End Property
 

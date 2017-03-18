@@ -206,7 +206,7 @@ Namespace Xeora.Web.Manager
                 If Not ClassNames Is Nothing Then
                     AssemblyObject = Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", String.Join("+", ClassNames)), True, True)
                 Else
-                    AssemblyObject = Me._ExecutableInstances.Item(ExamInterface).GetType() 'Me._AssemblyDll.GetType(String.Format("Xeora.Domain.{0}", Me._ExecutableName), True, True)
+                    AssemblyObject = Me._ExecutableInstances.Item(ExamInterface).GetType()
                 End If
 
                 AssemblyMethod = Me.GetAssemblyMethod(AssemblyObject, HttpMethodType, FunctionName, FunctionParams, ExecuterType)
@@ -283,182 +283,125 @@ Namespace Xeora.Web.Manager
             Return rObject
         End Function
 
-        Private _SortedAssemblyMethods As New System.Collections.Concurrent.ConcurrentDictionary(Of Integer, System.Reflection.MethodInfo())
+        Private _AssemblyMethods As New System.Collections.Concurrent.ConcurrentDictionary(Of String, System.Reflection.MethodInfo())
         Private Function GetAssemblyMethod(ByRef AssemblyObject As System.Type, ByVal HttpMethodType As String, ByVal FunctionName As String, ByRef FunctionParams As Object(), ByVal ExecuterType As String) As System.Reflection.MethodInfo
-            Dim rAssemblyMethod As System.Reflection.MethodInfo = Nothing
+            Dim mIF As New MethodInfoFinder(HttpMethodType, FunctionName)
+            Dim SearchKey As String = String.Format("{0}.{1}", AssemblyObject.FullName, mIF.Identifier)
 
-            ' Sort and Filter Searching Function
-            Dim AssemblyObjectMethods As System.Reflection.MethodInfo() = Nothing
+            Dim PossibleMethodInfos As System.Reflection.MethodInfo() = Nothing
 
-            If Not Me._SortedAssemblyMethods.TryGetValue(AssemblyObject.GetHashCode(), AssemblyObjectMethods) Then
-                AssemblyObjectMethods = AssemblyObject.GetMethods()
-                System.Array.Sort(AssemblyObjectMethods, New MethodInfoNameComparer(Nothing))
+            If Not Me._AssemblyMethods.TryGetValue(SearchKey, PossibleMethodInfos) Then
+                PossibleMethodInfos =
+                    System.Array.FindAll(Of System.Reflection.MethodInfo)(
+                        AssemblyObject.GetMethods(),
+                        New System.Predicate(Of System.Reflection.MethodInfo)(AddressOf mIF.MethodInfoFinder)
+                    )
 
-                Me._SortedAssemblyMethods.TryAdd(AssemblyObject.GetHashCode(), AssemblyObjectMethods)
+                Me._AssemblyMethods.TryAdd(SearchKey, PossibleMethodInfos)
             End If
 
-            Dim mIF As New MethodInfoFinder(HttpMethodType, FunctionName)
-            Dim MIFIdx As Integer =
-                System.Array.FindIndex(
-                    AssemblyObjectMethods,
-                    New System.Predicate(Of System.Reflection.MethodInfo)(AddressOf mIF.MethodInfoFinder)
-                )
-            Dim MILIdx As Integer =
-                System.Array.FindLastIndex(
-                    AssemblyObjectMethods,
-                    New System.Predicate(Of System.Reflection.MethodInfo)(AddressOf mIF.MethodInfoFinder)
-                )
+            Dim WorkingMethodInfo As System.Reflection.MethodInfo
+            Dim FunctionParams_ReBuild As Object()
 
-            If MIFIdx > -1 AndAlso MILIdx >= MIFIdx Then
-                Dim MethodInfos As System.Reflection.MethodInfo() =
-                    CType(
-                        System.Array.CreateInstance(
-                            GetType(System.Reflection.MethodInfo),
-                            (MILIdx - MIFIdx) + 1
-                        ),
-                        System.Reflection.MethodInfo()
-                    )
-                System.Array.Copy(AssemblyObjectMethods, MIFIdx, MethodInfos, 0, MethodInfos.Length)
-                System.Array.Sort(MethodInfos, New MethodInfoParameterLengthComparer())
+            For mC As Integer = 0 To PossibleMethodInfos.Length - 1
+                WorkingMethodInfo = PossibleMethodInfos(mC)
+                FunctionParams_ReBuild = CType(FunctionParams.Clone(), Object())
 
-                Dim FunctionParams_ReBuild As Object()
+                Dim IsXeoraControl As Boolean =
+                    Me.CheckFunctionResultTypeIsXeoraControl(WorkingMethodInfo.ReturnType)
+                Dim mParams As System.Reflection.ParameterInfo() =
+                    WorkingMethodInfo.GetParameters()
 
-                For mC As Integer = 0 To MethodInfos.Length - 1
-                    FunctionParams_ReBuild =
-                        CType(System.Array.CreateInstance(GetType(Object), FunctionParams.Length), Object())
-                    System.Array.Copy(FunctionParams, FunctionParams_ReBuild, FunctionParams.Length)
+                Select Case ExecuterType
+                    Case "Control"
+                        If Not WorkingMethodInfo.ReturnType Is GetType(Object) AndAlso Not IsXeoraControl Then Continue For
+                    Case "Other"
+                        If IsXeoraControl Then
+                            Select Case WorkingMethodInfo.ReturnType.Name
+                                Case "RedirectOrder", "Message"
+                                    ' These are exceptional controls
+                                Case Else
+                                    Continue For
+                            End Select
+                        End If
+                End Select
 
-                    Dim IsXeoraControl As Boolean =
-                        Me.CheckFunctionResultTypeIsXeoraControl(MethodInfos(mC).ReturnType)
-                    Dim mParams As System.Reflection.ParameterInfo() =
-                        MethodInfos(mC).GetParameters()
+                If mParams.Length = 0 AndAlso
+                    FunctionParams_ReBuild.Length = 0 Then
 
-                    Select Case ExecuterType
-                        Case "Control"
-                            If Not MethodInfos(mC).ReturnType Is GetType(Object) AndAlso Not IsXeoraControl Then Continue For
-                        Case "Other"
-                            If IsXeoraControl Then
-                                Select Case MethodInfos(mC).ReturnType.Name
-                                    Case "RedirectOrder", "Message"
-                                        ' These are exceptional controls
-                                    Case Else
-                                        Continue For
-                                End Select
-                            End If
-                    End Select
+                    FunctionParams = FunctionParams_ReBuild
+                    Return WorkingMethodInfo
 
-                    If mParams.Length = 0 AndAlso
-                        FunctionParams_ReBuild.Length = 0 Then
+                ElseIf mParams.Length > 0 AndAlso
+                    mParams.Length <= FunctionParams_ReBuild.Length Then
 
-                        rAssemblyMethod = MethodInfos(mC) : FunctionParams = FunctionParams_ReBuild
+                    Dim MatchComplete As Boolean = False
+                    Dim IsExactMatch As Boolean() =
+                        CType(System.Array.CreateInstance(GetType(Boolean), mParams.Length), Boolean())
 
-                        Exit For
-                    ElseIf mParams.Length > 0 AndAlso
-                            mParams.Length <= FunctionParams_ReBuild.Length Then
+                    For pC As Integer = 0 To mParams.Length - 1
+                        If pC = mParams.Length - 1 Then
+                            Dim CheckIsParamArrayDefined As Boolean =
+                                System.Attribute.IsDefined(mParams(pC), GetType(System.ParamArrayAttribute))
 
-                        Dim MatchComplete As Boolean = False
-                        Dim IsExactMatch As Boolean() =
-                            CType(System.Array.CreateInstance(GetType(Boolean), mParams.Length), Boolean())
+                            If CheckIsParamArrayDefined Then
+                                Dim ParamArrayValues As System.Array =
+                                    System.Array.CreateInstance(
+                                        mParams(pC).ParameterType.GetElementType(),
+                                        (FunctionParams_ReBuild.Length - mParams.Length) + 1
+                                    )
 
-                        For pC As Integer = 0 To mParams.Length - 1
-                            If pC = mParams.Length - 1 Then
-                                Dim CheckIsParamArrayDefined As Boolean =
-                                    System.Attribute.IsDefined(mParams(pC), GetType(System.ParamArrayAttribute))
+                                For pavC As Integer = pC To FunctionParams_ReBuild.Length - 1
+                                    Me.FixFunctionParameter(
+                                        mParams(pC).ParameterType.GetElementType(), FunctionParams_ReBuild(pavC))
 
-                                If CheckIsParamArrayDefined Then
-                                    Dim ParamArrayValues As System.Array =
-                                        System.Array.CreateInstance(
-                                                mParams(pC).ParameterType.GetElementType(),
-                                                (FunctionParams_ReBuild.Length - mParams.Length) + 1
-                                            )
+                                    ParamArrayValues.SetValue(
+                                        FunctionParams_ReBuild(pavC),
+                                        pavC - (mParams.Length - 1)
+                                    )
+                                Next
 
-                                    For pavC As Integer = pC To FunctionParams_ReBuild.Length - 1
-                                        Me.FixFunctionParameter(
-                                            mParams(pC).ParameterType.GetElementType(), FunctionParams_ReBuild(pavC))
+                                System.Array.Resize(FunctionParams_ReBuild, mParams.Length)
+                                FunctionParams_ReBuild(pC) = ParamArrayValues
 
-                                        ParamArrayValues.SetValue(
-                                            FunctionParams_ReBuild(pavC),
-                                            pavC - (mParams.Length - 1)
-                                        )
-                                    Next
-
-                                    System.Array.Resize(FunctionParams_ReBuild, mParams.Length)
-                                    FunctionParams_ReBuild(pC) = ParamArrayValues
-
-                                    IsExactMatch(pC) = True : MatchComplete = True
-                                Else
-                                    IsExactMatch(pC) = Me.FixFunctionParameter(
-                                                        mParams(pC).ParameterType, FunctionParams_ReBuild(pC))
-
-                                    If mParams.Length = FunctionParams_ReBuild.Length AndAlso
-                                        System.Array.IndexOf(IsExactMatch, False) = -1 Then MatchComplete = True
-                                End If
+                                IsExactMatch(pC) = True : MatchComplete = True
                             Else
                                 IsExactMatch(pC) = Me.FixFunctionParameter(
                                                     mParams(pC).ParameterType, FunctionParams_ReBuild(pC))
+
+                                If mParams.Length = FunctionParams_ReBuild.Length AndAlso
+                                    System.Array.IndexOf(IsExactMatch, False) = -1 Then MatchComplete = True
                             End If
-                        Next
-
-                        If MatchComplete AndAlso
-                            System.Array.IndexOf(IsExactMatch, False) = -1 Then
-
-                            rAssemblyMethod = MethodInfos(mC) : FunctionParams = FunctionParams_ReBuild
-
-                            Exit For
+                        Else
+                            IsExactMatch(pC) = Me.FixFunctionParameter(
+                                                mParams(pC).ParameterType, FunctionParams_ReBuild(pC))
                         End If
+                    Next
+
+                    If MatchComplete AndAlso
+                        System.Array.IndexOf(IsExactMatch, False) = -1 Then
+
+                        FunctionParams = FunctionParams_ReBuild
+                        Return WorkingMethodInfo
                     End If
-                Next
+                End If
+            Next
+
+            If Not AssemblyObject.BaseType Is Nothing Then
+                Dim AssemblyMethod As System.Reflection.MethodInfo =
+                    Me.GetAssemblyMethod(AssemblyObject.BaseType, HttpMethodType, FunctionName, FunctionParams, ExecuterType)
+
+                If Not AssemblyMethod Is Nothing Then
+                    AssemblyObject = AssemblyObject.BaseType
+                    Return AssemblyMethod
+                End If
             End If
 
-            If rAssemblyMethod Is Nothing AndAlso
-                Not AssemblyObject.BaseType Is Nothing Then
-
-                rAssemblyMethod = Me.GetAssemblyMethod(AssemblyObject.BaseType, HttpMethodType, FunctionName, FunctionParams, ExecuterType)
-
-                If Not rAssemblyMethod Is Nothing Then AssemblyObject = AssemblyObject.BaseType
-            End If
-
-            Return rAssemblyMethod
+            Return Nothing
         End Function
 
         Private Function FixFunctionParameter(ByVal ParameterType As System.Type, ByRef FunctionParam As Object) As Boolean
-            Dim rBoolean As Boolean = False
-
-            If Not FunctionParam Is Nothing Then
-                If ParameterType Is FunctionParam.GetType() Then
-                    rBoolean = True
-                Else
-                    If String.Compare(ParameterType.FullName, GetType(Object).FullName, True) <> 0 Then
-                        Try
-                            FunctionParam = System.Convert.ChangeType(FunctionParam, ParameterType)
-
-                            rBoolean = True
-                        Catch ex As System.Exception
-                            If TypeOf FunctionParam Is String AndAlso
-                                String.IsNullOrEmpty(CType(FunctionParam, String)) AndAlso
-                                (
-                                    ParameterType.Equals(GetType(Byte)) OrElse
-                                    ParameterType.Equals(GetType(SByte)) OrElse
-                                    ParameterType.Equals(GetType(Short)) OrElse
-                                    ParameterType.Equals(GetType(UShort)) OrElse
-                                    ParameterType.Equals(GetType(Integer)) OrElse
-                                    ParameterType.Equals(GetType(UInteger)) OrElse
-                                    ParameterType.Equals(GetType(Long)) OrElse
-                                    ParameterType.Equals(GetType(ULong)) OrElse
-                                    ParameterType.Equals(GetType(Double)) OrElse
-                                    ParameterType.Equals(GetType(Single))
-                                ) Then
-
-                                FunctionParam = 0
-
-                                rBoolean = True
-                            End If
-                        End Try
-                    Else
-                        rBoolean = True
-                    End If
-                End If
-            Else
+            If FunctionParam Is Nothing Then
                 If ParameterType.Equals(GetType(Byte)) OrElse
                     ParameterType.Equals(GetType(SByte)) OrElse
                     ParameterType.Equals(GetType(Short)) OrElse
@@ -473,24 +416,36 @@ Namespace Xeora.Web.Manager
                     FunctionParam = 0
                 End If
 
-                rBoolean = True
+                Return True
             End If
 
-            Return rBoolean
+            If ParameterType Is FunctionParam.GetType() Then Return True
+            If String.Compare(ParameterType.FullName, GetType(Object).FullName, True) = 0 Then Return True
+
+            Try
+                FunctionParam = System.Convert.ChangeType(FunctionParam, ParameterType)
+
+                Return True
+            Catch ex As System.Exception
+                If TypeOf FunctionParam Is String AndAlso String.IsNullOrEmpty(FunctionParam.ToString()) Then
+                    FunctionParam = Nothing
+                    Return Me.FixFunctionParameter(ParameterType, FunctionParam)
+                End If
+            End Try
+
+            Return False
         End Function
 
         Private Function CheckFunctionResultTypeIsXeoraControl(ByVal MethodReturnType As System.Type) As Boolean
-            Dim rResult As Boolean = False
-
             If Not Me._XeoraControls Is Nothing AndAlso
                 Not MethodReturnType Is Nothing Then
 
                 For Each XeoraType As System.Type In Me._XeoraControls
-                    If XeoraType Is MethodReturnType Then rResult = True : Exit For
+                    If XeoraType Is MethodReturnType Then Return True
                 Next
             End If
 
-            Return rResult
+            Return False
         End Function
 
         Private Class MethodInfoFinder
@@ -500,7 +455,11 @@ Namespace Xeora.Web.Manager
             Public Sub New(ByVal HttpMethodType As String, ByVal SearchName As String)
                 Me._HttpMethodType = HttpMethodType
                 Me._SearchName = SearchName
+
+                Me.Identifier = String.Format("{0}_{1}", Me._HttpMethodType, Me._SearchName)
             End Sub
+
+            Public ReadOnly Property Identifier As String
 
             Public Function MethodInfoFinder(ByVal mI As System.Reflection.MethodInfo) As Boolean
                 Dim AttributeCheck As Boolean =
