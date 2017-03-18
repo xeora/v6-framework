@@ -114,7 +114,7 @@ Namespace Xeora.Web.Shared
 
         Private Shared ReadOnly Property DomainControlInstance As IDomainControl
             Get
-                Return CType(TypeCache.DomainControl.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
+                Return CType(TypeCache.Instance.DomainControl.InvokeMember("Instance", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IDomainControl)
             End Get
         End Property
 
@@ -155,18 +155,18 @@ Namespace Xeora.Web.Shared
         End Function
 
         Public Overloads Shared Function CreateNewDomainInstance(ByVal DomainIDAccessTree As String(), ByVal DomainLanguageID As String) As IDomain
-            Return CType(Activator.CreateInstance(TypeCache.Domain, New Object() {DomainIDAccessTree, DomainLanguageID}), IDomain)
+            Return CType(Activator.CreateInstance(TypeCache.Instance.Domain, New Object() {DomainIDAccessTree, DomainLanguageID}), IDomain)
         End Function
 
         Public Shared ReadOnly Property Domains() As DomainInfo.DomainInfoCollection
             Get
-                Return CType(TypeCache.DomainControl.InvokeMember("GetAvailableDomains", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, Nothing), DomainInfo.DomainInfoCollection)
+                Return CType(TypeCache.Instance.DomainControl.InvokeMember("GetAvailableDomains", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, Nothing), DomainInfo.DomainInfoCollection)
             End Get
         End Property
 
         Public Shared ReadOnly Property Context() As IHttpContext
             Get
-                Return CType(TypeCache.RequestModule.InvokeMember("Context", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IHttpContext)
+                Return CType(TypeCache.Instance.RequestModule.InvokeMember("Context", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, New Object() {Helpers.CurrentRequestID}), IHttpContext)
             End Get
         End Property
 
@@ -189,7 +189,7 @@ Namespace Xeora.Web.Shared
         End Property
 
         Public Shared Sub ReloadApplication()
-            TypeCache.RequestModule.InvokeMember("ReloadApplication", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, New Object() {Helpers.CurrentRequestID})
+            TypeCache.Instance.RequestModule.InvokeMember("ReloadApplication", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.InvokeMethod, Nothing, Nothing, New Object() {Helpers.CurrentRequestID})
         End Sub
 
         Public Shared ReadOnly Property ScheduledTasks() As Service.IScheduledTasks
@@ -212,58 +212,68 @@ Namespace Xeora.Web.Shared
         End Property
 
         Private Class TypeCache
-            Private Shared _LoadedAssemblies As New Concurrent.ConcurrentDictionary(Of String, Reflection.Assembly)
-            Private Shared Function GetAssembly(ByVal AssemblyID As String) As Reflection.Assembly
+            Private Shared _Instance As TypeCache = Nothing
+            Public Shared ReadOnly Property Instance As TypeCache
+                Get
+                    If TypeCache._Instance Is Nothing Then _
+                        TypeCache._Instance = New TypeCache()
+
+                    Return TypeCache._Instance
+                End Get
+            End Property
+
+            Private _LoadedAssemblies As New Concurrent.ConcurrentDictionary(Of String, Reflection.Assembly)
+            Private Function GetAssembly(ByVal AssemblyID As String) As Reflection.Assembly
                 Dim rAssembly As Reflection.Assembly = Nothing
 
-                If Not TypeCache._LoadedAssemblies.TryGetValue(AssemblyID, rAssembly) Then
+                If Not Me._LoadedAssemblies.TryGetValue(AssemblyID, rAssembly) Then
                     rAssembly = Reflection.Assembly.Load(AssemblyID)
 
-                    TypeCache._LoadedAssemblies.TryAdd(AssemblyID, rAssembly)
+                    Me._LoadedAssemblies.TryAdd(AssemblyID, rAssembly)
                 End If
 
                 Return rAssembly
             End Function
 
-            Private Shared _DomainControlType As Type = Nothing
-            Public Shared ReadOnly Property DomainControl As Type
+            Private _DomainControlType As Type = Nothing
+            Public ReadOnly Property DomainControl As Type
                 Get
-                    If TypeCache._DomainControlType Is Nothing Then
+                    If Me._DomainControlType Is Nothing Then
                         Dim LoadedAssembly As Reflection.Assembly =
-                            TypeCache.GetAssembly("Xeora.Web")
+                            Me.GetAssembly("Xeora.Web")
 
-                        TypeCache._DomainControlType = LoadedAssembly.GetType("Xeora.Web.Site.DomainControl", False, True)
+                        Me._DomainControlType = LoadedAssembly.GetType("Xeora.Web.Site.DomainControl", False, True)
                     End If
 
-                    Return TypeCache._DomainControlType
+                    Return Me._DomainControlType
                 End Get
             End Property
 
-            Private Shared _DomainType As Type = Nothing
-            Public Shared ReadOnly Property Domain As Type
+            Private _DomainType As Type = Nothing
+            Public ReadOnly Property Domain As Type
                 Get
-                    If TypeCache._DomainType Is Nothing Then
+                    If Me._DomainType Is Nothing Then
                         Dim LoadedAssembly As Reflection.Assembly =
-                            TypeCache.GetAssembly("Xeora.Web")
+                            Me.GetAssembly("Xeora.Web")
 
-                        TypeCache._DomainType = LoadedAssembly.GetType("Xeora.Web.Site.Domain", False, True)
+                        Me._DomainType = LoadedAssembly.GetType("Xeora.Web.Site.Domain", False, True)
                     End If
 
-                    Return TypeCache._DomainType
+                    Return Me._DomainType
                 End Get
             End Property
 
-            Private Shared _RequestModuleType As Type = Nothing
-            Public Shared ReadOnly Property RequestModule As Type
+            Private _RequestModuleType As Type = Nothing
+            Public ReadOnly Property RequestModule As Type
                 Get
-                    If TypeCache._RequestModuleType Is Nothing Then
+                    If Me._RequestModuleType Is Nothing Then
                         Dim LoadedAssembly As Reflection.Assembly =
-                            TypeCache.GetAssembly("Xeora.Web.Handler")
+                            Me.GetAssembly("Xeora.Web.Handler")
 
-                        TypeCache._RequestModuleType = LoadedAssembly.GetType("Xeora.Web.Handler.RequestModule", False, True)
+                        Me._RequestModuleType = LoadedAssembly.GetType("Xeora.Web.Handler.RequestModule", False, True)
                     End If
 
-                    Return TypeCache._RequestModuleType
+                    Return Me._RequestModuleType
                 End Get
             End Property
         End Class
