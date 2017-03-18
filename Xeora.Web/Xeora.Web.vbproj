@@ -151,6 +151,7 @@
     <Compile Include="Controller\Directive\Interface\IDeploymentAccessRequires.vb" />
     <Compile Include="Controller\Directive\PartialCache.vb" />
     <Compile Include="Controller\Directive\UpdateBlock.vb" />
+    <Compile Include="Controller\ExternalController.vb" />
     <Compile Include="Deployment\DeploymentBase.vb" />
     <Compile Include="Deployment\DomainDeployment.vb" />
     <Compile Include="Controller\Directive\Control\AttributeInfo.vb" />
@@ -169,6 +170,7 @@
     <Compile Include="Controller\Directive\Control\VariableBlock.vb" />
     <Compile Include="Exception\DomainNotExistsException.vb" />
     <Compile Include="Exception\DeploymentException.vb" />
+    <Compile Include="Exception\HasParentException.vb" />
     <Compile Include="Exception\ServiceSocketException.vb" />
     <Compile Include="Exception\RequestBlockException.vb" />
     <Compile Include="Exception\InternalParentException.vb" />

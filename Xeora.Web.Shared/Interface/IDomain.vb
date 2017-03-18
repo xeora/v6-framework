@@ -20,6 +20,7 @@ Namespace Xeora.Web.Shared
         ReadOnly Property xService() As IDomain.IxService
         ReadOnly Property Children() As DomainInfo.DomainInfoCollection
         Function Render(ByVal ServicePathInfo As ServicePathInfo, ByVal MessageResult As ControlResult.Message, Optional UpdateBlockControlID As String = Nothing) As String
+        Function Render(ByVal XeoraContent As String, ByVal MessageResult As ControlResult.Message, Optional UpdateBlockControlID As String = Nothing) As String
         Sub ClearCache()
 
         Public Interface ISettings

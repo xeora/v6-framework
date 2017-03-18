@@ -147,8 +147,12 @@ Namespace Xeora.Web.Site
             Me._Deployment.ClearCache()
         End Sub
 
-        Public Function Render(ByVal ServicePathInfo As [Shared].ServicePathInfo, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String Implements [Shared].IDomain.Render
+        Public Overloads Function Render(ByVal ServicePathInfo As [Shared].ServicePathInfo, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String Implements [Shared].IDomain.Render
             Return Me._Renderer.Start(ServicePathInfo, MessageResult, UpdateBlockControlID)
+        End Function
+
+        Public Overloads Function Render(ByVal XeoraContent As String, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String Implements [Shared].IDomain.Render
+            Return Me._Renderer.Start(XeoraContent, MessageResult, UpdateBlockControlID)
         End Function
 
         Private _xPathStream As IO.StringReader = Nothing
@@ -179,20 +183,24 @@ Namespace Xeora.Web.Site
             End Sub
 
 #Region " Template Parsing Procedures "
-            Public Function Start(ByVal ServicePathInfo As [Shared].ServicePathInfo, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String
+            Public Overloads Function Start(ByVal ServicePathInfo As [Shared].ServicePathInfo, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String
                 If Me._Instance Is Nothing Then Throw New System.Exception("Injection required!")
 
-                Dim TemplateDirective As Controller.Directive.Template =
-                    New Controller.Directive.Template(0, String.Format("$T:{0}$", ServicePathInfo.FullPath), Nothing)
-                TemplateDirective.UpdateBlockControlID = UpdateBlockControlID
-                TemplateDirective.MessageResult = MessageResult
-                AddHandler TemplateDirective.ParseRequested, AddressOf Me.OnParseRequest
-                AddHandler TemplateDirective.DeploymentAccessRequested, AddressOf Me.OnDeploymentAccessRequest
-                AddHandler TemplateDirective.InstanceRequested, AddressOf Me.OnInstanceRequest
+                Return Me.Start(String.Format("$T:{0}$", ServicePathInfo.FullPath), MessageResult, UpdateBlockControlID)
+            End Function
 
-                TemplateDirective.Render(Nothing)
+            Public Overloads Function Start(ByVal XeoraContent As String, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String
+                If Me._Instance Is Nothing Then Throw New System.Exception("Injection required!")
 
-                Return TemplateDirective.RenderedValue
+                Dim ExternalController As Controller.ExternalController =
+                    New Controller.ExternalController(0, XeoraContent, Nothing)
+                ExternalController.UpdateBlockControlID = UpdateBlockControlID
+                ExternalController.MessageResult = MessageResult
+                AddHandler ExternalController.ParseRequested, AddressOf Me.OnParseRequest
+
+                ExternalController.Render(Nothing)
+
+                Return ExternalController.RenderedValue
             End Function
 
             Private Sub OnParseRequest(ByVal DraftValue As String, ByRef ContainerController As Controller.ControllerBase)
