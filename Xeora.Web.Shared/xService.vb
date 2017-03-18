@@ -39,7 +39,7 @@ Namespace Xeora.Web.Shared
             Try
                 RequestMS = New IO.MemoryStream(
                                 Text.Encoding.UTF8.GetBytes(
-                                    String.Format("execParams={0}", System.Web.HttpUtility.UrlEncode(Parameters.ExecuteParametersXML))
+                                    String.Format("xParams={0}", System.Web.HttpUtility.UrlEncode(Parameters.ExecuteParametersXML))
                                 )
                             )
                 RequestMS.Seek(0, IO.SeekOrigin.Begin)

@@ -156,7 +156,7 @@ Namespace Xeora.Web.Site
                 Case [Shared].IDomain.ISettings.IServices.IServiceItem.ServiceTypes.xService
                     If Me._IsAuthenticationRequired Then
                         Dim PostedExecuteParameters As [Shared].xService.Parameters =
-                            New [Shared].xService.Parameters([Shared].Helpers.Context.Request.Form.Item("execParams"))
+                            New [Shared].xService.Parameters([Shared].Helpers.Context.Request.Form.Item("xParams"))
 
                         If Not PostedExecuteParameters.PublicKey Is Nothing Then
                             Me._IsAuthenticationRequired = False

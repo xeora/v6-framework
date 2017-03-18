@@ -62,7 +62,7 @@ Namespace Xeora.Web.Site.Setting
             Dim BindInfo As [Shared].Execution.BindInfo =
                 [Shared].Execution.BindInfo.Make(
                     String.Format(
-                        "{0}?{1}.{2},~execParams",
+                        "{0}?{1}.{2},~xParams",
                         ExecuteIn,
                         ServiceID,
                         [Shared].Helpers.Context.Request.QueryString.Item("call"))
@@ -71,7 +71,17 @@ Namespace Xeora.Web.Site.Setting
             BindInfo.PrepareProcedureParameters(
                 New [Shared].Execution.BindInfo.ProcedureParser(
                     Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
-                        ProcedureParameter.Value = [Shared].Helpers.Context.Request.Form.Item(ProcedureParameter.Key)
+                        Dim xParameters As [Shared].xService.Parameters
+
+                        Try
+                            xParameters =
+                                New [Shared].xService.Parameters(
+                                    [Shared].Helpers.Context.Request.Form.Item(ProcedureParameter.Key))
+                        Catch ex As System.Exception
+                            xParameters = New [Shared].xService.Parameters()
+                        End Try
+
+                        ProcedureParameter.Value = xParameters
                     End Sub)
             )
 
