@@ -16,9 +16,13 @@ OperatorTags:
 	$=SearchKey$  << Returns Value Ex: $=Something$ Output: Something
 	$#SearchKey$  << Data(Block) Variable. This can be parented $##SearchKey$ one level upper parent value searching
 
-	$*SearchKey$  << Search All. Search Order: VariablePool, InData(Block), Session, Form Post, QueryString, Cookie
+	$*SearchKey$  << Search All. Search Order: InData(Block), VariablePool, Session, Cookie, Form Post, QueryString
 
-	$SearchKey@SearchLocation$  << SearchLocation is a serializable class, SearchKey is Readable Property Name. SearchLocation Class must be registered to VariablePool
+	$@SearchObject.SearchProperty$  << SearchObject is a serializable class, SearchProperty is Readable Property Name. 
+		SearchObject Class must be registered to VariablePool
+
+	If you search in Data(Block) then use as $@#SearchObject.SearchProperty$
+	If you search in Session then use as $@-SearchObject.SearchProperty$
 
 ControlTags:
 	All Control Tags has parenting specification;
@@ -38,7 +42,7 @@ ControlTags:
 		    $C[Control2]:Control3:{ <!-- Something --> }:Control3:{ <!-- Something (Alternative) --> }:Control3$
 
 	All Control Tags has leveling specification;
-		$[ControlTagType]<[AccessingLevel]>[ParentControlID]:[ControlID]...
+		$[ControlTagType]#[AccessingLevel][ParentControlID]:[ControlID]...
 
 		What is leveling?
 		Let's say that we have to loop inside each other
@@ -77,7 +81,7 @@ ControlTags:
 	$T:TemplateID$ << Include Template with specified TemplateID
 	$L:TranslationID$ << Insert Translation result using current specified language xml
 
-	Control parsing specified in ControlsMap.xml
+	Control parsing specified in Controls.xml
 	
 	$C:ControlID$
 
@@ -89,7 +93,7 @@ ControlTags:
 
 	$C:ControlID:{ <!-- Something --> }:ControlID:{ <!-- Something (Alternative) --> }:ControlID$	
 
-	Control Types in ControlsMap.xml
+	Control Types in Controls.xml
 
 	--- Block Control Types ---
 	ConditionalStatement	<< creates conditional statement
@@ -114,7 +118,7 @@ ControlTags:
 		With this control type, you can create html output statement with the postback functionality.
 		Bind will be called when client need some interaction with server
 
-	ControlsMap.xml Map Formats
+	Controls.xml Map Formats
 
 	<Control id="[ControlID]">
 		<!-- This is a MUST for all Controls -->
@@ -203,6 +207,12 @@ ControlTags:
 	or
 
 	$XF:{[DomainLibID|AddonLibID]?[ControlClass].[ProcedureName],SomeOperatorTags(seperated with |)}:XF$
+
+	Cache page partially. You can cache only the specific part of the page.
+
+	$PC:{ <!-- Page Content Part --> }:PC$
+
+	Where do you want to cache in the page, cover it with PC tag.
 
 	Use this for outputing Success, Warning and Error Information
 
