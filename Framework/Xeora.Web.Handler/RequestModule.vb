@@ -496,7 +496,8 @@ Namespace Xeora.Web.Handler
         End Sub
 
         Friend Shared Sub DisposeAll()
-            Dim Keys As ICollection(Of Integer) = RequestModule._Instance.Keys
+            Dim Keys As Integer() = CType(Array.CreateInstance(GetType(Object), RequestModule._Instance.Keys.Count), Integer())
+            RequestModule._Instance.Keys.CopyTo(Keys, 0)
 
             For Each Key As Integer In Keys
                 Dim RequestModule As RequestModule = Nothing

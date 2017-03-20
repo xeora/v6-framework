@@ -803,7 +803,8 @@ QUICKEXIT:
 
             Public Sub ClearCache()
                 SyncLock XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.SyncRoot
-                    Dim Keys As ICollection = XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.Keys
+                    Dim Keys As Array = Array.CreateInstance(GetType(Object), XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.Keys.Count)
+                    XeoraDomainDecompiler._XeoraDomainFileStreamBytesCache.Keys.CopyTo(Keys, 0)
 
                     For Each Key As Object In Keys
                         Dim Key_s As String = CType(Key, String)
