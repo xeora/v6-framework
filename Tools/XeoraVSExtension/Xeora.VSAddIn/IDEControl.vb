@@ -817,6 +817,12 @@ RESEARCHPOINT:
                 End If
             End Sub
 
+            Public Sub CompileDomain()
+                Dim CompilerForm As New CompilerForm()
+
+                CompilerForm.ShowDialog(Me._Parent)
+            End Sub
+
             Public Sub RePullRelease()
                 Me.RePullRelease(Nothing, 0)
             End Sub

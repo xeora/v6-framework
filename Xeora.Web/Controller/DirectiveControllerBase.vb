@@ -26,6 +26,8 @@ Namespace Xeora.Web.Controller
             Me._DirectiveType = DirectiveType
         End Sub
 
+        Private Shared _LevelingRegEx As Text.RegularExpressions.Regex =
+            New Text.RegularExpressions.Regex("\#\d+(\+)?", Text.RegularExpressions.RegexOptions.Compiled)
         Protected Function CaptureLeveling(ByRef LevelingExecutionOnly As Boolean) As Integer
             Dim rCapturedLeveling As Integer = 0
 
@@ -33,7 +35,7 @@ Namespace Xeora.Web.Controller
                 Me.InsideValue.Split(":"c)
 
             Dim CLevelingMatch As Text.RegularExpressions.Match =
-                Text.RegularExpressions.Regex.Match(controlValueSplitted(0), "\#\d+(\+)?")
+                DirectiveControllerBase._LevelingRegEx.Match(controlValueSplitted(0))
 
             If CLevelingMatch.Success Then
                 ' Trim # character from match result
@@ -54,6 +56,8 @@ Namespace Xeora.Web.Controller
             Return rCapturedLeveling
         End Function
 
+        Private Shared _BoundControlIDRegEx As Text.RegularExpressions.Regex =
+            New Text.RegularExpressions.Regex("\[[\.\w\-]+\]", Text.RegularExpressions.RegexOptions.Compiled)
         Protected Function CaptureBoundControlID() As String
             Dim rCapturedParentID As String = String.Empty
 
@@ -61,7 +65,7 @@ Namespace Xeora.Web.Controller
                 Me.InsideValue.Split(":"c)
 
             Dim CPIDMatch As Text.RegularExpressions.Match =
-                Text.RegularExpressions.Regex.Match(controlValueSplitted(0), "\[[\.\w\-]+\]")
+                DirectiveControllerBase._BoundControlIDRegEx.Match(controlValueSplitted(0))
 
             If CPIDMatch.Success Then
                 ' Trim [ and ] character from match result
@@ -71,6 +75,8 @@ Namespace Xeora.Web.Controller
             Return rCapturedParentID
         End Function
 
+        Private Shared _ControlIDRegEx As Text.RegularExpressions.Regex =
+            New Text.RegularExpressions.Regex("[\/\.\w\-]+", Text.RegularExpressions.RegexOptions.Compiled)
         Protected Function CaptureControlID() As String
             Dim rCapturedID As String = String.Empty
 
@@ -78,7 +84,7 @@ Namespace Xeora.Web.Controller
                 Me.InsideValue.Split(":"c)
 
             Dim CPIDMatch As Text.RegularExpressions.Match =
-                Text.RegularExpressions.Regex.Match(controlValueSplitted(1), "[\/\.\w\-]+")
+                DirectiveControllerBase._ControlIDRegEx.Match(controlValueSplitted(1))
 
             If CPIDMatch.Success Then
                 ' Trim [ and ] character from match result
@@ -88,15 +94,19 @@ Namespace Xeora.Web.Controller
             Return rCapturedID
         End Function
 
+        Private Shared _DirectiveTypeRegEx As Text.RegularExpressions.Regex =
+            New Text.RegularExpressions.Regex("\$(((?<DirectiveType>\w)(\#\d+(\+)?)?(\[[\.\w\-]+\])?)|(?<DirectiveType>\w+))\:", Text.RegularExpressions.RegexOptions.Compiled)
         Public Shared Function CaptureDirectiveType(ByVal DraftValue As String) As DirectiveTypes
             Dim rDirectiveType As DirectiveTypes = DirectiveTypes.Undefined
 
             If Not String.IsNullOrEmpty(DraftValue) Then
                 Dim CPIDMatch As Text.RegularExpressions.Match =
-                    Text.RegularExpressions.Regex.Match(DraftValue, "\$(((?<DirectiveType>\w)(\#\d+(\+)?)?(\[[\.\w\-]+\])?)|(?<DirectiveType>\w+))\:")
+                    DirectiveControllerBase._DirectiveTypeRegEx.Match(DraftValue)
 
                 If CPIDMatch.Success Then
-                    Select Case CPIDMatch.Result("${DirectiveType}")
+                    Dim DirectiveType As String = CPIDMatch.Result("${DirectiveType}")
+
+                    Select Case DirectiveType
                         Case "C"
                             rDirectiveType = DirectiveTypes.Control
                         Case "T"
@@ -118,6 +128,14 @@ Namespace Xeora.Web.Controller
                         Case "PC"
                             rDirectiveType = DirectiveTypes.PartialCache
                     End Select
+
+                    If rDirectiveType <> DirectiveTypes.Undefined Then
+                        ' Capital Test
+                        Dim LowerDirectiveType As String = DirectiveType.ToLower()
+
+                        If String.Compare(DirectiveType, LowerDirectiveType) = 0 Then _
+                            Throw New Exception.DirectivePointerException()
+                    End If
                 End If
             End If
 

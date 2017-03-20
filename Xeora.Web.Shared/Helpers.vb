@@ -270,7 +270,7 @@ Namespace Xeora.Web.Shared
                         Dim LoadedAssembly As Reflection.Assembly =
                             Me.GetAssembly("Xeora.Web.Handler")
 
-                        Me._RequestModuleType = LoadedAssembly.GetType("Xeora.Web.Handler.RequestModule", False, True)
+                        Me._RequestModuleType = LoadedAssembly.GetType("Xeora.Web.Handler.RemoteInvoke", False, True)
                     End If
 
                     Return Me._RequestModuleType

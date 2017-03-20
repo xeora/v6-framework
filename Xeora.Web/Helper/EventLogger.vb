@@ -135,7 +135,7 @@ Namespace Xeora.Web.Helper
                     Dim RequestAsm As Reflection.Assembly, objRequest As Type
 
                     RequestAsm = Reflection.Assembly.Load("Xeora.Web.Handler")
-                    objRequest = RequestAsm.GetType("Xeora.Web.Handler.RequestModule", False, True)
+                    objRequest = RequestAsm.GetType("Xeora.Web.Handler.RemoteInvoke", False, True)
 
                     Dim XeoraSettingsObject As Object =
                         objRequest.InvokeMember("XeoraSettings", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, Nothing)

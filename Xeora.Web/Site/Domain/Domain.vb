@@ -29,11 +29,11 @@ Namespace Xeora.Web.Site
 
             ' Create the New One
             Try
-                Me._Deployment = New Deployment.DomainDeployment(DomainIDAccessTree, LanguageID)
+                Me._Deployment = Deployment.InstanceFactory.Current.GetOrCreate(DomainIDAccessTree, LanguageID)
             Catch ex As Exception.DomainNotExistsException
                 ' Try with the default one if requested one is not the default one
                 If String.Compare(String.Join("\", DomainIDAccessTree), String.Join("\"c, [Shared].Configurations.DefaultDomain)) <> 0 Then
-                    Me._Deployment = New Deployment.DomainDeployment([Shared].Configurations.DefaultDomain, LanguageID)
+                    Me._Deployment = Deployment.InstanceFactory.Current.GetOrCreate([Shared].Configurations.DefaultDomain, LanguageID)
                 Else
                     Throw
                 End If

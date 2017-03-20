@@ -8,6 +8,8 @@ Namespace Xeora.Web.Controller
             MyBase.New(DraftStartIndex, DraftValue, ControllerTypes.Renderless, ContentArguments)
         End Sub
 
+        Private Shared _RootPathRegEx As Text.RegularExpressions.Regex =
+            New Text.RegularExpressions.Regex("[""']+(~|¨)/", Text.RegularExpressions.RegexOptions.Compiled Or Text.RegularExpressions.RegexOptions.Multiline)
         Public Overrides Sub Render(ByRef SenderController As ControllerBase)
             If Me.IsUpdateBlockRequest AndAlso Not Me.InRequestedUpdateBlock Then
                 Me.DefineRenderedValue(String.Empty)
@@ -17,7 +19,7 @@ Namespace Xeora.Web.Controller
 
             ' Change ~/ values with the exact application root path
             Dim RootPathMatches As Text.RegularExpressions.MatchCollection =
-                Text.RegularExpressions.Regex.Matches(Me.DraftValue, "[""']+(~|¨)/", Text.RegularExpressions.RegexOptions.Multiline)
+                RenderlessController._RootPathRegEx.Matches(Me.DraftValue)
             Dim ApplicationRoot As String = [Shared].Configurations.ApplicationRoot.BrowserImplementation
             Dim VirtualRoot As String = [Shared].Configurations.VirtualRoot
 

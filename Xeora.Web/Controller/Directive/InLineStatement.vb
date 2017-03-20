@@ -1,8 +1,6 @@
 ﻿Option Strict On
 
-Imports Xeora.Web.Global
 Imports Xeora.Web.Shared
-Imports Xeora.Web.Site
 
 Namespace Xeora.Web.Controller.Directive
     Public Class InLineStatement
@@ -18,7 +16,7 @@ Namespace Xeora.Web.Controller.Directive
         Public Event ParseRequested(DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
         Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.InLineStatement, ContentArguments)
 
             Me._ControlID = Me.CaptureControlID()
@@ -84,57 +82,35 @@ Namespace Xeora.Web.Controller.Directive
         End Sub
 
         Private Sub RenderInternal()
-            ' Parse Block Content
-            Dim controlValueSplitted As String() =
-                Me.InsideValue.Split(":"c)
-            Dim BlockContent As String = String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
+            Dim ContentDescription As [Global].ContentDescription =
+                New [Global].ContentDescription(Me.InsideValue)
 
-            ' Check This Control has a Content
-            Dim idxCon As Integer = BlockContent.IndexOf(":"c)
+            Dim BlockContent As String =
+                ContentDescription.Parts.Item(0)
 
-            If idxCon = -1 Then _
-                Throw New Exception.GrammerException()
+            Dim NoCacheMarker As String = "!NOCACHE", NoCache As Boolean = False
+
+            If BlockContent.IndexOf(NoCacheMarker) = 0 Then _
+                NoCache = True : BlockContent = BlockContent.Substring(NoCacheMarker.Length)
+
+            BlockContent = BlockContent.Trim()
+
+            If String.IsNullOrEmpty(BlockContent) Then _
+                Throw New Exception.EmptyBlockException()
 
             ' InLineStatement does not have any ContentArguments, That's why it copies it's parent Arguments
             If Not Me.Parent Is Nothing Then _
                 Me.ContentArguments.Replace(Me.Parent.ContentArguments)
 
-            ' ControlIDWithIndex Like ControlID~INDEX
-            Dim ControlIDWithIndex As String = BlockContent.Substring(0, idxCon)
+            RaiseEvent ParseRequested(BlockContent, Me)
 
-            Dim CoreContent As String = Nothing
-            Dim idxCoreContStart As Integer, idxCoreContEnd As Integer
-
-            Dim OpeningTag As String = String.Format("{0}:{{", ControlIDWithIndex)
-            Dim ClosingTag As String = String.Format("}}:{0}", ControlIDWithIndex)
-
-            idxCoreContStart = BlockContent.IndexOf(OpeningTag) + OpeningTag.Length
-            idxCoreContEnd = BlockContent.LastIndexOf(ClosingTag, BlockContent.Length)
-
-            If idxCoreContStart <> OpeningTag.Length OrElse idxCoreContEnd <> (BlockContent.Length - OpeningTag.Length) Then _
-                Throw New Exception.GrammerException()
-
-            CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
-
-            Dim NoCacheMarker As String = "!NOCACHE", NoCache As Boolean = False
-
-            If CoreContent.IndexOf(NoCacheMarker) = 0 Then _
-                NoCache = True : CoreContent = CoreContent.Substring(NoCacheMarker.Length)
-
-            CoreContent = CoreContent.Trim()
-
-            If String.IsNullOrEmpty(CoreContent) Then _
-                Throw New Exception.EmptyBlockException()
-
-            RaiseEvent ParseRequested(CoreContent, Me)
-
-            CoreContent = Me.Create()
+            BlockContent = Me.Create()
 
             Dim Instance As IDomain = Nothing
             RaiseEvent InstanceRequested(Instance)
 
             Dim MethodResultInfo As Object =
-                Manager.Assembly.ExecuteStatement(Instance.IDAccessTree, Me.ControlID, CoreContent.Trim(), NoCache)
+                Manager.Assembly.ExecuteStatement(Instance.IDAccessTree, Me.ControlID, BlockContent.Trim(), NoCache)
 
             If Not MethodResultInfo Is Nothing AndAlso TypeOf MethodResultInfo Is System.Exception Then
                 Throw New Exception.ExecutionException(

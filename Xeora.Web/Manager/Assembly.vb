@@ -267,17 +267,18 @@ QUICKEXIT:
 
                 objAssembly = [Assembly].PrepareInLineStatementExecutable(BlockKey, Statement, NoCache)
 
-                If Not objAssembly Is Nothing Then
-                    Dim AssemblyObject As Type =
-                        objAssembly.CreateInstance(String.Format("InLineStatement.{0}", BlockKey)).GetType()
-                    Dim MethodObject As Reflection.MethodInfo =
-                        AssemblyObject.GetMethod("Execute")
+                If objAssembly Is Nothing Then _
+                    Throw New Exception.GrammerException()
 
-                    rMethodResult = MethodObject.Invoke(AssemblyObject,
-                                                        Reflection.BindingFlags.DeclaredOnly Or
-                                                        Reflection.BindingFlags.InvokeMethod,
-                                                        Nothing, Nothing, Nothing)
-                End If
+                Dim AssemblyObject As Type =
+                    objAssembly.CreateInstance(String.Format("InLineStatement.{0}", BlockKey)).GetType()
+                Dim MethodObject As Reflection.MethodInfo =
+                    AssemblyObject.GetMethod("Execute")
+
+                rMethodResult = MethodObject.Invoke(AssemblyObject,
+                                                    Reflection.BindingFlags.DeclaredOnly Or
+                                                    Reflection.BindingFlags.InvokeMethod,
+                                                    Nothing, Nothing, Nothing)
             Catch ex As System.Exception
                 rMethodResult = ex
             End Try

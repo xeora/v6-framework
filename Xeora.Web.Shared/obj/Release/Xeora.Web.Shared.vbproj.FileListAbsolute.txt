@@ -1,3 +1,0 @@
-P:\XeoraCube\Xeora.Web.Shared\bin\Release\Xeora.Web.Shared.dll
-P:\XeoraCube\Xeora.Web.Shared\obj\Release\Xeora.Web.Shared.vbprojResolveAssemblyReference.cache
-P:\XeoraCube\Xeora.Web.Shared\obj\Release\Xeora.Web.Shared.dll

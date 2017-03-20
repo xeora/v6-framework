@@ -13,7 +13,7 @@ Namespace Xeora.Web.Shared.Service
                     Dim RequestAsm As Reflection.Assembly, objRequest As Type
 
                     RequestAsm = Reflection.Assembly.Load("Xeora.Web.Handler")
-                    objRequest = RequestAsm.GetType("Xeora.Web.Handler.RequestModule", False, True)
+                    objRequest = RequestAsm.GetType("Xeora.Web.Handler.RemoteInvoke", False, True)
 
                     VariablePoolOperation._Cache =
                         CType(objRequest.InvokeMember("VariablePool", Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.GetProperty, Nothing, Nothing, Nothing), IVariablePool)

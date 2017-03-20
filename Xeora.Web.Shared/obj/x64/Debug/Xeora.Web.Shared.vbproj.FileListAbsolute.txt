@@ -1,7 +1,3 @@
-P:\XeoraCube\Web.PlugInsHelper\bin\x64\Xeora.Web.Shared.dll
-P:\XeoraCube\Web.PlugInsHelper\bin\x64\Xeora.Web.Shared.pdb
-P:\XeoraCube\Web.PlugInsHelper\obj\x64\Debug\Xeora.Web.Shared.dll
-P:\XeoraCube\Web.PlugInsHelper\obj\x64\Debug\Xeora.Web.Shared.pdb
 P:\XeoraCube\Xeora.Web.Shared\bin\x64\Xeora.Web.Shared.dll
 P:\XeoraCube\Xeora.Web.Shared\bin\x64\Xeora.Web.Shared.pdb
 P:\XeoraCube\Xeora.Web.Shared\obj\x64\Debug\Xeora.Web.Shared.vbprojResolveAssemblyReference.cache

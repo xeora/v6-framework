@@ -556,6 +556,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Xeora.VSAddIn.Compiler\Xeora.VSAddIn.Compiler.vbproj">
+      <Project>{f8714812-aae4-4830-8361-b8dec9a6bf4c}</Project>
+      <Name>Xeora.VSAddIn.Compiler</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Xeora.VSAddIn.Executable\Xeora.VSAddIn.Executable.vbproj">
       <Project>{4adb8c79-2318-4da7-97cc-d98045363395}</Project>
       <Name>Xeora.VSAddIn.Executable</Name>

@@ -1,8 +1,5 @@
 ﻿Option Strict On
 
-Imports Xeora.Web.Global
-Imports Xeora.Web.Shared
-
 Namespace Xeora.Web.Controller.Directive
     Public Class PartialCache
         Inherits DirectiveControllerBase
@@ -10,9 +7,9 @@ Namespace Xeora.Web.Controller.Directive
         Implements IInstanceRequires
 
         Public Event ParseRequested(DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
-        Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
+        Public Event InstanceRequested(ByRef Instance As [Shared].IDomain) Implements IInstanceRequires.InstanceRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.PartialCache, ContentArguments)
         End Sub
 
@@ -23,27 +20,7 @@ Namespace Xeora.Web.Controller.Directive
                 Exit Sub
             End If
 
-            '' Check for Parent UpdateBlock
-            'Dim WorkingControl As ControllerBase = Me.Parent
-
-            'Do Until WorkingControl Is Nothing
-            '    If TypeOf WorkingControl Is UpdateBlock Then _
-            '        Throw New Exception.RequestBlockException()
-
-            '    WorkingControl = WorkingControl.Parent
-            'Loop
-            '' !--
-
-            Dim matchMI As Text.RegularExpressions.Match =
-                Text.RegularExpressions.Regex.Match(Me.InsideValue, "PC~\d+\:\{")
-
-            If Not matchMI.Success Then _
-                Throw New Exception.UnknownDirectiveException()
-
-            If String.Compare(matchMI.Value.Split("~"c)(0), "PC") <> 0 Then _
-                Throw New Exception.DirectivePointerException()
-
-            Dim Instance As IDomain = Nothing
+            Dim Instance As [Shared].IDomain = Nothing
             RaiseEvent InstanceRequested(Instance)
 
             Dim UniqueCacheID As String = CacheObject.ProvideUniqueCacheID(Me, Instance)
@@ -53,17 +30,11 @@ Namespace Xeora.Web.Controller.Directive
 
                 Me.DefineRenderedValue(CType(CType(Me.PartialCaches.Item(Instance.IDAccessTree), Hashtable).Item(UniqueCacheID), CacheObject).Content)
             Else
-                Dim controlValueSplitted As String() =
-                    Me.InsideValue.Split(":"c)
+                Dim ContentDescription As [Global].ContentDescription =
+                    New [Global].ContentDescription(Me.InsideValue)
+
                 Dim BlockContent As String =
-                    String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 2)
-
-                BlockContent = BlockContent.Trim()
-
-                If BlockContent.Trim().Length < 2 Then Me.DefineRenderedValue(String.Empty) : Exit Sub
-
-                BlockContent = BlockContent.Substring(1, BlockContent.Length - 2)
-                BlockContent = BlockContent.Trim()
+                    ContentDescription.Parts.Item(0)
 
                 RaiseEvent ParseRequested(BlockContent, Me)
 
@@ -115,6 +86,8 @@ Namespace Xeora.Web.Controller.Directive
         End Sub
 
         Private Class CacheObject
+            Private Shared _PositionRegEx As Text.RegularExpressions.Regex =
+                New Text.RegularExpressions.Regex("PC~(?<PositionID>\d+)\:\{", Text.RegularExpressions.RegexOptions.Compiled)
             Private _UniqueCacheID As String
 
             Private _Content As String
@@ -126,7 +99,7 @@ Namespace Xeora.Web.Controller.Directive
                 Me._Date = Date.Now
             End Sub
 
-            Public Shared Function ProvideUniqueCacheID(ByVal PartialCache As PartialCache, ByVal Instance As IDomain) As String
+            Public Shared Function ProvideUniqueCacheID(ByVal PartialCache As PartialCache, ByVal Instance As [Shared].IDomain) As String
                 If PartialCache Is Nothing Then Throw New NullReferenceException("PartialCache Parameter must not be null!")
 
                 Dim ServiceFullPath As String = String.Empty
@@ -146,9 +119,9 @@ Namespace Xeora.Web.Controller.Directive
 
                 Dim PositionID As Integer = -1
                 Dim matchMI As Text.RegularExpressions.Match =
-                    Text.RegularExpressions.Regex.Match(PartialCache.InsideValue, "PC~(?<PositionID>\d+)\:\{")
+                    CacheObject._PositionRegEx.Match(PartialCache.InsideValue)
 
-                If matchMI.Success Then Integer.TryParse(matchMI.Groups.Item("PositionID").Value, PositionID)
+                If matchMI.Success Then Integer.TryParse(matchMI.Result("${PositionID}"), PositionID)
 
                 If String.IsNullOrEmpty(Instance.Language.ID) OrElse String.IsNullOrEmpty(ServiceFullPath) OrElse PositionID = -1 Then _
                     Throw New Exception.ParseException()

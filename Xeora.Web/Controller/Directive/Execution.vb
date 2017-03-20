@@ -1,8 +1,5 @@
 ﻿Option Strict On
 
-Imports Xeora.Web.Global
-Imports Xeora.Web.Shared
-
 Namespace Xeora.Web.Controller.Directive
     Public Class Execution
         Inherits DirectiveControllerBase
@@ -14,9 +11,9 @@ Namespace Xeora.Web.Controller.Directive
         Private _LevelingExecutionOnly As Boolean
         Private _BoundControlID As String
 
-        Public Event InstanceRequested(ByRef Instance As IDomain) Implements IInstanceRequires.InstanceRequested
+        Public Event InstanceRequested(ByRef Instance As [Shared].IDomain) Implements IInstanceRequires.InstanceRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.Execution, ContentArguments)
 
             Me._Leveling = Me.CaptureLeveling(Me._LevelingExecutionOnly)
@@ -114,12 +111,13 @@ Namespace Xeora.Web.Controller.Directive
                         New [Shared].Execution.BindInfo.ProcedureParser(
                             Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
                                 ProcedureParameter.Value = PropertyController.ParseProperty(
-                                                               ProcedureParameter.Query,
-                                                               ControllerLevel.Parent,
-                                                               CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
-                                                               New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
-                                                                                                                       RaiseEvent InstanceRequested(Instance)
-                                                                                                                   End Sub)
+                                                            ProcedureParameter.Query,
+                                                            ControllerLevel.Parent,
+                                                            CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
+                                                            New IInstanceRequires.InstanceRequestedEventHandler(
+                                                                Sub(ByRef Instance As [Shared].IDomain)
+                                                                    RaiseEvent InstanceRequested(Instance)
+                                                                End Sub)
                                                            )
                             End Sub)
                     )
@@ -139,10 +137,10 @@ Namespace Xeora.Web.Controller.Directive
                     )
                 Else
                     If Not BindInvokeResult.InvokeResult Is Nothing AndAlso
-                        TypeOf BindInvokeResult.InvokeResult Is ControlResult.RedirectOrder Then
+                        TypeOf BindInvokeResult.InvokeResult Is [Shared].ControlResult.RedirectOrder Then
 
-                        Helpers.Context.Content.Item("RedirectLocation") =
-                            CType(BindInvokeResult.InvokeResult, ControlResult.RedirectOrder).Location
+                        [Shared].Helpers.Context.Content.Item("RedirectLocation") =
+                            CType(BindInvokeResult.InvokeResult, [Shared].ControlResult.RedirectOrder).Location
 
                         Me.DefineRenderedValue(String.Empty)
                     Else

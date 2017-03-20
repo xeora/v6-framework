@@ -5,6 +5,7 @@ Namespace Xeora.VSAddIn.IDE.Command
     Public NotInheritable Class Command
 
         Public Const CID_ReloadExecutableLoader As Integer = 250
+        Public Const CID_CompileDomain As Integer = 253
         Public Const CID_GotoControlDefinition As Integer = 256
         Public Const CID_PrepareProject As Integer = 260
         Public Const CID_RePullRelease As Integer = 265
@@ -26,6 +27,12 @@ Namespace Xeora.VSAddIn.IDE.Command
                     New MenuCommand(
                         AddressOf Me.ReloadExecutableLoader,
                         New CommandID(CommandSet, CID_ReloadExecutableLoader)
+                    )
+                )
+                commandService.AddCommand(
+                    New MenuCommand(
+                        AddressOf Me.CompileDomain,
+                        New CommandID(CommandSet, CID_CompileDomain)
                     )
                 )
                 commandService.AddCommand(
@@ -52,6 +59,10 @@ Namespace Xeora.VSAddIn.IDE.Command
         Private Sub ReloadExecutableLoader(sender As Object, e As EventArgs)
             ExecutableLoaderHelper.DestroyAppDomain()
             ExecutableLoaderHelper.CreateAppDomain()
+        End Sub
+
+        Private Sub CompileDomain(sender As Object, e As EventArgs)
+            PackageControl.IDEControl.UserCommands.CompileDomain()
         End Sub
 
         Private Sub GoToReferanceCallback(sender As Object, e As EventArgs)

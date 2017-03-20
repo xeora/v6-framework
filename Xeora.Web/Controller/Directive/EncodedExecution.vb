@@ -1,8 +1,5 @@
 ﻿Option Strict On
 
-Imports Xeora.Web.Global
-Imports Xeora.Web.Shared
-
 Namespace Xeora.Web.Controller.Directive
     Public Class EncodedExecution
         Inherits DirectiveControllerBase
@@ -10,7 +7,7 @@ Namespace Xeora.Web.Controller.Directive
 
         Public Event ParseRequested(DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.EncodedExecution, ContentArguments)
         End Sub
 
@@ -21,33 +18,15 @@ Namespace Xeora.Web.Controller.Directive
                 Exit Sub
             End If
 
+            Dim ContentDescription As [Global].ContentDescription =
+                New [Global].ContentDescription(Me.InsideValue)
+
             ' EncodedExecution does not have any ContentArguments, That's why it copies it's parent Arguments
             If Not Me.Parent Is Nothing Then _
                 Me.ContentArguments.Replace(Me.Parent.ContentArguments)
 
-            Dim matchXF As Text.RegularExpressions.Match =
-                Text.RegularExpressions.Regex.Match(Me.InsideValue, "XF~\d+\:\{")
-
-            If Not matchXF.Success Then _
-                Throw New Exception.UnknownDirectiveException()
-
-            ' Encode Direct Call Function
-            If String.Compare(matchXF.Value.Split("~"c)(0), "XF") <> 0 Then _
-                Throw New Exception.DirectivePointerException()
-
-            Dim controlValueSplitted As String() =
-                Me.InsideValue.Split(":"c)
             Dim BlockContent As String =
-                String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 2)
-
-            If BlockContent Is Nothing OrElse BlockContent.Trim().Length < 2 Then _
-                Throw New Exception.EmptyBlockException()
-
-            BlockContent = BlockContent.Substring(1, BlockContent.Length - 2)
-            BlockContent = BlockContent.Trim()
-
-            If String.IsNullOrEmpty(BlockContent) Then _
-                Throw New Exception.EmptyBlockException()
+                ContentDescription.Parts.Item(0)
 
             RaiseEvent ParseRequested(BlockContent, Me)
 
@@ -74,11 +53,11 @@ Namespace Xeora.Web.Controller.Directive
 
             If Not String.IsNullOrEmpty(ParentUpdateBlockID) Then
                 Me.DefineRenderedValue(
-                    String.Format("javascript:__XeoraJS.update('{0}', '{1}');", ParentUpdateBlockID, Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, BlockContent.Trim()))
+                    String.Format("javascript:__XeoraJS.update('{0}', '{1}');", ParentUpdateBlockID, Manager.Assembly.EncodeFunction([Shared].Helpers.Context.Request.HashCode, BlockContent.Trim()))
                 )
             Else
                 Me.DefineRenderedValue(
-                    String.Format("javascript:__XeoraJS.post('{0}');", Manager.Assembly.EncodeFunction(Helpers.Context.Request.HashCode, BlockContent.Trim()))
+                    String.Format("javascript:__XeoraJS.post('{0}');", Manager.Assembly.EncodeFunction([Shared].Helpers.Context.Request.HashCode, BlockContent.Trim()))
                 )
             End If
         End Sub

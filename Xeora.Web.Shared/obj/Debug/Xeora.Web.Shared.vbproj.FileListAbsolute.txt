@@ -2,4 +2,3 @@ P:\XeoraCube\Xeora.Web.Shared\bin\Any\Xeora.Web.Shared.dll
 P:\XeoraCube\Xeora.Web.Shared\bin\Any\Xeora.Web.Shared.pdb
 P:\XeoraCube\Xeora.Web.Shared\obj\Debug\Xeora.Web.Shared.dll
 P:\XeoraCube\Xeora.Web.Shared\obj\Debug\Xeora.Web.Shared.pdb
-P:\XeoraCube\Xeora.Web.Shared\obj\Debug\Xeora.Web.Shared.vbprojResolveAssemblyReference.cache

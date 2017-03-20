@@ -35,7 +35,7 @@ Namespace Xeora.Web.Handler
                 Me._RequestID = RequestID
                 Me._MessageResult = Nothing
 
-                Me._Context = RequestModule.Context(Me._RequestID)
+                Me._Context = Context.ContextManager.Current.Context(Me._RequestID)
             End Sub
 
             Public Sub Handle()
@@ -211,12 +211,13 @@ Namespace Xeora.Web.Handler
                                     New [Shared].Execution.BindInfo.ProcedureParser(
                                         Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
                                             ProcedureParameter.Value = Controller.PropertyController.ParseProperty(
-                                                                           ProcedureParameter.Query,
-                                                                           Nothing,
-                                                                           Nothing,
-                                                                           New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
-                                                                                                                                                        Instance = Me._DomainControl.Domain
-                                                                                                                                                    End Sub)
+                                                                            ProcedureParameter.Query,
+                                                                            Nothing,
+                                                                            Nothing,
+                                                                            New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(
+                                                                                Sub(ByRef Instance As [Shared].IDomain)
+                                                                                    Instance = Me._DomainControl.Domain
+                                                                                End Sub)
                                                                         )
                                         End Sub)
                                 )
@@ -228,7 +229,7 @@ Namespace Xeora.Web.Handler
                                     ' This is application dependency problem, force to apply auto recovery!
                                     Me._DomainControl.ClearCache()
 
-                                    RequestModule.ReloadApplication(Me._RequestID)
+                                    RemoteInvoke.ReloadApplication(Me._RequestID)
 
                                     Exit Sub
                                 Else
@@ -302,9 +303,10 @@ Namespace Xeora.Web.Handler
                                                                             ProcedureParameter.Query,
                                                                             Nothing,
                                                                             Nothing,
-                                                                            New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As [Shared].IDomain)
-                                                                                                                                                         Instance = Me._DomainControl.Domain
-                                                                                                                                                     End Sub)
+                                                                            New Controller.Directive.IInstanceRequires.InstanceRequestedEventHandler(
+                                                                                Sub(ByRef Instance As [Shared].IDomain)
+                                                                                    Instance = Me._DomainControl.Domain
+                                                                                End Sub)
                                                                         )
                                         End Sub)
                                 )
@@ -342,7 +344,7 @@ Namespace Xeora.Web.Handler
                                 ' This is application dependency problem, force to apply auto recovery!
                                 Me._DomainControl.ClearCache()
 
-                                RequestModule.ReloadApplication(Me._RequestID)
+                                RemoteInvoke.ReloadApplication(Me._RequestID)
 
                                 Exit Sub
                             Else
@@ -634,7 +636,7 @@ Namespace Xeora.Web.Handler
                     Me._DomainControl.RenderService(Me._MessageResult, String.Empty)
                 Catch ex As Exception.ReloadRequiredException
                     Me._DomainControl.ClearCache()
-                    RequestModule.ReloadApplication([Shared].Helpers.CurrentRequestID)
+                    RemoteInvoke.ReloadApplication([Shared].Helpers.CurrentRequestID)
 
                     Exit Sub
                 End Try
@@ -658,7 +660,7 @@ Namespace Xeora.Web.Handler
                     Me._DomainControl.RenderService(Me._MessageResult, UpdateBlockControlID)
                 Catch ex As Exception.ReloadRequiredException
                     Me._DomainControl.ClearCache()
-                    RequestModule.ReloadApplication([Shared].Helpers.CurrentRequestID)
+                    RemoteInvoke.ReloadApplication([Shared].Helpers.CurrentRequestID)
 
                     Exit Sub
                 End Try
@@ -939,7 +941,7 @@ Namespace Xeora.Web.Handler
 
                 Dim ContentBuffer As Byte() = CType(Array.CreateInstance(GetType(Byte), 4096), Byte()), bC As Integer
                 Dim Bandwidth As Long =
-                    CType(CType(RequestModule.XeoraSettings, Configuration.XeoraSection).Main.Bandwidth, Long)
+                    CType(CType(RemoteInvoke.XeoraSettings, Configuration.XeoraSection).Main.Bandwidth, Long)
 
                 If Bandwidth > 0 Then ContentBuffer = CType(Array.CreateInstance(GetType(Byte), Bandwidth), Byte())
 

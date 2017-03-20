@@ -152,6 +152,7 @@
     <Compile Include="Controller\Directive\PartialCache.vb" />
     <Compile Include="Controller\Directive\UpdateBlock.vb" />
     <Compile Include="Controller\ExternalController.vb" />
+    <Compile Include="Deployment\InstanceFactory.vb" />
     <Compile Include="Deployment\DeploymentBase.vb" />
     <Compile Include="Deployment\DomainDeployment.vb" />
     <Compile Include="Controller\Directive\Control\AttributeInfo.vb" />

@@ -353,12 +353,14 @@ Namespace Xeora.Web.Controller
             Return DummyControllerContainer
         End Function
 
+        Private Shared _ControllerTypeRegEx As Text.RegularExpressions.Regex =
+            New Text.RegularExpressions.Regex("\$((\w(\#\d+(\+)?)?(\[[\.\w\-]+\])?)|(\w+))\:", Text.RegularExpressions.RegexOptions.Compiled)
         Public Shared Function CaptureControllerType(ByVal DraftValue As String) As ControllerTypes
             Dim rControllerType As ControllerTypes = ControllerTypes.Renderless
 
             If Not String.IsNullOrEmpty(DraftValue) Then
                 Dim CPIDMatch As Text.RegularExpressions.Match =
-                    Text.RegularExpressions.Regex.Match(DraftValue, "\$((\w(\#\d+(\+)?)?(\[[\.\w\-]+\])?)|(\w+))\:")
+                    ControllerBase._ControllerTypeRegEx.Match(DraftValue)
 
                 If CPIDMatch.Success Then
                     rControllerType = ControllerTypes.Directive

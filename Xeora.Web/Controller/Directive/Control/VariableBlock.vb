@@ -56,38 +56,11 @@ Namespace Xeora.Web.Controller.Directive.Control
         End Sub
 
         Private Sub RenderInternal()
-            ' Parse Block Content
-            Dim controlValueSplitted As String() =
-                Me.InsideValue.Split(":"c)
+            Dim ContentDescription As [Global].ContentDescription =
+                New [Global].ContentDescription(Me.InsideValue)
+
             Dim BlockContent As String =
-                String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
-
-            ' Check This Control has a Content
-            Dim idxCon As Integer = BlockContent.IndexOf(":"c)
-
-            If idxCon = -1 Then _
-                Throw New Exception.GrammerException()
-
-            ' ControlIDWithIndex Like ControlID~INDEX
-            Dim ControlIDWithIndex As String = BlockContent.Substring(0, idxCon)
-
-            Dim CoreContent As String = Nothing
-            Dim idxCoreContStart As Integer, idxCoreContEnd As Integer
-
-            Dim OpeningTag As String = String.Format("{0}:{{", ControlIDWithIndex)
-            Dim ClosingTag As String = String.Format("}}:{0}", ControlIDWithIndex)
-
-            idxCoreContStart = BlockContent.IndexOf(OpeningTag) + OpeningTag.Length
-            idxCoreContEnd = BlockContent.LastIndexOf(ClosingTag, BlockContent.Length)
-
-            If idxCoreContStart <> OpeningTag.Length OrElse idxCoreContEnd <> (BlockContent.Length - OpeningTag.Length) Then _
-                Throw New Exception.ParseException()
-
-            CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
-            CoreContent = CoreContent.Trim()
-
-            If String.IsNullOrEmpty(CoreContent) Then _
-                Throw New Exception.EmptyBlockException()
+                ContentDescription.Parts.Item(0)
 
             ' Call Related Function and Exam It
             Dim ControllerLevel As ControllerBase = Me
@@ -112,9 +85,10 @@ Namespace Xeora.Web.Controller.Directive.Control
                                                         ProcedureParameter.Query,
                                                         ControllerLevel.Parent,
                                                         CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
-                                                        New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
-                                                                                                                RaiseEvent InstanceRequested(Instance)
-                                                                                                            End Sub)
+                                                        New IInstanceRequires.InstanceRequestedEventHandler(
+                                                            Sub(ByRef Instance As IDomain)
+                                                                RaiseEvent InstanceRequested(Instance)
+                                                            End Sub)
                                                     )
                     End Sub)
             )
@@ -146,7 +120,7 @@ Namespace Xeora.Web.Controller.Directive.Control
                 Next
             End If
 
-            Me.RequestParse(CoreContent, Me)
+            Me.RequestParse(BlockContent, Me)
 
             Me.DefineRenderedValue(Me.Create())
 

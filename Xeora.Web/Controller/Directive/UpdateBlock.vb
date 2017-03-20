@@ -1,8 +1,5 @@
 ﻿Option Strict On
 
-Imports Xeora.Web.Global
-Imports Xeora.Web.Shared
-
 Namespace Xeora.Web.Controller.Directive
     Public Class UpdateBlock
         Inherits DirectiveControllerBase
@@ -13,7 +10,7 @@ Namespace Xeora.Web.Controller.Directive
 
         Public Event ParseRequested(DraftValue As String, ByRef ContainerController As ControllerBase) Implements IParsingRequires.ParseRequested
 
-        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As ArgumentInfoCollection)
+        Public Sub New(ByVal DraftStartIndex As Integer, ByVal DraftValue As String, ByVal ContentArguments As [Global].ArgumentInfoCollection)
             MyBase.New(DraftStartIndex, DraftValue, DirectiveTypes.UpdateBlock, ContentArguments)
 
             Me._ControlID = Me.CaptureControlID()
@@ -43,47 +40,17 @@ Namespace Xeora.Web.Controller.Directive
             Loop
             ' !--
 
-            ' Parse Block Content
-            Dim controlValueSplitted As String() =
-                Me.InsideValue.Split(":"c)
-            Dim BlockContent As String = String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
+            Dim ContentDescription As [Global].ContentDescription =
+                New [Global].ContentDescription(Me.InsideValue)
 
-            ' Check This Control has a Content
-            Dim idxCon As Integer = BlockContent.IndexOf(":"c)
-
-            If idxCon = -1 Then _
-                Throw New Exception.GrammerException()
-
-            ' UpdateBlock does not have any ContentArguments, That's why it copies it's parent Arguments
-            If Not Me.Parent Is Nothing Then _
-                Me.ContentArguments.Replace(Me.Parent.ContentArguments)
-
-            ' ControlIDWithIndex Like ControlID~INDEX
-            Dim ControlIDWithIndex As String = BlockContent.Substring(0, idxCon)
-
-            Dim CoreContent As String = Nothing
-            Dim idxCoreContStart As Integer, idxCoreContEnd As Integer
-
-            Dim OpeningTag As String = String.Format("{0}:{{", ControlIDWithIndex)
-            Dim ClosingTag As String = String.Format("}}:{0}", ControlIDWithIndex)
-
-            idxCoreContStart = BlockContent.IndexOf(OpeningTag) + OpeningTag.Length
-            idxCoreContEnd = BlockContent.LastIndexOf(ClosingTag, BlockContent.Length)
-
-            If idxCoreContStart <> OpeningTag.Length OrElse idxCoreContEnd <> (BlockContent.Length - OpeningTag.Length) Then _
-                Throw New Exception.ParseException()
-
-            CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
-            CoreContent = CoreContent.Trim()
-
-            If String.IsNullOrEmpty(CoreContent) Then _
-                Throw New Exception.EmptyBlockException()
+            Dim BlockContent As String =
+                ContentDescription.Parts.Item(0)
 
             Dim RenderOnRequestMarker As String = "!RENDERONREQUEST"
 
-            If CoreContent.IndexOf(RenderOnRequestMarker) = 0 Then
+            If BlockContent.IndexOf(RenderOnRequestMarker) = 0 Then
                 If String.Compare(Me.UpdateBlockControlID, Me.ControlID) = 0 Then
-                    CoreContent = CoreContent.Substring(RenderOnRequestMarker.Length)
+                    BlockContent = BlockContent.Substring(RenderOnRequestMarker.Length)
                 Else
                     Me.DefineRenderedValue(String.Format("<div id=""{0}""></div>", Me.ControlID))
 
@@ -91,7 +58,7 @@ Namespace Xeora.Web.Controller.Directive
                 End If
             End If
 
-            RaiseEvent ParseRequested(CoreContent, Me)
+            RaiseEvent ParseRequested(BlockContent, Me)
 
             If Me.IsUpdateBlockRequest AndAlso Me.InRequestedUpdateBlock Then
                 Me.DefineRenderedValue(Me.Create())

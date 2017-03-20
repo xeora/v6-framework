@@ -1,4 +1,5 @@
 ﻿Option Strict On
+
 Imports Xeora.Web.Controller.Directive
 Imports Xeora.Web.Global
 Imports Xeora.Web.Shared
@@ -35,9 +36,6 @@ Namespace Xeora.Web.Controller
                 End If
             End If
 
-            Dim Instance As IDomain = Nothing
-            RaiseEvent InstanceRequested(Instance)
-
             If String.IsNullOrEmpty(Me.InsideValue) Then
                 If String.Compare(Me.DraftValue, Me.InsideValue) <> 0 Then
                     Me.DefineRenderedValue("$")
@@ -46,357 +44,352 @@ Namespace Xeora.Web.Controller
                     Me.DefineRenderedValue(String.Empty)
                     Me._ObjectResult = Nothing
                 End If
-            Else
-                Select Case Me.InsideValue
-                    Case "DomainContents"
-                        Me.DefineRenderedValue(Instance.ContentsVirtualPath)
-                        Me._ObjectResult = CObj(Me.RenderedValue)
-
-                    Case "PageRenderDuration"
-                        Me.DefineRenderedValue("<!--_sys_PAGERENDERDURATION-->")
-                        Me._ObjectResult = CObj("<!--_sys_PAGERENDERDURATION-->")
-
-                    Case Else
-                        Select Case Me.InsideValue.Chars(0)
-                            Case "^"c ' QueryString Value
-                                Dim QueryValue As String =
-                                    [Shared].Helpers.Context.Request.QueryString.Item(Me.InsideValue.Substring(1))
-
-                                Select Case [Shared].Configurations.RequestTagFiltering
-                                    Case [Shared].Enum.RequestTagFilteringTypes.OnlyQuery, [Shared].Enum.RequestTagFilteringTypes.Both
-                                        Dim ArgumentNameForCompare As String =
-                                                Me.InsideValue.Substring(1).ToLower(New Globalization.CultureInfo("en-US"))
-
-                                        If Array.IndexOf([Shared].Configurations.RequestTagFilteringExceptions, ArgumentNameForCompare) = -1 Then _
-                                            QueryValue = Me.CleanHTMLTags(QueryValue, [Shared].Configurations.RequestTagFilteringItems)
-                                End Select
-
-                                Me.DefineRenderedValue(QueryValue)
-                                Me._ObjectResult = CObj(QueryValue)
-
-                            Case "~"c ' Form Post Value
-                                ' File Post is not supporting on XML Http Requests
-                                Dim RequestFilesKeys As String() =
-                                    Helpers.Context.Request.File.AllKeys
-                                Dim RequestFileObjects As New Generic.List(Of System.Web.HttpPostedFile)
-
-                                For kC As Integer = 0 To RequestFilesKeys.Length - 1
-                                    If String.Compare(RequestFilesKeys(kC), Me.InsideValue.Substring(1), True) = 0 Then
-                                        RequestFileObjects.Add(
-                                            Helpers.Context.Request.File.Item(kC))
-                                    End If
-                                Next
-                                ' !--
-
-                                If RequestFileObjects.Count = 0 Then
-                                    If String.Compare(Helpers.Context.Request.Method, "POST", True) = 0 Then
-                                        Dim ControlSIM As Hashtable =
-                                            CType(Me.ContentArguments.Item("_sys_ControlSIM"), Hashtable)
-
-                                        If Not ControlSIM Is Nothing AndAlso
-                                            ControlSIM.ContainsKey(Me.InsideValue.Substring(1)) Then
-
-                                            Me.DefineRenderedValue(
-                                                CType(ControlSIM.Item(Me.InsideValue.Substring(1)), String)
-                                            )
-                                            Me._ObjectResult = ControlSIM.Item(Me.InsideValue.Substring(1))
-                                        Else
-                                            Dim FormValue As String =
-                                                [Shared].Helpers.Context.Request.Form.Item(Me.InsideValue.Substring(1))
-
-                                            Select Case [Shared].Configurations.RequestTagFiltering
-                                                Case [Shared].Enum.RequestTagFilteringTypes.OnlyForm, [Shared].Enum.RequestTagFilteringTypes.Both
-                                                    Dim ArgumentNameForCompare As String =
-                                                    Me.InsideValue.Substring(1).ToLower(New Globalization.CultureInfo("en-US"))
-
-                                                    If Array.IndexOf([Shared].Configurations.RequestTagFilteringExceptions, ArgumentNameForCompare) = -1 Then _
-                                                    FormValue = Me.CleanHTMLTags(FormValue, [Shared].Configurations.RequestTagFilteringItems)
-                                            End Select
-
-                                            Me.DefineRenderedValue(FormValue)
-                                            Me._ObjectResult = FormValue
-                                        End If
-                                    Else
-                                        Me.DefineRenderedValue(String.Empty)
-                                        Me._ObjectResult = Nothing
-                                    End If
-                                Else
-                                    Me.DefineRenderedValue(String.Empty)
-                                    If RequestFileObjects.Count = 1 Then
-                                        Me._ObjectResult = RequestFileObjects.Item(0)
-                                    Else
-                                        Me._ObjectResult = RequestFileObjects.ToArray()
-                                    End If
-                                End If
-
-                            Case "-"c ' Session Value
-                                Dim SessionResult As Object =
-                                    Helpers.Context.Session.Item(Me.InsideValue.Substring(1))
-
-                                If SessionResult Is Nothing Then
-                                    Me.DefineRenderedValue(String.Empty)
-                                Else
-                                    Me.DefineRenderedValue(SessionResult.ToString())
-                                End If
-                                Me._ObjectResult = SessionResult
-
-                            Case "+"c ' Cookies Value
-                                Try
-                                    Dim CookieValue As String =
-                                        Helpers.Context.Request.Cookie.Item(Me.InsideValue.Substring(1)).Value
-
-                                    Me.DefineRenderedValue(CookieValue)
-                                    Me._ObjectResult = CookieValue
-                                Catch ex As System.Exception
-                                    Me.DefineRenderedValue(String.Empty)
-                                    Me._ObjectResult = Nothing
-                                End Try
-
-                            Case "="c ' Value which following after '='
-                                Me.DefineRenderedValue(Me.InsideValue.Substring(1))
-                                Me._ObjectResult = Me.InsideValue.Substring(1)
-
-                            Case "#"c ' DataTable Field
-                                Dim searchContentInfo As ControllerBase = Me
-                                Dim searchVariableName As String = Me.InsideValue
-
-                                Dim OutsideOfBlock As Boolean =
-                                    (Me.InsideValue.LastIndexOf("#"c) > 0)
-                                Do
-                                    If searchVariableName.IndexOf("#") = 0 Then
-                                        Do
-                                            searchContentInfo = searchContentInfo.Parent
-
-                                            ' Only Controls that have own contents such as Datalist, VariableBlock and MessageBlock!
-                                            ' however, Datalist can have multiple content that's why we should check it this content
-                                            ' parent is Datalist or not
-                                        Loop Until searchContentInfo Is Nothing OrElse
-                                            TypeOf searchContentInfo.Parent Is Control.DataList OrElse
-                                            TypeOf searchContentInfo Is Control.VariableBlock OrElse
-                                            TypeOf searchContentInfo Is MessageBlock
-                                    Else
-                                        If TypeOf searchContentInfo Is Control.VariableBlock AndAlso
-                                            CType(searchContentInfo, Control.VariableBlock).Level > 0 AndAlso
-                                            Not CType(searchContentInfo, Control.VariableBlock).LevelExecutionOnly AndAlso
-                                            OutsideOfBlock Then
-
-                                            OutsideOfBlock = False
-                                            searchVariableName = searchVariableName.PadLeft(CType(searchContentInfo, Control.VariableBlock).Level + searchVariableName.Length, "#"c)
-                                        Else
-                                            Exit Do
-                                        End If
-                                    End If
-
-                                    searchVariableName = searchVariableName.Substring(1)
-                                Loop Until searchContentInfo Is Nothing
-
-                                If Not searchContentInfo Is Nothing Then
-                                    Dim argItem As Object =
-                                        searchContentInfo.ContentArguments.Item(searchVariableName)
-
-                                    If Not argItem Is Nothing AndAlso
-                                        Not argItem.GetType() Is GetType(DBNull) Then
-
-                                        Me.DefineRenderedValue(argItem.ToString())
-                                        Me._ObjectResult = argItem
-                                    Else
-                                        Me.DefineRenderedValue(String.Empty)
-                                        Me._ObjectResult = Nothing
-                                    End If
-                                Else
-                                    Me.DefineRenderedValue(String.Empty)
-                                    Me._ObjectResult = Nothing
-                                End If
-
-                                ' Just Needs Object Output
-
-                            Case "*"c ' Search in All orderby : [InData, DataField, Session, Form Post, QueryString, Cookie] (DOES NOT SUPPORT FILE POSTS)
-                                Dim searchArgName As String = Me.InsideValue.Substring(1)
-                                Dim searchArgValue As Object
-
-                                ' Search InDatas
-                                searchArgValue = [Shared].Helpers.VariablePool.Get(searchArgName)
-
-                                ' Search In DataFields (GlobalArguments, ContentArguments)
-                                If searchArgValue Is Nothing Then
-                                    Dim argItem As Object =
-                                        Me.ContentArguments.Item(searchArgName)
-
-                                    If Not argItem Is Nothing AndAlso
-                                        Not argItem.GetType() Is GetType(DBNull) Then
-
-                                        searchArgValue = argItem
-                                    Else
-                                        searchArgValue = Nothing
-                                    End If
-                                End If
-
-                                ' Search In Session
-                                If searchArgValue Is Nothing Then searchArgValue = Helpers.Context.Session.Item(searchArgName)
-
-                                ' Search In Form Post (NO FILE POST SUPPORT)
-                                If searchArgValue Is Nothing AndAlso
-                                    String.Compare(Helpers.Context.Request.Method, "POST", True) = 0 Then
-
-                                    Dim ControlSIM As Hashtable =
-                                        CType(Me.ContentArguments.Item("_sys_ControlSIM"), Hashtable)
-
-                                    If Not ControlSIM Is Nothing AndAlso
-                                        ControlSIM.ContainsKey(searchArgName) Then
-
-                                        searchArgValue = ControlSIM.Item(searchArgName)
-                                    Else
-                                        searchArgValue = [Shared].Helpers.Context.Request.Form.Item(searchArgName)
-                                    End If
-                                Else
-                                    searchArgValue = Nothing
-                                End If
-
-                                ' Search QueryString
-                                If searchArgValue Is Nothing Then searchArgValue = [Shared].Helpers.Context.Request.QueryString.Item(searchArgName)
-
-                                ' Cookie
-                                If searchArgValue Is Nothing AndAlso
-                                    Not Helpers.Context.Request.Cookie.Item(searchArgName) Is Nothing Then
-
-                                    searchArgValue = Helpers.Context.Request.Cookie.Item(searchArgName).Value
-                                End If
-
-                                If Not searchArgValue Is Nothing Then
-                                    Me.DefineRenderedValue(searchArgValue.ToString())
-                                Else
-                                    Me.DefineRenderedValue(String.Empty)
-                                End If
-                                Me._ObjectResult = searchArgValue
-
-                            Case Else ' Search in Values Set for Current Request Session
-                                If Me.InsideValue.IndexOf("@"c) > 0 Then
-                                    Dim ArgumentQueryObjectName As String =
-                                        Me.InsideValue.Substring(Me.InsideValue.IndexOf("@"c) + 1)
-
-                                    Dim ArgumentQueryObject As Object = Nothing
-
-                                    Select Case ArgumentQueryObjectName.Chars(0)
-                                        Case "-"c
-                                            ArgumentQueryObject = Helpers.Context.Session.Item(ArgumentQueryObjectName.Substring(1))
-
-                                        Case "#"c
-                                            Dim searchContentInfo As ControllerBase = Me
-                                            Dim searchVariableName As String = ArgumentQueryObjectName
-
-                                            Dim OutsideOfBlock As Boolean =
-                                                (Me.InsideValue.LastIndexOf("#"c) > 0)
-                                            Do
-                                                If searchVariableName.IndexOf("#") = 0 Then
-                                                    Do
-                                                        searchContentInfo = searchContentInfo.Parent
-
-                                                        ' Only Controls that have own contents such as Datalist, VariableBlock and MessageBlock!
-                                                        ' however, Datalist can have multiple content that's why we should check it this content
-                                                        ' parent is Datalist or not
-                                                    Loop Until searchContentInfo Is Nothing OrElse
-                                                        TypeOf searchContentInfo.Parent Is Control.DataList OrElse
-                                                        TypeOf searchContentInfo Is Control.VariableBlock OrElse
-                                                        TypeOf searchContentInfo Is MessageBlock
-                                                Else
-                                                    If TypeOf searchContentInfo Is Control.VariableBlock AndAlso
-                                                        CType(searchContentInfo, Control.VariableBlock).Level > 0 AndAlso
-                                                        Not CType(searchContentInfo, Control.VariableBlock).LevelExecutionOnly AndAlso
-                                                        OutsideOfBlock Then
-
-                                                        OutsideOfBlock = False
-                                                        searchVariableName = searchVariableName.PadLeft(CType(searchContentInfo, Control.VariableBlock).Level + searchVariableName.Length, "#"c)
-                                                    Else
-                                                        Exit Do
-                                                    End If
-                                                End If
-
-                                                searchVariableName = searchVariableName.Substring(1)
-                                            Loop Until searchContentInfo Is Nothing
-
-                                            If Not searchContentInfo Is Nothing Then
-                                                Dim argItem As Object =
-                                                    searchContentInfo.ContentArguments.Item(searchVariableName)
-
-                                                If Not argItem Is Nothing Then ArgumentQueryObject = argItem
-                                            End If
-
-                                        Case Else
-                                            ArgumentQueryObject = Helpers.VariablePool.Get(ArgumentQueryObjectName)
-
-                                            If TypeOf ArgumentQueryObject Is DataListOutputInfo Then
-                                                If TypeOf SenderController Is ControlBase AndAlso
-                                                    TypeOf SenderController Is INamable Then
-
-                                                    If String.Compare(
-                                                        CType(SenderController, INamable).ControlID, ArgumentQueryObjectName, True) <> 0 Then
-
-                                                        If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ArgumentQueryObjectName)
-
-                                                        Exit Sub
-                                                    End If
-                                                Else
-                                                    If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ArgumentQueryObjectName)
-
-                                                    Exit Sub
-                                                End If
-                                            Else
-                                                ' DataListOutputInfo is not defined yet and let's put in a queue to render later
-                                                If ArgumentQueryObject Is Nothing Then
-                                                    If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ArgumentQueryObjectName)
-
-                                                    Exit Sub
-                                                End If
-                                            End If
-
-                                    End Select
-
-                                    If Not ArgumentQueryObject Is Nothing Then
-                                        Dim ArgumentCallList As String() = Me.InsideValue.Substring(0, Me.InsideValue.IndexOf("@"c)).Split("."c)
-                                        Dim ArgumentValue As Object
-
-                                        Try
-                                            For Each ArgumentCall As String In ArgumentCallList
-                                                If Not ArgumentQueryObject Is Nothing Then
-                                                    ArgumentQueryObject = ArgumentQueryObject.GetType().InvokeMember(ArgumentCall, Reflection.BindingFlags.GetProperty, Nothing, ArgumentQueryObject, Nothing)
-                                                Else
-                                                    Exit For
-                                                End If
-                                            Next
-
-                                            ArgumentValue = ArgumentQueryObject
-                                        Catch ex As System.Exception
-                                            ArgumentValue = Nothing
-                                        End Try
-
-                                        If Not ArgumentValue Is Nothing Then
-                                            Me.DefineRenderedValue(ArgumentValue.ToString())
-                                        Else
-                                            Me.DefineRenderedValue(String.Empty)
-                                        End If
-                                        Me._ObjectResult = ArgumentValue
-
-                                        Me.UnRegisterFromRenderCompletedOf(ArgumentQueryObjectName)
-                                    Else
-                                        Me.DefineRenderedValue(String.Empty)
-                                        Me._ObjectResult = Nothing
-                                    End If
-                                Else
-                                    Dim PoolValue As Object =
-                                        [Shared].Helpers.VariablePool.Get(Me.InsideValue)
-
-                                    If Not PoolValue Is Nothing Then
-                                        Me.DefineRenderedValue(PoolValue.ToString())
-                                    Else
-                                        Me.DefineRenderedValue(String.Empty)
-                                    End If
-                                    Me._ObjectResult = PoolValue
-                                End If
-
-                        End Select
 
+                Exit Sub
+            End If
+
+            Select Case Me.InsideValue
+                Case "DomainContents"
+                    Me.RenderDomainContents()
+
+                Case "PageRenderDuration"
+                    Me.RenderPageRenderDuration()
+
+                Case Else
+                    Select Case Me.InsideValue.Chars(0)
+                        Case "^"c ' QueryString Value
+                            Me.RenderQueryString()
+
+                        Case "~"c ' Form Post Value
+                            Me.RenderFormPost()
+
+                        Case "-"c ' Session Value
+                            Me.RenderSessionItem()
+
+                        Case "+"c ' Cookies Value
+                            Me.RenderCookieItem()
+
+                        Case "="c ' Value which following after '='
+                            Me.RenderStaticString()
+
+                        Case "#"c ' DataTable Field
+                            Me.RenderDataItem()
+
+                        Case "*"c ' Search in All orderby : [InData, DataField, Session, Form Post, QueryString, Cookie] (DOES NOT SUPPORT FILE POSTS)
+                            Dim SearchArgKey As String = Me.InsideValue.Substring(1)
+                            Dim SearchArgValue As Object
+
+                            ' Search InDatas
+                            SearchArgValue = Me.ContentArguments.Item(SearchArgKey)
+
+                            ' Search In VariablePool
+                            If SearchArgValue Is Nothing Then _
+                                SearchArgValue = Helpers.VariablePool.Get(SearchArgKey)
+
+                            ' Search In Session
+                            If SearchArgValue Is Nothing Then _
+                                SearchArgValue = Helpers.Context.Session.Item(SearchArgKey)
+
+                            ' Cookie
+                            If SearchArgValue Is Nothing AndAlso
+                                Not Helpers.Context.Request.Cookie.Item(SearchArgKey) Is Nothing Then
+
+                                SearchArgValue = Helpers.Context.Request.Cookie.Item(SearchArgKey).Value
+                            End If
+
+                            ' Search In Form Post First File then Value
+                            If SearchArgValue Is Nothing Then _
+                                SearchArgValue = Helpers.Context.Request.File.Item(SearchArgKey)
+                            If SearchArgValue Is Nothing Then _
+                                SearchArgValue = Helpers.Context.Request.Form.Item(SearchArgKey)
+
+                            ' Search QueryString
+                            If SearchArgValue Is Nothing Then _
+                                SearchArgValue = Helpers.Context.Request.QueryString.Item(SearchArgKey)
+
+                            If Not SearchArgValue Is Nothing Then
+                                Me.DefineRenderedValue(SearchArgValue.ToString())
+                            Else
+                                Me.DefineRenderedValue(String.Empty)
+                            End If
+                            Me._ObjectResult = SearchArgValue
+
+                        Case "@"c ' Search in Values Set for Current Request Session
+                            Me.RenderObjectItem(SenderController)
+
+                        Case Else
+                            Me.RenderVariablePoolItem()
+
+                    End Select
+            End Select
+        End Sub
+
+        Private Sub RenderDomainContents()
+            Dim Instance As IDomain = Nothing
+
+            RaiseEvent InstanceRequested(Instance)
+
+            Me.DefineRenderedValue(Instance.ContentsVirtualPath)
+            Me._ObjectResult = CObj(Me.RenderedValue)
+        End Sub
+
+        Private Sub RenderPageRenderDuration()
+            Me.DefineRenderedValue("<!--_sys_PAGERENDERDURATION-->")
+            Me._ObjectResult = CObj("<!--_sys_PAGERENDERDURATION-->")
+        End Sub
+
+        Private Sub RenderQueryString()
+            Dim QueryItemKey As String = Me.InsideValue.Substring(1)
+            Dim QueryItemValue As String =
+                Helpers.Context.Request.QueryString.Item(QueryItemKey)
+
+            If Not String.IsNullOrEmpty(QueryItemValue) Then
+                Select Case Configurations.RequestTagFiltering
+                    Case [Enum].RequestTagFilteringTypes.OnlyQuery, [Enum].RequestTagFilteringTypes.Both
+                        If Array.IndexOf(Configurations.RequestTagFilteringExceptions, QueryItemKey) = -1 Then _
+                            QueryItemValue = Me.CleanHTMLTags(QueryItemValue, Configurations.RequestTagFilteringItems)
                 End Select
             End If
+
+            Me.DefineRenderedValue(QueryItemValue)
+            Me._ObjectResult = CObj(QueryItemValue)
+        End Sub
+
+        Private Sub RenderFormPost()
+            Dim FormItemKey As String = Me.InsideValue.Substring(1)
+
+            ' File Post is not supporting XML Http Requests
+            Dim RequestFilesKeys As String() =
+                Helpers.Context.Request.File.AllKeys
+            Dim RequestFileObjects As New Generic.List(Of System.Web.HttpPostedFile)
+
+            For kC As Integer = 0 To RequestFilesKeys.Length - 1
+                If String.Compare(RequestFilesKeys(kC), FormItemKey, True) = 0 Then
+                    RequestFileObjects.Add(
+                        Helpers.Context.Request.File.Item(kC))
+                End If
+            Next
+            ' !--
+
+            If RequestFileObjects.Count > 0 Then
+                Me.DefineRenderedValue(String.Empty)
+                If RequestFileObjects.Count = 1 Then
+                    Me._ObjectResult = RequestFileObjects.Item(0)
+                Else
+                    Me._ObjectResult = RequestFileObjects.ToArray()
+                End If
+
+                Exit Sub
+            End If
+
+            Dim FormItemValue As String =
+                Helpers.Context.Request.Form.Item(FormItemKey)
+
+            If Not String.IsNullOrEmpty(FormItemValue) Then
+                Select Case Configurations.RequestTagFiltering
+                    Case [Enum].RequestTagFilteringTypes.OnlyForm, [Enum].RequestTagFilteringTypes.Both
+                        If Array.IndexOf(Configurations.RequestTagFilteringExceptions, FormItemKey) = -1 Then _
+                            FormItemValue = Me.CleanHTMLTags(FormItemValue, Configurations.RequestTagFilteringItems)
+                End Select
+            End If
+
+            Me.DefineRenderedValue(FormItemValue)
+            Me._ObjectResult = FormItemValue
+        End Sub
+
+        Private Sub RenderSessionItem()
+            Dim SessionItemKey As String = Me.InsideValue.Substring(1)
+            Dim SessionItemValue As Object =
+                Helpers.Context.Session.Item(SessionItemKey)
+
+            If SessionItemValue Is Nothing Then
+                Me.DefineRenderedValue(String.Empty)
+            Else
+                Me.DefineRenderedValue(SessionItemValue.ToString())
+            End If
+            Me._ObjectResult = SessionItemValue
+        End Sub
+
+        Private Sub RenderCookieItem()
+            Dim CookieItemKey As String = Me.InsideValue.Substring(1)
+            Dim CookieItem As System.Web.HttpCookie =
+                Helpers.Context.Request.Cookie.Item(CookieItemKey)
+
+            If CookieItem Is Nothing Then
+                Me.DefineRenderedValue(String.Empty)
+                Me._ObjectResult = Nothing
+            Else
+                Me.DefineRenderedValue(CookieItem.Value)
+                Me._ObjectResult = CookieItem.Value
+            End If
+        End Sub
+
+        Private Sub RenderStaticString()
+            Dim StringValue As String = Me.InsideValue.Substring(1)
+
+            Me.DefineRenderedValue(StringValue)
+            Me._ObjectResult = StringValue
+        End Sub
+
+        Private Sub RenderDataItem()
+            Dim SearchController As ControllerBase = Me
+            Dim SearchVariableKey As String = Me.InsideValue
+
+            Me.LocateLeveledContentInfo(SearchVariableKey, SearchController)
+
+            If SearchController Is Nothing Then
+                Me.DefineRenderedValue(String.Empty)
+                Me._ObjectResult = Nothing
+
+                Exit Sub
+            End If
+
+            Dim argItem As Object =
+                SearchController.ContentArguments.Item(SearchVariableKey)
+
+            If Not argItem Is Nothing AndAlso
+                Not argItem.GetType() Is GetType(DBNull) Then
+
+                Me.DefineRenderedValue(argItem.ToString())
+                Me._ObjectResult = argItem
+            Else
+                Me.DefineRenderedValue(String.Empty)
+                Me._ObjectResult = Nothing
+            End If
+        End Sub
+
+        Private Sub RenderVariablePoolItem()
+            Dim PoolValue As Object =
+                Helpers.VariablePool.Get(Me.InsideValue)
+
+            If Not PoolValue Is Nothing Then
+                Me.DefineRenderedValue(PoolValue.ToString())
+            Else
+                Me.DefineRenderedValue(String.Empty)
+            End If
+            Me._ObjectResult = PoolValue
+        End Sub
+
+        Private Sub RenderObjectItem(ByRef SenderController As ControllerBase)
+            Dim ObjectPath As String =
+                Me.InsideValue.Substring(1)
+
+            Dim ObjectPaths As String() =
+                ObjectPath.Split("."c)
+
+            If ObjectPaths.Length < 2 Then _
+                Throw New Exception.GrammerException()
+
+            Dim ObjectItemKey As String = ObjectPaths(0)
+            Dim ObjectItem As Object = Nothing
+
+            Select Case ObjectItemKey.Chars(0)
+                Case "-"c
+                    ObjectItem = Helpers.Context.Session.Item(ObjectItemKey.Substring(1))
+
+                Case "#"c
+                    Dim SearchController As ControllerBase = Me
+
+                    Me.LocateLeveledContentInfo(ObjectItemKey, SearchController)
+
+                    If Not SearchController Is Nothing Then
+                        Dim argItem As Object =
+                            SearchController.ContentArguments.Item(ObjectItemKey)
+
+                        If Not argItem Is Nothing Then ObjectItem = argItem
+                    End If
+
+                Case Else
+                    ObjectItem = Helpers.VariablePool.Get(ObjectItemKey)
+
+                    If TypeOf ObjectItem Is DataListOutputInfo Then
+                        If TypeOf SenderController Is ControlBase AndAlso
+                            TypeOf SenderController Is INamable Then
+
+                            If String.Compare(
+                                CType(SenderController, INamable).ControlID, ObjectItemKey, True) <> 0 Then
+
+                                If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ObjectItemKey)
+
+                                Exit Sub
+                            End If
+                        Else
+                            If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ObjectItemKey)
+
+                            Exit Sub
+                        End If
+                    Else
+                        ' DataListOutputInfo is not defined yet and let's put in a queue to render later
+                        If ObjectItem Is Nothing Then
+                            If Not Me.BoundControlRenderWaiting Then Me.RegisterToRenderCompletedOf(ObjectItemKey)
+
+                            Exit Sub
+                        End If
+                    End If
+
+            End Select
+
+            If ObjectItem Is Nothing Then
+                Me.DefineRenderedValue(String.Empty)
+                Me._ObjectResult = Nothing
+
+                Exit Sub
+            End If
+
+            Dim ObjectValue As Object
+
+            Try
+                For pC As Integer = 1 To ObjectPaths.Length - 1
+                    If ObjectItem Is Nothing Then Exit For
+
+                    ObjectItem = ObjectItem.GetType().InvokeMember(ObjectPaths(pC), Reflection.BindingFlags.GetProperty, Nothing, ObjectItem, Nothing)
+                Next
+
+                ObjectValue = ObjectItem
+            Catch ex As System.Exception
+                ObjectValue = Nothing
+            End Try
+
+            If Not ObjectValue Is Nothing Then
+                Me.DefineRenderedValue(ObjectValue.ToString())
+            Else
+                Me.DefineRenderedValue(String.Empty)
+            End If
+            Me._ObjectResult = ObjectValue
+
+            Me.UnRegisterFromRenderCompletedOf(ObjectItemKey)
+        End Sub
+
+        Private Sub LocateLeveledContentInfo(ByRef SearchItemKey As String, ByRef Controller As ControllerBase)
+            Dim OutsideOfBlock As Boolean =
+                (SearchItemKey.LastIndexOf("#"c) > 0)
+            Do
+                If SearchItemKey.IndexOf("#") = 0 Then
+                    Do
+                        Controller = Controller.Parent
+
+                        ' Only Controls that have own contents such as Datalist, VariableBlock and MessageBlock!
+                        ' however, Datalist can have multiple content that's why we should check it this content
+                        ' parent is Datalist or not
+                    Loop Until Controller Is Nothing OrElse
+                                TypeOf Controller.Parent Is Control.DataList OrElse
+                                TypeOf Controller Is Control.VariableBlock OrElse
+                                TypeOf Controller Is MessageBlock
+                Else
+                    If TypeOf Controller Is Control.VariableBlock AndAlso
+                            CType(Controller, Control.VariableBlock).Level > 0 AndAlso
+                            Not CType(Controller, Control.VariableBlock).LevelExecutionOnly AndAlso
+                            OutsideOfBlock Then
+
+                        OutsideOfBlock = False
+                        SearchItemKey = SearchItemKey.PadLeft(CType(Controller, Control.VariableBlock).Level + SearchItemKey.Length, "#"c)
+                    Else
+                        Exit Do
+                    End If
+                End If
+
+                SearchItemKey = SearchItemKey.Substring(1)
+            Loop Until Controller Is Nothing
         End Sub
 
         Public Shared Function ParseProperty(
@@ -433,54 +426,52 @@ Namespace Xeora.Web.Controller
         Private Function CleanHTMLTags(ByVal Content As String, ByVal CleaningTags As String()) As String
             Dim RegExSearch As Text.RegularExpressions.Regex
 
-            If Not String.IsNullOrEmpty(Content) AndAlso
-                Not CleaningTags Is Nothing AndAlso
-                CleaningTags.Length > 0 Then
+            If String.IsNullOrEmpty(Content) OrElse CleaningTags Is Nothing OrElse CleaningTags.Length = 0 Then _
+                Return Content
 
-                Dim SearchType As Integer = 0, tContent As String = String.Empty
-                Dim regMatchs As Text.RegularExpressions.MatchCollection
+            Dim SearchType As Integer = 0
+            Dim LastSearchIndex As Integer, ModifiedContent As Text.StringBuilder
+            Dim RegExMatches As Text.RegularExpressions.MatchCollection
 
-                For Each CleaningTag As String In CleaningTags
-                    If CleaningTag.IndexOf(">"c) = 0 Then
-                        RegExSearch = New Text.RegularExpressions.Regex(
-                                        String.Format("<{0}(\s+[^>]*)*>", CleaningTag.Substring(1))
-                                    )
-                        SearchType = 1
-                    Else
-                        RegExSearch = New Text.RegularExpressions.Regex(
-                                        String.Format("<{0}(\s+[^>]*)*(/)?>", CleaningTag)
-                                    )
-                        SearchType = 0
-                    End If
+            For Each CleaningTag As String In CleaningTags
+                If CleaningTag.IndexOf(">"c) = 0 Then
+                    RegExSearch = New Text.RegularExpressions.Regex(
+                                        String.Format("<{0}(\s+[^>]*)*>", CleaningTag.Substring(1)))
+                    SearchType = 1
+                Else
+                    RegExSearch = New Text.RegularExpressions.Regex(
+                                        String.Format("<{0}(\s+[^>]*)*(/)?>", CleaningTag))
+                    SearchType = 0
+                End If
 
-                    regMatchs = RegExSearch.Matches(Content)
+                RegExMatches = RegExSearch.Matches(Content)
 
-                    If regMatchs.Count > 0 Then
-                        Dim LastSearchIndex As Integer = 0
-                        For Each regMatch As Text.RegularExpressions.Match In regMatchs
-                            tContent &= Content.Substring(LastSearchIndex, regMatch.Index - LastSearchIndex)
+                ModifiedContent = New Text.StringBuilder
+                LastSearchIndex = 0
 
-                            Select Case SearchType
-                                Case 1
-                                    Dim tailRegExSearch As New Text.RegularExpressions.Regex(
-                                        String.Format("</{0}>", CleaningTag.Substring(1)))
-                                    Dim tailRegMatch As Text.RegularExpressions.Match =
-                                        tailRegExSearch.Match(Content, LastSearchIndex)
+                For Each regMatch As Text.RegularExpressions.Match In RegExMatches
+                    ModifiedContent.Append(Content.Substring(LastSearchIndex, regMatch.Index - LastSearchIndex))
 
-                                    If tailRegMatch.Success Then
-                                        LastSearchIndex = tailRegMatch.Index + tailRegMatch.Length
-                                    Else
-                                        LastSearchIndex = regMatch.Index + regMatch.Length
-                                    End If
-                                Case Else
-                                    LastSearchIndex = regMatch.Index + regMatch.Length
-                            End Select
-                        Next
-                        tContent &= Content.Substring(LastSearchIndex)
-                        Content = tContent
-                    End If
+                    Select Case SearchType
+                        Case 1
+                            Dim TailRegExSearch As Text.RegularExpressions.Regex =
+                                New Text.RegularExpressions.Regex(String.Format("</{0}>", CleaningTag.Substring(1)))
+                            Dim TailRegMatch As Text.RegularExpressions.Match =
+                                TailRegExSearch.Match(Content, LastSearchIndex)
+
+                            If TailRegMatch.Success Then
+                                LastSearchIndex = TailRegMatch.Index + TailRegMatch.Length
+                            Else
+                                LastSearchIndex = regMatch.Index + regMatch.Length
+                            End If
+                        Case Else
+                            LastSearchIndex = regMatch.Index + regMatch.Length
+                    End Select
                 Next
-            End If
+                ModifiedContent.Append(Content.Substring(LastSearchIndex))
+
+                Content = ModifiedContent.ToString()
+            Next
 
             Return Content
         End Function

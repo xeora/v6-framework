@@ -40,11 +40,11 @@ Namespace Xeora.Web.Context
         End Sub
 
         Public Function CreateThreadID() As String Implements IHttpContext.CreateThreadID
-            Return Handler.RequestModule.DuplicateContext(Me.XeoraRequestID)
+            Return ContextManager.Current.DuplicateContext(Me.XeoraRequestID)
         End Function
 
         Public Sub Dispose() Implements IHttpContext.Dispose
-            If Not Handler.RequestModule.DisposeContext(Me._XeoraRequestID) Then _
+            If Not ContextManager.Current.DisposeContext(Me._XeoraRequestID) Then _
                 Throw New System.Exception("You can not dispose a Context which does not belong to a Thread!")
         End Sub
 

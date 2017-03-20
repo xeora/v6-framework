@@ -59,41 +59,8 @@ Namespace Xeora.Web.Controller.Directive.Control
         End Sub
 
         Private Sub RenderInternal()
-            ' Parse Block Content
-            Dim controlValueSplitted As String() =
-                Me.InsideValue.Split(":"c)
-            Dim BlockContent As String =
-                String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
-
-            ' Check This Control has a Content
-            Dim idxCon As Integer = BlockContent.IndexOf(":"c)
-
-            If idxCon = -1 Then _
-                Throw New Exception.GrammerException()
-
-            ' ControlIDWithIndex Like ControlID~INDEX
-            Dim ControlIDWithIndex As String = BlockContent.Substring(0, idxCon)
-
-            Dim CoreContent As String = Nothing
-            Dim idxCoreContStart As Integer, idxCoreContEnd As Integer
-
-            Dim OpeningTag As String = String.Format("{0}:{{", ControlIDWithIndex)
-            Dim ClosingTag As String = String.Format("}}:{0}", ControlIDWithIndex)
-
-            idxCoreContStart = BlockContent.IndexOf(OpeningTag) + OpeningTag.Length
-            idxCoreContEnd = BlockContent.LastIndexOf(ClosingTag, BlockContent.Length)
-
-            If idxCoreContStart <> OpeningTag.Length OrElse idxCoreContEnd <> (BlockContent.Length - OpeningTag.Length) Then _
-                Throw New Exception.ParseException()
-
-            CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
-            CoreContent = CoreContent.Trim()
-
             Dim ContentDescription As [Global].ContentDescription =
-                New [Global].ContentDescription(CoreContent, ControlIDWithIndex)
-
-            If Not ContentDescription.HasParts Then _
-                Throw New Exception.ParseException()
+                New [Global].ContentDescription(Me.InsideValue)
 
             ' Reset Variables
             Helpers.VariablePool.Set(Me.ControlID, Nothing)
@@ -121,9 +88,10 @@ Namespace Xeora.Web.Controller.Directive.Control
                                                         ProcedureParameter.Query,
                                                         ControllerLevel.Parent,
                                                         CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
-                                                        New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
-                                                                                                                RaiseEvent InstanceRequested(Instance)
-                                                                                                            End Sub)
+                                                        New IInstanceRequires.InstanceRequestedEventHandler(
+                                                            Sub(ByRef Instance As IDomain)
+                                                                RaiseEvent InstanceRequested(Instance)
+                                                            End Sub)
                                                     )
                     End Sub)
             )

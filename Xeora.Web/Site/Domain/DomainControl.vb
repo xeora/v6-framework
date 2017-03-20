@@ -270,7 +270,7 @@ Namespace Xeora.Web.Site
                             Deployment.DomainDeployment.AvailableLanguageInfos(New String() {DI.Name})
 
                         Dim DomainDeployment As Deployment.DomainDeployment =
-                            New Deployment.DomainDeployment(New String() {DI.Name}, Languages(0).ID)
+                            Deployment.InstanceFactory.Current.GetOrCreate(New String() {DI.Name}, Languages(0).ID)
 
                         Dim DomainInfo As New [Shared].DomainInfo(DomainDeployment.DeploymentType, DI.Name, Languages)
                         DomainInfo.Children.AddRange(DomainDeployment.Children)

@@ -151,7 +151,8 @@ Namespace Xeora.Web.Deployment
                     Array.Copy(Me.DomainIDAccessTree, 0, ChildAccessTree, 0, Me.DomainIDAccessTree.Length)
                     ChildAccessTree(ChildAccessTree.Length - 1) = ChildDI.Name
 
-                    Dim ChildDomainDeployment As New DomainDeployment(ChildAccessTree, Me._Language.ID)
+                    Dim ChildDomainDeployment As DomainDeployment =
+                        InstanceFactory.Current.GetOrCreate(ChildAccessTree, Me._Language.ID)
 
                     Dim DomainInfo As [Shared].DomainInfo =
                         New [Shared].DomainInfo(ChildDomainDeployment.DeploymentType, ChildDI.Name, AvailableLanguageInfos(ChildDomainDeployment))
@@ -253,9 +254,8 @@ Namespace Xeora.Web.Deployment
         End Sub
 
         Public Overloads Shared Function AvailableLanguageInfos(ByVal DomainIDAccessTree As String()) As [Shared].DomainInfo.LanguageInfo()
-            Dim DomainDeployment As New DomainDeployment(DomainIDAccessTree)
-
-            Return DomainDeployment.AvailableLanguageInfos(DomainDeployment)
+            Return DomainDeployment.AvailableLanguageInfos(
+                    InstanceFactory.Current.GetOrCreate(DomainIDAccessTree))
         End Function
 
         Public Overloads Shared Function AvailableLanguageInfos(ByRef WorkingDomainDeployment As DomainDeployment) As [Shared].DomainInfo.LanguageInfo()
@@ -273,7 +273,7 @@ Namespace Xeora.Web.Deployment
                             Dim XeoraFileInfo As XeoraDomainDecompiler.XeoraFileInfo =
                                 FileListDictionary.Item(Key)
 
-                            DomainDeployment = New DomainDeployment(WorkingDomainDeployment.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(XeoraFileInfo.FileName))
+                            DomainDeployment = InstanceFactory.Current.GetOrCreate(WorkingDomainDeployment.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(XeoraFileInfo.FileName))
 
                             rLanguageInfos.Add(DomainDeployment.Language.Info)
 
@@ -286,7 +286,7 @@ Namespace Xeora.Web.Deployment
                         Dim LanguagesDI As New IO.DirectoryInfo(WorkingDomainDeployment.LanguagesRegistration)
 
                         For Each TFI As IO.FileInfo In LanguagesDI.GetFiles()
-                            DomainDeployment = New DomainDeployment(WorkingDomainDeployment.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(TFI.Name))
+                            DomainDeployment = InstanceFactory.Current.GetOrCreate(WorkingDomainDeployment.DomainIDAccessTree, IO.Path.GetFileNameWithoutExtension(TFI.Name))
 
                             rLanguageInfos.Add(DomainDeployment.Language.Info)
 
@@ -300,7 +300,8 @@ Namespace Xeora.Web.Deployment
         End Function
 
         Public Shared Sub ExtractApplication(ByVal DomainIDAccessTree As String(), ByVal ExtractLocation As String)
-            Dim DomainDeployment As New DomainDeployment(DomainIDAccessTree)
+            Dim DomainDeployment As DomainDeployment =
+                InstanceFactory.Current.GetOrCreate(DomainIDAccessTree)
             Dim ExecutablesPath As String =
                 DomainDeployment.ExecutablesPath
             DomainDeployment.Dispose()

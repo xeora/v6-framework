@@ -24,10 +24,10 @@ Namespace Xeora.Web.Controller.Directive.Control
 
                     Do Until Controller.Parent Is Nothing
                         If TypeOf Controller.Parent Is ControllerBase AndAlso
-                        TypeOf Controller.Parent Is INamable Then
+                            TypeOf Controller.Parent Is INamable Then
 
                             If String.Compare(
-                            CType(Controller.Parent, INamable).ControlID, Me.BoundControlID, True) = 0 Then
+                                CType(Controller.Parent, INamable).ControlID, Me.BoundControlID, True) = 0 Then
 
                                 Throw New Exception.InternalParentException(Exception.InternalParentException.ChildDirectiveTypes.Control)
                             End If
@@ -56,49 +56,15 @@ Namespace Xeora.Web.Controller.Directive.Control
         End Sub
 
         Private Sub RenderInternal()
-            ' Parse Block Content
-            Dim controlValueSplitted As String() =
-                Me.InsideValue.Split(":"c)
-            Dim BlockContent As String =
-                String.Join(":", controlValueSplitted, 1, controlValueSplitted.Length - 1)
-
-            ' Check This Control has a Content
-            Dim idxCon As Integer = BlockContent.IndexOf(":"c)
-
-            If idxCon = -1 Then _
-                Throw New Exception.GrammerException()
+            Dim ContentDescription As [Global].ContentDescription =
+                New [Global].ContentDescription(Me.InsideValue)
 
             ' ConditionalStatment does not have any ContentArguments, That's why it copies it's parent Arguments
             If Not Me.Parent Is Nothing Then _
                 Me.ContentArguments.Replace(Me.Parent.ContentArguments)
 
-            ' ControlIDWithIndex Like ControlID~INDEX
-            Dim ControlIDWithIndex As String = BlockContent.Substring(0, idxCon)
-
-            Dim CoreContent As String = Nothing
-            Dim idxCoreContStart As Integer, idxCoreContEnd As Integer
-
-            Dim OpeningTag As String = String.Format("{0}:{{", ControlIDWithIndex)
-            Dim ClosingTag As String = String.Format("}}:{0}", ControlIDWithIndex)
-
-            idxCoreContStart = BlockContent.IndexOf(OpeningTag) + OpeningTag.Length
-            idxCoreContEnd = BlockContent.LastIndexOf(ClosingTag, BlockContent.Length)
-
-            If idxCoreContStart <> OpeningTag.Length OrElse idxCoreContEnd <> (BlockContent.Length - OpeningTag.Length) Then _
-                Throw New Exception.ParseException()
-
-            Dim ContentTrue As String = Nothing, ContentFalse As String = Nothing
-
-            CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
-            CoreContent = CoreContent.Trim()
-
-            Dim ContentDescription As [Global].ContentDescription =
-                New [Global].ContentDescription(CoreContent, ControlIDWithIndex)
-
-            If Not ContentDescription.HasParts Then _
-                Throw New Exception.ParseException()
-
-            ContentTrue = ContentDescription.Parts.Item(0)
+            Dim ContentTrue As String = ContentDescription.Parts.Item(0)
+            Dim ContentFalse As String = String.Empty
 
             If ContentDescription.Parts.Count > 1 Then _
                 ContentFalse = ContentDescription.Parts.Item(1)
@@ -123,12 +89,13 @@ Namespace Xeora.Web.Controller.Directive.Control
                 New [Shared].Execution.BindInfo.ProcedureParser(
                     Sub(ByRef ProcedureParameter As [Shared].Execution.BindInfo.ProcedureParameter)
                         ProcedureParameter.Value = PropertyController.ParseProperty(
-                                                       ProcedureParameter.Query,
-                                                       ControllerLevel.Parent,
-                                                       CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
-                                                       New IInstanceRequires.InstanceRequestedEventHandler(Sub(ByRef Instance As IDomain)
-                                                                                                               RaiseEvent InstanceRequested(Instance)
-                                                                                                           End Sub)
+                                                        ProcedureParameter.Query,
+                                                        ControllerLevel.Parent,
+                                                        CType(IIf(ControllerLevel.Parent Is Nothing, Nothing, ControllerLevel.Parent.ContentArguments), [Global].ArgumentInfoCollection),
+                                                        New IInstanceRequires.InstanceRequestedEventHandler(
+                                                            Sub(ByRef Instance As IDomain)
+                                                                RaiseEvent InstanceRequested(Instance)
+                                                            End Sub)
                                                    )
                     End Sub)
             )

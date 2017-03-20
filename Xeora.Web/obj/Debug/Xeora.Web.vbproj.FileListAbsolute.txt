@@ -2,6 +2,7 @@ P:\XeoraCube\Xeora.Web\bin\Any\Xeora.Web.dll.config
 P:\XeoraCube\Xeora.Web\bin\Any\Xeora.Web.dll
 P:\XeoraCube\Xeora.Web\bin\Any\Xeora.Web.pdb
 P:\XeoraCube\Xeora.Web\bin\Any\Xeora.Web.Manager.Loader.dll
+P:\XeoraCube\Xeora.Web\bin\Any\Xeora.Web.RegularExpressions.dll
 P:\XeoraCube\Xeora.Web\bin\Any\Xeora.Web.Shared.dll
 P:\XeoraCube\Xeora.Web\bin\Any\Xeora.Web.Manager.Loader.pdb
 P:\XeoraCube\Xeora.Web\bin\Any\Xeora.Web.Shared.pdb
@@ -10,4 +11,3 @@ P:\XeoraCube\Xeora.Web\obj\Debug\Resources.resources
 P:\XeoraCube\Xeora.Web\obj\Debug\Xeora.Web.vbproj.GenerateResource.Cache
 P:\XeoraCube\Xeora.Web\obj\Debug\Xeora.Web.dll
 P:\XeoraCube\Xeora.Web\obj\Debug\Xeora.Web.pdb
-P:\XeoraCube\Xeora.Web\bin\Any\Xeora.Web.RegularExpressions.dll
