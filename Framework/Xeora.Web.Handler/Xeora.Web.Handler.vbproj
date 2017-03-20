@@ -172,7 +172,7 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>xcopy /D /S /I /C /K /Y "P:\XeoraCube\Xeora.Web.Handler\bin\Any\*.*" "P:\XeoraCube\Build\Any"
-xcopy /D /S /I /C /K /Y "P:\XeoraCube\Xeora.Web.Handler\bin\x64\*.*" "P:\XeoraCube\Build\x64"</PostBuildEvent>
+    <PostBuildEvent>xcopy /D /S /I /C /K /Y "P:\XeoraCube\Framework\Xeora.Web.Handler\bin\Any\*.*" "P:\XeoraCube\Build\Any"
+xcopy /D /S /I /C /K /Y "P:\XeoraCube\Framework\Xeora.Web.Handler\bin\x64\*.*" "P:\XeoraCube\Build\x64"</PostBuildEvent>
   </PropertyGroup>
 </Project>
