@@ -4,19 +4,53 @@ Namespace Xeora.Web.Handler
     Public NotInheritable Class RequestModule
         Implements System.Web.IHttpModule
 
-        Private Shared _Instance As RequestModule = Nothing
-
-        Private _pInitialized As Boolean = False
+        Private Shared _Instance As New Concurrent.ConcurrentDictionary(Of Integer, RequestModule)
+        Private Shared _Initialized As Boolean = False
 
         Private Sub New()
-            RequestModule._Instance = Me
-        End Sub
+            RequestModule._Instance.TryAdd(Me.GetHashCode(), Me)
 
-        Private Sub Init(ByVal app As System.Web.HttpApplication) Implements System.Web.IHttpModule.Init
+            If RequestModule._Initialized Then Exit Sub
+            RequestModule._Initialized = True
+
             ' Application Domain UnHandled Exception Event Handling Defination
             AddHandler AppDomain.CurrentDomain.UnhandledException, New UnhandledExceptionEventHandler(AddressOf Me.OnUnhandledExceptions)
             ' !---
 
+            ' If not already initialized, initialize timer and configuration.
+            Threading.Monitor.Enter(Me)
+            Try
+                ' Get the configuration section and set timeout and CookieMode values.
+                Dim cfg As System.Configuration.Configuration =
+                    System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration(
+                                System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
+
+                ' Take care framework defaults
+                Dim IsModified As Boolean = Me.Configure(cfg)
+
+                If IsModified Then
+                    cfg = System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration(
+                            System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
+                End If
+
+                Dim sConfig As System.Web.Configuration.SessionStateSection =
+                    CType(cfg.GetSection("system.web/sessionState"), System.Web.Configuration.SessionStateSection)
+
+                RemoteInvoke.XeoraSettings = CType(cfg.GetSection("xeora"), Configuration.XeoraSection)
+
+                Session.SessionManager.Current.SessionStateMode = sConfig.Mode
+                Session.SessionManager.Current.Timeout = CInt(sConfig.Timeout.TotalMinutes)
+
+                If Session.SessionManager.Current.SessionStateMode = System.Web.SessionState.SessionStateMode.Off Then _
+                    Session.SessionManager.Current.CookieMode = sConfig.Cookieless
+            Finally
+                Threading.Monitor.Exit(Me)
+            End Try
+
+            ApplicationLoader.Current.Initialize()
+        End Sub
+
+        Private Sub Init(ByVal app As System.Web.HttpApplication) Implements System.Web.IHttpModule.Init
             ' Add event handlers.
             AddHandler app.BeginRequest, New EventHandler(AddressOf Me.OnBeginRequest)
             AddHandler app.AcquireRequestState, New EventHandler(AddressOf Me.OnAcquireRequestState)
@@ -25,42 +59,6 @@ Namespace Xeora.Web.Handler
             AddHandler app.ReleaseRequestState, New EventHandler(AddressOf Me.OnReleaseRequestState)
             AddHandler app.EndRequest, New EventHandler(AddressOf Me.OnEndRequest)
             ' !---
-
-            ' If not already initialized, initialize timer and configuration.
-            Threading.Monitor.Enter(Me)
-            Try
-                If Not Me._pInitialized Then
-                    ' Get the configuration section and set timeout and CookieMode values.
-                    Dim cfg As System.Configuration.Configuration =
-                        System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration(
-                                    System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
-
-                    ' Take care framework defaults
-                    Dim IsModified As Boolean = Me.Configure(cfg)
-
-                    If IsModified Then
-                        cfg = System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration(
-                                System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
-                    End If
-
-                    Dim sConfig As System.Web.Configuration.SessionStateSection =
-                        CType(cfg.GetSection("system.web/sessionState"), System.Web.Configuration.SessionStateSection)
-
-                    RemoteInvoke.XeoraSettings = CType(cfg.GetSection("xeora"), Configuration.XeoraSection)
-
-                    Session.SessionManager.Current.SessionStateMode = sConfig.Mode
-                    Session.SessionManager.Current.Timeout = CInt(sConfig.Timeout.TotalMinutes)
-
-                    If Session.SessionManager.Current.SessionStateMode = System.Web.SessionState.SessionStateMode.Off Then _
-                        Session.SessionManager.Current.CookieMode = sConfig.Cookieless
-
-                    Me._pInitialized = True
-                End If
-            Finally
-                Threading.Monitor.Exit(Me)
-            End Try
-
-            ApplicationLoader.Current.Initialize()
         End Sub
 
         Private Function Configure(ByRef cfg As System.Configuration.Configuration) As Boolean
@@ -497,14 +495,23 @@ Namespace Xeora.Web.Handler
                 CType(context.Items.Item("RequestID"), String))
         End Sub
 
-        Friend Shared ReadOnly Property Instance As RequestModule
-            Get
-                Return RequestModule._Instance
-            End Get
-        End Property
+        Friend Shared Sub DisposeAll()
+            Dim Keys As ICollection(Of Integer) = RequestModule._Instance.Keys
+
+            For Each Key As Integer In Keys
+                Dim RequestModule As RequestModule = Nothing
+
+                RequestModule._Instance.TryGetValue(Key, RequestModule)
+
+                If Not RequestModule Is Nothing Then RequestModule.Dispose()
+            Next
+
+            ApplicationLoader.Current.CleanUp()
+            RequestModule._Initialized = False
+        End Sub
 
         Public Sub Dispose() Implements System.Web.IHttpModule.Dispose
-            ApplicationLoader.Current.CleanUp()
+            RequestModule._Instance.TryRemove(Me.GetHashCode(), Nothing)
         End Sub
     End Class
 End Namespace

@@ -9,7 +9,7 @@ Namespace Xeora.Web.Handler
             Dim Context As [Shared].IHttpContext =
                 Web.Context.ContextManager.Current.Context(RequestID)
 
-            RequestModule.Instance.Dispose()
+            RequestModule.DisposeAll()
 
             If Not Context Is Nothing Then _
                 Context.Response.Redirect(Context.Request.URL.Raw)
