@@ -1,6 +1,0 @@
-P:\XeoraCube\Xeora.Web.Manager.Loader\bin\Any\Xeora.Web.Manager.Loader.dll
-P:\XeoraCube\Xeora.Web.Manager.Loader\bin\Any\Xeora.Web.Manager.Loader.pdb
-P:\XeoraCube\Xeora.Web.Manager.Loader\obj\Debug\Resources.resources
-P:\XeoraCube\Xeora.Web.Manager.Loader\obj\Debug\Xeora.Web.Manager.Loader.vbproj.GenerateResource.Cache
-P:\XeoraCube\Xeora.Web.Manager.Loader\obj\Debug\Xeora.Web.Manager.Loader.dll
-P:\XeoraCube\Xeora.Web.Manager.Loader\obj\Debug\Xeora.Web.Manager.Loader.pdb
