@@ -2,6 +2,8 @@
 
 Namespace Xeora.Web.Deployment
     Public NotInheritable Class InstanceFactory
+        Implements IDisposable
+
         Private _Instances As Concurrent.ConcurrentDictionary(Of String, DomainDeployment)
 
         Public Sub New()
@@ -35,5 +37,31 @@ Namespace Xeora.Web.Deployment
 
             Return DomainDeployment
         End Function
+
+        Private disposedValue As Boolean ' To detect redundant calls
+
+        ' IDisposable
+        Protected Sub Dispose(disposing As Boolean)
+            If Not Me.disposedValue Then
+                For Each Key As String In Me._Instances.Keys
+                    Dim DomainDeployment As DomainDeployment = Nothing
+
+                    Me._Instances.TryGetValue(Key, DomainDeployment)
+
+                    If Not DomainDeployment Is Nothing Then DomainDeployment.Dispose()
+                Next
+
+                Me._Instances.Clear()
+            End If
+
+            Me.disposedValue = True
+        End Sub
+
+#Region "IDisposable Support"
+        ' This code added by Visual Basic to correctly implement the disposable pattern.
+        Public Sub Dispose() Implements IDisposable.Dispose
+            Dispose(True)
+        End Sub
+#End Region
     End Class
 End Namespace
