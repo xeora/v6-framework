@@ -25,10 +25,12 @@ Namespace Xeora.Web.Global
             Dim BlockContent As String
             Dim ColonIndex As Integer =
                 DirectiveIdentifier.IndexOf(":"c)
+            Dim IsSpecialDirective As Boolean = False
 
             If ColonIndex = -1 Then
                 ' Special Directive such as PC, MB, XF
                 BlockContent = DirectiveInnerValue
+                IsSpecialDirective = True
             Else
                 ' Common Directive such as DirectiveType:ControlID
                 BlockContent = DirectiveInnerValue.Substring(ColonIndex + 1)
@@ -53,7 +55,8 @@ Namespace Xeora.Web.Global
                 Throw New Exception.ParseException()
 
             CoreContent = BlockContent.Substring(idxCoreContStart, idxCoreContEnd - idxCoreContStart)
-            CoreContent = CoreContent.Trim()
+            If IsSpecialDirective Then _
+                CoreContent = CoreContent.Trim()
 
             Me._Parts = New Generic.List(Of String)
             Me._MessageTemplate = String.Empty
@@ -68,10 +71,10 @@ Namespace Xeora.Web.Global
                 End If
             End If
 
-            Me.PrepareDesciption(CoreContent, ControlIDWithIndex)
+            Me.PrepareDesciption(CoreContent, ControlIDWithIndex, IsSpecialDirective)
         End Sub
 
-        Private Sub PrepareDesciption(ByVal Content As String, ByVal ControlIDWithIndex As String)
+        Private Sub PrepareDesciption(ByVal Content As String, ByVal ControlIDWithIndex As String, ByVal IsSpecialDirective As Boolean)
             Dim SearchString As String = String.Format("}}:{0}:{{", ControlIDWithIndex)
             Dim sIdx As Integer, cIdx As Integer = 0
 
@@ -88,7 +91,8 @@ Namespace Xeora.Web.Global
                 Else
                     ContentPart = Content.Substring(cIdx)
                 End If
-                ContentPart = ContentPart.Trim()
+                If IsSpecialDirective Then _
+                    ContentPart = ContentPart.Trim()
 
                 If ContentPart.IndexOf(ContentDescription.TemplatePointerText) = 0 Then
                     If Not String.IsNullOrEmpty(Me._MessageTemplate) Then _

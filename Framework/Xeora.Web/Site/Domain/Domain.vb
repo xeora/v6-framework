@@ -8,6 +8,8 @@ Namespace Xeora.Web.Site
         Private _Renderer As Renderer = Nothing
 
         Private _Deployment As Deployment.DomainDeployment = Nothing
+
+        Private _LanguageHolder As LanguageHolder
         Private _ControlsXPathNavigator As Xml.XPath.XPathNavigator
 
 #Region " Constructors "
@@ -24,10 +26,6 @@ Namespace Xeora.Web.Site
             If DomainIDAccessTree Is Nothing Then _
                 DomainIDAccessTree = [Shared].Configurations.DefaultDomain
 
-            ' First Dispose the existed deployment
-            If Not Me._Deployment Is Nothing Then Me._Deployment.Dispose()
-
-            ' Create the New One
             Try
                 Me._Deployment = Deployment.InstanceFactory.Current.GetOrCreate(DomainIDAccessTree, LanguageID)
             Catch ex As Exception.DomainNotExistsException
@@ -40,23 +38,15 @@ Namespace Xeora.Web.Site
             Catch ex As System.Exception
                 Throw
             End Try
-            AddHandler Me._Deployment.Language.ResolveTranslationRequested, AddressOf Me.ResolveTranslationRequest
+
+            Me._LanguageHolder = New LanguageHolder(Me, Me._Deployment.Language)
 
             If DomainIDAccessTree.Length > 1 Then
-                Dim DomainIDAccessTreeA As New Generic.List(Of String)
-                DomainIDAccessTreeA.AddRange(DomainIDAccessTree)
-                DomainIDAccessTreeA.RemoveAt(DomainIDAccessTreeA.Count - 1)
+                Dim ParentDomainIDAccessTree As String() =
+                    CType(Array.CreateInstance(GetType(String), DomainIDAccessTree.Length - 1), String())
+                Array.Copy(DomainIDAccessTree, 0, ParentDomainIDAccessTree, 0, ParentDomainIDAccessTree.Length)
 
-                Dim WorkingInstance As Domain = Me
-                Do Until DomainIDAccessTreeA.Count = 0
-                    Dim ParentInstance As Domain =
-                        New Domain(DomainIDAccessTreeA.ToArray(), Me._Deployment.LanguageID)
-
-                    WorkingInstance._Parent = ParentInstance
-                    WorkingInstance = ParentInstance
-
-                    DomainIDAccessTreeA.RemoveAt(DomainIDAccessTreeA.Count - 1)
-                Loop
+                Me._Parent = New Domain(ParentDomainIDAccessTree, Me._Deployment.LanguageID)
             End If
             ' !---
 
@@ -64,16 +54,6 @@ Namespace Xeora.Web.Site
                 Me._Renderer = New Renderer()
 
             Me._Renderer.Inject(Me)
-        End Sub
-
-        Private Sub ResolveTranslationRequest(ByVal TranslationID As String, ByRef Value As String)
-            Dim WorkingInstance As [Shared].IDomain = Me._Parent
-
-            Do Until WorkingInstance Is Nothing OrElse Not String.IsNullOrEmpty(Value)
-                Value = WorkingInstance.Language.Get(TranslationID)
-
-                WorkingInstance = WorkingInstance.Parent
-            Loop
         End Sub
 
 #End Region
@@ -113,7 +93,7 @@ Namespace Xeora.Web.Site
 
         Public ReadOnly Property Language() As [Shared].IDomain.ILanguage Implements [Shared].IDomain.Language
             Get
-                Return Me._Deployment.Language
+                Return Me._LanguageHolder
             End Get
         End Property
 
@@ -174,6 +154,64 @@ Namespace Xeora.Web.Site
                 Return Me._ControlsXPathNavigator
             End Get
         End Property
+
+        Private Class LanguageHolder
+            Implements [Shared].IDomain.ILanguage
+
+            Private _Owner As [Shared].IDomain
+            Private _Language As [Shared].IDomain.ILanguage
+
+            Public Sub New(ByVal Owner As [Shared].IDomain, ByVal Language As [Shared].IDomain.ILanguage)
+                Me._Owner = Owner
+                Me._Language = Language
+            End Sub
+
+            Public ReadOnly Property ID As String Implements [Shared].IDomain.ILanguage.ID
+                Get
+                    Return Me._Language.ID
+                End Get
+            End Property
+
+            Public ReadOnly Property Info As [Shared].DomainInfo.LanguageInfo Implements [Shared].IDomain.ILanguage.Info
+                Get
+                    Return Me._Language.Info
+                End Get
+            End Property
+
+            Public ReadOnly Property Name As String Implements [Shared].IDomain.ILanguage.Name
+                Get
+                    Return Me._Language.Name
+                End Get
+            End Property
+
+            Public Function [Get](ByVal TranslationID As String) As String Implements [Shared].IDomain.ILanguage.Get
+                Try
+                    Return Me._Language.Get(TranslationID)
+                Catch ex As Exception.TranslationNotFoundException
+                    If Not Me._Owner.Parent Is Nothing Then _
+                        Return Me._Owner.Parent.Language.Get(TranslationID)
+                End Try
+
+                Return Nothing
+            End Function
+
+            Private disposedValue As Boolean = False ' To detect redundant calls
+
+            ' IDisposable
+            Protected Overridable Sub Dispose(disposing As Boolean)
+                If Not Me.disposedValue Then Me._Language.Dispose()
+
+                Me.disposedValue = True
+            End Sub
+
+#Region "IDisposable Support"
+            ' This code added by Visual Basic to correctly implement the disposable pattern.
+            Public Sub Dispose() Implements IDisposable.Dispose
+                ' Do not change this code.  Put cleanup code in Dispose(ByVal disposing As Boolean) above.
+                Dispose(True)
+            End Sub
+#End Region
+        End Class
 
         Private Class Renderer
             Private _Instance As [Shared].IDomain = Nothing

@@ -10,8 +10,6 @@ Namespace Xeora.Web.Site.Setting
         Private _XPathStream As IO.StringReader = Nothing
         Private _XPathNavigator As Xml.XPath.XPathNavigator
 
-        Public Event ResolveTranslationRequested As [Shared].IDomain.ILanguage.ResolveTranslationRequestedEventHandler Implements [Shared].IDomain.ILanguage.ResolveTranslationRequested
-
         Public Sub New(ByVal LanguageXMLContent As String)
             If LanguageXMLContent Is Nothing OrElse
                 LanguageXMLContent.Trim().Length = 0 Then
@@ -62,22 +60,21 @@ Namespace Xeora.Web.Site.Setting
         End Property
 
         Public Function [Get](ByVal TranslationID As String) As String Implements [Shared].IDomain.ILanguage.Get
-            Dim rString As String = Nothing
-
             Dim xPathIter As Xml.XPath.XPathNodeIterator
 
             Try
                 xPathIter = Me._XPathNavigator.Select(String.Format("//translation[@id='{0}']", TranslationID))
 
-                If xPathIter.MoveNext() Then rString = xPathIter.Current.Value
+                If xPathIter.MoveNext() Then Return xPathIter.Current.Value
 
-                If String.IsNullOrEmpty(rString) Then _
-                    RaiseEvent ResolveTranslationRequested(TranslationID, rString)
+                Throw New Exception.TranslationNotFoundException()
+            Catch ex As Exception.TranslationNotFoundException
+                Throw
             Catch ex As System.Exception
                 ' Just Handle Exceptions
             End Try
 
-            Return rString
+            Return String.Empty
         End Function
 
         Private disposedValue As Boolean = False        ' To detect redundant calls

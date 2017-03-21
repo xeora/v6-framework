@@ -171,6 +171,7 @@
     <Compile Include="Controller\Directive\Control\VariableBlock.vb" />
     <Compile Include="Exception\DomainNotExistsException.vb" />
     <Compile Include="Exception\DeploymentException.vb" />
+    <Compile Include="Exception\TranslationNotFoundException.vb" />
     <Compile Include="Exception\HasParentException.vb" />
     <Compile Include="Exception\ServiceSocketException.vb" />
     <Compile Include="Exception\RequestBlockException.vb" />

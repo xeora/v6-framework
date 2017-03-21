@@ -77,8 +77,6 @@ Namespace Xeora.Web.Shared
             ReadOnly Property Name() As String
             ReadOnly Property Info() As DomainInfo.LanguageInfo
             Function [Get](ByVal TranslationID As String) As String
-
-            Event ResolveTranslationRequested(ByVal TranslationID As String, ByRef Value As String)
         End Interface
 
         Public Interface IxService
