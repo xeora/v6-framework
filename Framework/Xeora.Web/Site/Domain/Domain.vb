@@ -23,6 +23,8 @@ Namespace Xeora.Web.Site
         End Sub
 
         Private Sub BuildDomain(ByVal DomainIDAccessTree As String(), ByVal LanguageID As String)
+            If Not Me._xPathStream Is Nothing Then Me._xPathStream.Close() : Me._ControlsXPathNavigator = Nothing
+
             If DomainIDAccessTree Is Nothing Then _
                 DomainIDAccessTree = [Shared].Configurations.DefaultDomain
 
@@ -195,22 +197,9 @@ Namespace Xeora.Web.Site
                 Return Nothing
             End Function
 
-            Private disposedValue As Boolean = False ' To detect redundant calls
-
-            ' IDisposable
-            Protected Overridable Sub Dispose(disposing As Boolean)
-                If Not Me.disposedValue Then Me._Language.Dispose()
-
-                Me.disposedValue = True
-            End Sub
-
-#Region "IDisposable Support"
-            ' This code added by Visual Basic to correctly implement the disposable pattern.
             Public Sub Dispose() Implements IDisposable.Dispose
-                ' Do not change this code.  Put cleanup code in Dispose(ByVal disposing As Boolean) above.
-                Dispose(True)
+                ' Dispose will be handled by InstanceFactory. No need to handle here!
             End Sub
-#End Region
         End Class
 
         Private Class Renderer
@@ -640,8 +629,6 @@ Namespace Xeora.Web.Site
         Protected Overridable Sub Dispose(ByVal disposing As Boolean)
             If Not Me.disposedValue Then
                 If Not Me._xPathStream Is Nothing Then Me._xPathStream.Close() : GC.SuppressFinalize(Me._xPathStream)
-
-                Me._Deployment.Dispose()
             End If
 
             Me.disposedValue = True
