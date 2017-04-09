@@ -512,22 +512,34 @@ Namespace Xeora.Web.Handler
                         If Range.IndexOf("bytes=") = 0 Then
                             Range = Range.Remove(0, "bytes=".Length)
 
-                            If Not Long.TryParse(Range.Split("-"c)(0), beginRange) Then beginRange = 0
-                            If Not Long.TryParse(Range.Split("-"c)(1), endRange) Then endRange = -1
-                        End If
+                            Try
+                                If Not Long.TryParse(Range.Split("-"c)(0), beginRange) Then beginRange = 0
+                                If Not Long.TryParse(Range.Split("-"c)(1), endRange) Then endRange = -1
+                            Catch ex As System.Exception
+                                Me._Context.Response.StatusCode = 416
 
-                        Me._Context.Response.StatusCode = 206
-                        Me._Context.Response.Header.Item("Content-Type") = ContentType
-                        Me._Context.Response.Header.Item("Content-Encoding") = "identity"
+                                Return
+                            End Try
+                        End If
 
                         Try
                             RequestFileStream = New IO.FileStream(RequestFilePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
-                            If endRange = -1 Then endRange = RequestFileStream.Length
-                            endRange -= 1
+                            If endRange = -1 Then endRange = RequestFileStream.Length - 1
 
                             Dim requestingLength As Long = endRange - beginRange + 1
 
-                            Me._Context.Response.Header.Item("Content-Range") = String.Format("bytes {0}-{1}/{2}", beginRange, endRange, requestingLength)
+                            If endRange > RequestFileStream.Length - 1 OrElse
+                                beginRange > endRange Then
+
+                                Me._Context.Response.StatusCode = 416
+
+                                Exit Try
+                            End If
+
+                            Me._Context.Response.StatusCode = 206
+                            Me._Context.Response.Header.Item("Content-Type") = ContentType
+                            Me._Context.Response.Header.Item("Content-Encoding") = "identity"
+                            Me._Context.Response.Header.Item("Content-Range") = String.Format("bytes {0}-{1}/{2}", beginRange, endRange, RequestFileStream.Length)
                             Me._Context.Response.Header.Item("Content-Length") = requestingLength.ToString()
                             Me._Context.Response.ReleaseHeader()
 
