@@ -1,19 +1,10 @@
 Namespace Xeora.VSAddIn.Tools
     Public Class CompilerForm
 
-        Private Sub butBrowse_Click(ByVal sender As System.Object, ByVal e As System.EventArgs)
-            Dim folderBrowse As New FolderBrowserDialog
-
-            folderBrowse.Description = "Browse Domain Root Path"
-            folderBrowse.ShowNewFolderButton = False
-            folderBrowse.SelectedPath = Application.StartupPath
-
-            If folderBrowse.ShowDialog = System.Windows.Forms.DialogResult.OK Then
-                Me.tbLocation.Text = folderBrowse.SelectedPath
-            End If
-        End Sub
-
         Private Sub cbShowPassword_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cbShowPassword.CheckedChanged
+            For Each dgvRow As DataGridViewRow In dgvDomains.Rows
+
+            Next
             If Me.cbShowPassword.Checked Then
                 Me.tbPassword.PasswordChar = Nothing
             Else

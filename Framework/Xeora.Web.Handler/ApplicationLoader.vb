@@ -121,11 +121,7 @@ Namespace Xeora.Web.Handler
                 Dim DomainChildrenDI As IO.DirectoryInfo =
                     New IO.DirectoryInfo(IO.Path.Combine(DomainDI.FullName, "Addons"))
 
-                If DomainChildrenDI.Exists Then
-                    For Each ChildDomainDI As IO.DirectoryInfo In DomainChildrenDI.GetDirectories()
-                        Me.LoadDomainExecutables(ChildDomainDI.FullName)
-                    Next
-                End If
+                If DomainChildrenDI.Exists Then Me.LoadDomainExecutables(DomainChildrenDI.FullName)
             Next
         End Sub
 
