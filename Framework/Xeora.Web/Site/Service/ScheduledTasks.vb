@@ -43,7 +43,7 @@ RETRYREMOTEBIND:
                             Me._TasksID, [Shared].Configurations.ScheduledTasksServicePort, serverProvider)
 
                     ' Register RemoteVariablePoolService to Remoting Service
-                    Runtime.Remoting.Channels.ChannelServices.RegisterChannel(Me._RemoteTasksService, True)
+                    Runtime.Remoting.Channels.ChannelServices.RegisterChannel(Me._RemoteTasksService, False)
 
                     ' Register VariablePool's Service Name
                     Runtime.Remoting.RemotingServices.Marshal(Me, Me._TasksID, GetType(ScheduledTasks))
@@ -73,7 +73,7 @@ RETRYREMOTEBIND:
 
                 RemoteTasksServiceConnection =
                     New Runtime.Remoting.Channels.Tcp.TcpClientChannel(Guid.NewGuid().ToString(), clientProvider)
-                Runtime.Remoting.Channels.ChannelServices.RegisterChannel(RemoteTasksServiceConnection, True)
+                Runtime.Remoting.Channels.ChannelServices.RegisterChannel(RemoteTasksServiceConnection, False)
 
                 rRemoteTasks =
                     CType(

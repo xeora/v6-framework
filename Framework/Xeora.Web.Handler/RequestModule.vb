@@ -4,6 +4,8 @@ Namespace Xeora.Web.Handler
     Public NotInheritable Class RequestModule
         Implements System.Web.IHttpModule
 
+        Private Shared _UnixPlatform As Boolean = False
+
         Private Shared _Instance As New Concurrent.ConcurrentDictionary(Of Integer, RequestModule)
         Private Shared _Initialized As Boolean = False
 
@@ -189,178 +191,183 @@ Namespace Xeora.Web.Handler
                 IsModified = True
             End If
 
-            ' take care framework headers
-            xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol")
-
-            If xmlNodes.Count = 0 Then
-                xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer")
-
-                If xmlNodes.Count = 0 Then
-                    Throw New System.Exception("Application Configuration File Error!")
-                Else
-                    Dim removeNode As Xml.XmlNode =
-                        xmlDocument.CreateElement("remove")
-                    Dim removeNameAttribute As Xml.XmlAttribute =
-                        xmlDocument.CreateAttribute("name")
-                    removeNameAttribute.Value = "X-Powered-By"
-                    removeNode.Attributes.Append(removeNameAttribute)
-
-                    Dim addNode As Xml.XmlNode =
-                        xmlDocument.CreateElement("add")
-                    Dim addNameAttribute As Xml.XmlAttribute =
-                        xmlDocument.CreateAttribute("name")
-                    addNameAttribute.Value = "X-Powered-By"
-                    Dim addValueAttribute As Xml.XmlAttribute =
-                        xmlDocument.CreateAttribute("value")
-                    addValueAttribute.Value = "XeoraCube"
-
-                    addNode.Attributes.Append(addNameAttribute)
-                    addNode.Attributes.Append(addValueAttribute)
-
-                    Dim customHeadersNode As Xml.XmlNode =
-                        xmlDocument.CreateElement("customHeaders")
-
-                    Dim protocolNode As Xml.XmlNode =
-                        xmlDocument.CreateElement("httpProtocol")
-
-                    customHeadersNode.AppendChild(removeNode)
-                    customHeadersNode.AppendChild(addNode)
-                    protocolNode.AppendChild(customHeadersNode)
-
-                    xmlNodes.Item(0).AppendChild(protocolNode)
-
-                    IsModified = True
-                End If
-            Else
-                xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
-
-                If xmlNodes.Count = 0 Then
+            Select Case Environment.OSVersion.Platform
+                Case PlatformID.MacOSX, PlatformID.Unix
+                    RequestModule._UnixPlatform = True
+                Case Else
+                    ' take care framework headers
                     xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol")
 
-                    Dim removeNode As Xml.XmlNode =
-                        xmlDocument.CreateElement("remove")
-                    Dim removeNameAttribute As Xml.XmlAttribute =
-                        xmlDocument.CreateAttribute("name")
-                    removeNameAttribute.Value = "X-Powered-By"
-                    removeNode.Attributes.Append(removeNameAttribute)
+                    If xmlNodes.Count = 0 Then
+                        xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer")
 
-                    Dim addNode As Xml.XmlNode =
-                        xmlDocument.CreateElement("add")
-                    Dim addNameAttribute As Xml.XmlAttribute =
-                        xmlDocument.CreateAttribute("name")
-                    addNameAttribute.Value = "X-Powered-By"
-                    Dim addValueAttribute As Xml.XmlAttribute =
-                        xmlDocument.CreateAttribute("value")
-                    addValueAttribute.Value = "XeoraCube"
+                        If xmlNodes.Count = 0 Then
+                            Throw New System.Exception("Application Configuration File Error!")
+                        Else
+                            Dim removeNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("remove")
+                            Dim removeNameAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("name")
+                            removeNameAttribute.Value = "X-Powered-By"
+                            removeNode.Attributes.Append(removeNameAttribute)
 
-                    addNode.Attributes.Append(addNameAttribute)
-                    addNode.Attributes.Append(addValueAttribute)
+                            Dim addNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("add")
+                            Dim addNameAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("name")
+                            addNameAttribute.Value = "X-Powered-By"
+                            Dim addValueAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("value")
+                            addValueAttribute.Value = "XeoraCube"
 
-                    Dim customHeadersNode As Xml.XmlNode =
-                        xmlDocument.CreateElement("customHeaders")
+                            addNode.Attributes.Append(addNameAttribute)
+                            addNode.Attributes.Append(addValueAttribute)
 
-                    customHeadersNode.AppendChild(removeNode)
-                    customHeadersNode.AppendChild(addNode)
+                            Dim customHeadersNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("customHeaders")
 
-                    xmlNodes.Item(0).AppendChild(customHeadersNode)
+                            Dim protocolNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("httpProtocol")
 
-                    IsModified = True
-                Else
-                    Dim xpbModified As Boolean = False
-                    xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders/remove[@name='X-Powered-By']")
+                            customHeadersNode.AppendChild(removeNode)
+                            customHeadersNode.AppendChild(addNode)
+                            protocolNode.AppendChild(customHeadersNode)
 
-                    If xmlNodes.Count <> 1 Then
-                        If xmlNodes.Count > 1 Then
-                            For Each xmlNode As Xml.XmlNode In xmlNodes
-                                xmlNode.ParentNode.RemoveChild(xmlNode)
-                            Next
-                        End If
+                            xmlNodes.Item(0).AppendChild(protocolNode)
 
-                        xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
-
-                        Dim removeNode As Xml.XmlNode =
-                            xmlDocument.CreateElement("remove")
-                        Dim removeNameAttribute As Xml.XmlAttribute =
-                            xmlDocument.CreateAttribute("name")
-                        removeNameAttribute.Value = "X-Powered-By"
-                        removeNode.Attributes.Append(removeNameAttribute)
-
-                        xmlNodes.Item(0).AppendChild(removeNode)
-
-                        IsModified = True
-                        xpbModified = True
-                    End If
-
-                    xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders/add[@name='X-Powered-By']")
-
-                    If xmlNodes.Count <> 1 OrElse xpbModified Then
-                        If xmlNodes.Count > 1 OrElse xpbModified Then
-                            For Each xmlNode As Xml.XmlNode In xmlNodes
-                                xmlNode.ParentNode.RemoveChild(xmlNode)
-                            Next
-                        End If
-
-                        xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
-
-                        Dim addNode As Xml.XmlNode =
-                            xmlDocument.CreateElement("add")
-                        Dim addNameAttribute As Xml.XmlAttribute =
-                            xmlDocument.CreateAttribute("name")
-                        addNameAttribute.Value = "X-Powered-By"
-                        Dim addValueAttribute As Xml.XmlAttribute =
-                            xmlDocument.CreateAttribute("value")
-                        addValueAttribute.Value = "XeoraCube"
-
-                        addNode.Attributes.Append(addNameAttribute)
-                        addNode.Attributes.Append(addValueAttribute)
-
-                        xmlNodes.Item(0).AppendChild(addNode)
-
-                        IsModified = True
-                    Else
-                        If String.Compare(xmlNodes.Item(0).Attributes.GetNamedItem("value").Value, "XeoraCube") <> 0 Then
-                            xmlNodes.Item(0).Attributes.GetNamedItem("value").Value = "XeoraCube"
                             IsModified = True
                         End If
-                    End If
-
-                    xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders/add[@name='X-FrameworkVersion']")
-
-                    Dim vI As Version = Reflection.Assembly.GetExecutingAssembly().GetName().Version
-                    Dim vIS As String = String.Format("{0}.{1}.{2}", vI.Major, vI.Minor, vI.Build)
-
-                    If xmlNodes.Count <> 1 Then
-                        If xmlNodes.Count > 1 Then
-                            For Each xmlNode As Xml.XmlNode In xmlNodes
-                                xmlNode.ParentNode.RemoveChild(xmlNode)
-                            Next
-                        End If
-
+                    Else
                         xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
 
-                        Dim addNode As Xml.XmlNode =
-                            xmlDocument.CreateElement("add")
-                        Dim addNameAttribute As Xml.XmlAttribute =
-                            xmlDocument.CreateAttribute("name")
-                        addNameAttribute.Value = "X-FrameworkVersion"
-                        Dim addValueAttribute As Xml.XmlAttribute =
-                            xmlDocument.CreateAttribute("value")
-                        addValueAttribute.Value = vIS
+                        If xmlNodes.Count = 0 Then
+                            xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol")
 
-                        addNode.Attributes.Append(addNameAttribute)
-                        addNode.Attributes.Append(addValueAttribute)
+                            Dim removeNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("remove")
+                            Dim removeNameAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("name")
+                            removeNameAttribute.Value = "X-Powered-By"
+                            removeNode.Attributes.Append(removeNameAttribute)
 
-                        xmlNodes.Item(0).AppendChild(addNode)
+                            Dim addNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("add")
+                            Dim addNameAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("name")
+                            addNameAttribute.Value = "X-Powered-By"
+                            Dim addValueAttribute As Xml.XmlAttribute =
+                                xmlDocument.CreateAttribute("value")
+                            addValueAttribute.Value = "XeoraCube"
 
-                        IsModified = True
-                    Else
-                        If String.Compare(xmlNodes.Item(0).Attributes.GetNamedItem("value").Value, vIS) <> 0 Then
-                            xmlNodes.Item(0).Attributes.GetNamedItem("value").Value = vIS
+                            addNode.Attributes.Append(addNameAttribute)
+                            addNode.Attributes.Append(addValueAttribute)
+
+                            Dim customHeadersNode As Xml.XmlNode =
+                                xmlDocument.CreateElement("customHeaders")
+
+                            customHeadersNode.AppendChild(removeNode)
+                            customHeadersNode.AppendChild(addNode)
+
+                            xmlNodes.Item(0).AppendChild(customHeadersNode)
+
                             IsModified = True
+                        Else
+                            Dim xpbModified As Boolean = False
+                            xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders/remove[@name='X-Powered-By']")
+
+                            If xmlNodes.Count <> 1 Then
+                                If xmlNodes.Count > 1 Then
+                                    For Each xmlNode As Xml.XmlNode In xmlNodes
+                                        xmlNode.ParentNode.RemoveChild(xmlNode)
+                                    Next
+                                End If
+
+                                xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
+
+                                Dim removeNode As Xml.XmlNode =
+                                    xmlDocument.CreateElement("remove")
+                                Dim removeNameAttribute As Xml.XmlAttribute =
+                                    xmlDocument.CreateAttribute("name")
+                                removeNameAttribute.Value = "X-Powered-By"
+                                removeNode.Attributes.Append(removeNameAttribute)
+
+                                xmlNodes.Item(0).AppendChild(removeNode)
+
+                                IsModified = True
+                                xpbModified = True
+                            End If
+
+                            xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders/add[@name='X-Powered-By']")
+
+                            If xmlNodes.Count <> 1 OrElse xpbModified Then
+                                If xmlNodes.Count > 1 OrElse xpbModified Then
+                                    For Each xmlNode As Xml.XmlNode In xmlNodes
+                                        xmlNode.ParentNode.RemoveChild(xmlNode)
+                                    Next
+                                End If
+
+                                xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
+
+                                Dim addNode As Xml.XmlNode =
+                                    xmlDocument.CreateElement("add")
+                                Dim addNameAttribute As Xml.XmlAttribute =
+                                    xmlDocument.CreateAttribute("name")
+                                addNameAttribute.Value = "X-Powered-By"
+                                Dim addValueAttribute As Xml.XmlAttribute =
+                                    xmlDocument.CreateAttribute("value")
+                                addValueAttribute.Value = "XeoraCube"
+
+                                addNode.Attributes.Append(addNameAttribute)
+                                addNode.Attributes.Append(addValueAttribute)
+
+                                xmlNodes.Item(0).AppendChild(addNode)
+
+                                IsModified = True
+                            Else
+                                If String.Compare(xmlNodes.Item(0).Attributes.GetNamedItem("value").Value, "XeoraCube") <> 0 Then
+                                    xmlNodes.Item(0).Attributes.GetNamedItem("value").Value = "XeoraCube"
+                                    IsModified = True
+                                End If
+                            End If
+
+                            xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders/add[@name='X-Framework-Version']")
+
+                            Dim vI As Version = Reflection.Assembly.GetExecutingAssembly().GetName().Version
+                            Dim vIS As String = String.Format("{0}.{1}.{2}", vI.Major, vI.Minor, vI.Build)
+
+                            If xmlNodes.Count <> 1 Then
+                                If xmlNodes.Count > 1 Then
+                                    For Each xmlNode As Xml.XmlNode In xmlNodes
+                                        xmlNode.ParentNode.RemoveChild(xmlNode)
+                                    Next
+                                End If
+
+                                xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
+
+                                Dim addNode As Xml.XmlNode =
+                                    xmlDocument.CreateElement("add")
+                                Dim addNameAttribute As Xml.XmlAttribute =
+                                    xmlDocument.CreateAttribute("name")
+                                addNameAttribute.Value = "X-Framework-Version"
+                                Dim addValueAttribute As Xml.XmlAttribute =
+                                    xmlDocument.CreateAttribute("value")
+                                addValueAttribute.Value = vIS
+
+                                addNode.Attributes.Append(addNameAttribute)
+                                addNode.Attributes.Append(addValueAttribute)
+
+                                xmlNodes.Item(0).AppendChild(addNode)
+
+                                IsModified = True
+                            Else
+                                If String.Compare(xmlNodes.Item(0).Attributes.GetNamedItem("value").Value, vIS) <> 0 Then
+                                    xmlNodes.Item(0).Attributes.GetNamedItem("value").Value = vIS
+                                    IsModified = True
+                                End If
+                            End If
                         End If
                     End If
-                End If
-            End If
+            End Select
 
             If IsModified Then
                 Dim cfgBackupFilePath As String =
@@ -397,11 +404,17 @@ Namespace Xeora.Web.Handler
         ' Unhandled Exception Logging for AppDomain
         '
         Private Sub OnUnhandledExceptions(ByVal source As Object, ByVal args As UnhandledExceptionEventArgs)
-            If Not args.ExceptionObject Is Nothing AndAlso
-                TypeOf args.ExceptionObject Is System.Exception Then
+            If Not args Is Nothing AndAlso Not args.ExceptionObject Is Nothing Then
+                Dim ErrorContent As String
+
+                If TypeOf args.ExceptionObject Is System.Exception Then
+                    ErrorContent = CType(args.ExceptionObject, System.Exception).ToString()
+                Else
+                    ErrorContent = args.ExceptionObject.ToString()
+                End If
 
                 Helper.EventLogger.LogToSystemEvent(
-                    String.Format(" --- RequestModule Exception --- {0}{0}{1}", Environment.NewLine, CType(args.ExceptionObject, System.Exception).ToString()),
+                    String.Format(" --- RequestModule Exception --- {0}{0}{1}", Environment.NewLine, ErrorContent),
                     EventLogEntryType.Error
                 )
             End If
@@ -414,9 +427,9 @@ Namespace Xeora.Web.Handler
             Dim app As System.Web.HttpApplication =
                 CType(source, System.Web.HttpApplication)
 
-            ' Check URL contains RootPath (~) modifier
+            ' Check URL contains ApplicationRootPath (~) or SiteRootPath (¨) modifiers
             Dim RootPath As String =
-                app.Context.Request.RawUrl
+                System.Web.HttpUtility.UrlDecode(app.Context.Request.RawUrl)
 
             If RootPath.IndexOf("~/") > -1 Then
                 Dim tildeIdx As Integer = RootPath.IndexOf("~/")
@@ -442,16 +455,24 @@ Namespace Xeora.Web.Handler
             ' Define a RequestID and ApplicationID for XeoraCube
             app.Context.Items.Add("RequestID", Guid.NewGuid().ToString())
             app.Context.Items.Add("ApplicationID", ApplicationLoader.Current.ApplicationID)
+
+            If RequestModule._UnixPlatform Then
+                Dim vI As Version = Reflection.Assembly.GetExecutingAssembly().GetName().Version
+                Dim vIS As String = String.Format("{0}.{1}.{2}", vI.Major, vI.Minor, vI.Build)
+
+                app.Context.Response.AppendHeader("X-Powered-By", "XeoraCube")
+                app.Context.Response.AppendHeader("X-Framework-Version", vIS)
+            End If
         End Sub
 
         '
         ' Event handler for HttpApplication.AcquireRequestState
         '
         Private Sub OnAcquireRequestState(ByVal source As Object, ByVal args As EventArgs)
-            Dim context As System.Web.HttpContext = CType(source, System.Web.HttpApplication).Context
-
-            If Session.SessionManager.Current.SessionStateMode = System.Web.SessionState.SessionStateMode.Off Then _
-                Session.SessionManager.Current.Acquire(context)
+            If Session.SessionManager.Current.SessionStateMode = System.Web.SessionState.SessionStateMode.Off Then
+                Session.SessionManager.Current.Acquire(
+                    CType(source, System.Web.HttpApplication).Context)
+            End If
         End Sub
 
         '
@@ -477,10 +498,10 @@ Namespace Xeora.Web.Handler
         ' Event handler for HttpApplication.ReleaseRequestState
         '
         Private Sub OnReleaseRequestState(ByVal source As Object, ByVal args As EventArgs)
-            Dim context As System.Web.HttpContext = CType(source, System.Web.HttpApplication).Context
-
-            If Session.SessionManager.Current.SessionStateMode = System.Web.SessionState.SessionStateMode.Off Then _
-                Session.SessionManager.Current.Release(context)
+            If Session.SessionManager.Current.SessionStateMode = System.Web.SessionState.SessionStateMode.Off Then
+                Session.SessionManager.Current.Release(
+                    CType(source, System.Web.HttpApplication).Context)
+            End If
         End Sub
 
         '

@@ -105,8 +105,6 @@ Namespace Xeora.Web.Handler.Session
             Dim stateProvider As System.Web.SessionState.HttpSessionStateContainer =
                 CType(System.Web.SessionState.SessionStateUtility.GetHttpSessionStateFromContext(Context), System.Web.SessionState.HttpSessionStateContainer)
 
-            ' If Session.Abandon() was called, remove the session data from the local Hashtable
-            ' and execute the Session_OnEnd event from the Global.asax file.
             If stateProvider.IsAbandoned Then
                 Threading.Monitor.Enter(Me._SessionItems.SyncRoot)
                 Try
@@ -116,8 +114,6 @@ Namespace Xeora.Web.Handler.Session
                     Threading.Monitor.Exit(Me._SessionItems.SyncRoot)
                 End Try
 
-                ' This event is here for just dummy purpose 
-                System.Web.SessionState.SessionStateUtility.RaiseSessionEnd(stateProvider, Me, EventArgs.Empty)
                 System.Web.SessionState.SessionStateUtility.RemoveHttpSessionStateFromContext(Context)
             End If
         End Sub

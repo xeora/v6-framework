@@ -152,17 +152,18 @@ Namespace Xeora.Web.Shared
                         CType(WorkingObject.GetType().InvokeMember("ApplicationRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
 
                     If String.IsNullOrEmpty(appRootValue) Then
-                        Configurations._ApplicationRootFormat.FileSystemImplementation = ".\"
+                        Configurations._ApplicationRootFormat.FileSystemImplementation =
+                            String.Format(".{0}", IO.Path.DirectorySeparatorChar)
                         Configurations._ApplicationRootFormat.BrowserImplementation = Configurations.VirtualRoot
                     Else
-                        If appRootValue.IndexOf("\"c) = 0 Then _
+                        If appRootValue.IndexOf(IO.Path.DirectorySeparatorChar) = 0 Then _
                             appRootValue = String.Format(".{0}", appRootValue)
 
-                        If appRootValue.IndexOf(".\") <> 0 Then _
-                            appRootValue = String.Format(".\{0}", appRootValue)
+                        If appRootValue.IndexOf(String.Format(".{0}", IO.Path.DirectorySeparatorChar)) <> 0 Then _
+                            appRootValue = String.Format(".{0}{1}", IO.Path.DirectorySeparatorChar, appRootValue)
 
-                        If String.Compare(appRootValue.Substring(appRootValue.Length - 1), "\") <> 0 Then _
-                            appRootValue = String.Format("{0}\", appRootValue)
+                        If String.Compare(appRootValue.Substring(appRootValue.Length - 1), IO.Path.DirectorySeparatorChar) <> 0 Then _
+                            appRootValue = String.Format("{0}{1}", appRootValue, IO.Path.DirectorySeparatorChar)
 
                         Configurations._ApplicationRootFormat.FileSystemImplementation = appRootValue
                         Configurations._ApplicationRootFormat.BrowserImplementation =
@@ -209,7 +210,7 @@ Namespace Xeora.Web.Shared
                     Configurations._WorkingPathFormat = New WorkingPathFormat()
 
                     Dim wPath As String =
-                        IO.Path.Combine(Configurations.PhysicalRoot, Configurations.ApplicationRoot.FileSystemImplementation)
+                        IO.Path.GetFullPath(IO.Path.Combine(Configurations.PhysicalRoot, Configurations.ApplicationRoot.FileSystemImplementation))
                     Configurations._WorkingPathFormat.WorkingPath = wPath
 
                     For Each match As Text.RegularExpressions.Match In Text.RegularExpressions.Regex.Matches(wPath, "\W")

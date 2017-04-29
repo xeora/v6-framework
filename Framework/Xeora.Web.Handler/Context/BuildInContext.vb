@@ -298,6 +298,7 @@ Namespace Xeora.Web.Context
                             CurrentHashCode = mR.Value.Substring(0, mR.Value.Length - 1)
                         Else
                             CurrentHashCode = Me._Request.GetHashCode().ToString()
+                            CurrentHashCode = CurrentHashCode.Replace("-"c, String.Empty)
                         End If
 
                         AppDomain.CurrentDomain.SetData(
@@ -394,6 +395,7 @@ Namespace Xeora.Web.Context
                             End If
                     End Select
                 Next
+                Me.Stream.Flush()
             End Sub
 
             Public Sub Redirect(ByVal URL As String) Implements IHttpContext.IHttpResponse.Redirect
@@ -417,7 +419,7 @@ Namespace Xeora.Web.Context
                 End Set
             End Property
 
-            Public ReadOnly Property Stream As Stream Implements IHttpContext.IHttpResponse.Stream
+            Public ReadOnly Property Stream As IO.Stream Implements IHttpContext.IHttpResponse.Stream
                 Get
                     Return Me._Response.OutputStream
                 End Get

@@ -175,7 +175,7 @@ Namespace Xeora.Web.Manager
                     Throw New System.Exception("Assembly does not belong to any XeoraCube Domain or Addon!")
                 Else
                     Dim InterfaceType As System.Type =
-                        ExamInterface.GetInterface("IDomainExecutable", True)
+                        ExamInterface.GetInterface("IDomainExecutable")
 
                     If InterfaceType Is Nothing OrElse
                         Not InterfaceType.IsInterface OrElse

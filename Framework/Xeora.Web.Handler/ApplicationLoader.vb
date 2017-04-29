@@ -33,10 +33,12 @@ Namespace Xeora.Web.Handler
             Dim FileSystemWatcher As New IO.FileSystemWatcher()
 
             With FileSystemWatcher
-                .Path = IO.Path.Combine(
-                            [Shared].Configurations.PhysicalRoot,
-                            [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
-                            "Domains"
+                .Path = IO.Path.GetFullPath(
+                            IO.Path.Combine(
+                                [Shared].Configurations.PhysicalRoot,
+                                [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
+                                "Domains"
+                            )
                         )
                 .IncludeSubdirectories = True
                 .Filter = "*.dll"
@@ -80,10 +82,12 @@ Namespace Xeora.Web.Handler
                     IO.Directory.CreateDirectory(Me._ApplicationLocation)
 
                 Dim DefaultDomainRootLocation As String =
-                    IO.Path.Combine(
-                        [Shared].Configurations.PhysicalRoot,
-                        [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
-                        "Domains"
+                    IO.Path.GetFullPath(
+                        IO.Path.Combine(
+                            [Shared].Configurations.PhysicalRoot,
+                            [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
+                            "Domains"
+                        )
                     )
                 Me.LoadDomainExecutables(DefaultDomainRootLocation)
             Catch ex As System.Exception

@@ -28,11 +28,13 @@ Namespace Xeora.Web.Deployment
             End If
 
             Me._WorkingRoot =
-                IO.Path.Combine(
-                    [Shared].Configurations.PhysicalRoot,
-                    [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
-                    "Domains",
-                    Me.CreateDomainAccessPathString()
+                IO.Path.GetFullPath(
+                    IO.Path.Combine(
+                        [Shared].Configurations.PhysicalRoot,
+                        [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
+                        "Domains",
+                        Me.CreateDomainAccessPathString()
+                    )
                 )
 
             If Not IO.Directory.Exists(Me._WorkingRoot) Then _

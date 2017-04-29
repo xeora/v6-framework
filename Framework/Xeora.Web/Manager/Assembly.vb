@@ -205,11 +205,8 @@ Namespace Xeora.Web.Manager
             Dim ApplicationPath As String =
                 IO.Path.Combine(
                     [Shared].Configurations.TemporaryRoot,
-                    String.Format("{0}{2}{1}",
-                        [Shared].Configurations.WorkingPath.WorkingPathID,
-                        [Shared].Helpers.Context.Content.Item("ApplicationID"),
-                        IO.Path.DirectorySeparatorChar
-                    )
+                    [Shared].Configurations.WorkingPath.WorkingPathID,
+                    CType([Shared].Helpers.Context.Content.Item("ApplicationID"), String)
                 )
 
             Dim AssemblyKey As String =

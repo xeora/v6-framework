@@ -22,13 +22,15 @@ Namespace Xeora.Web.Site.Service
 
         Private _PoolLockFS As IO.FileStream = Nothing
         Private _PoolLockFileLocation As String =
-            IO.Path.Combine(
-                [Shared].Configurations.TemporaryRoot,
-                String.Format(
-                        "{0}{1}vp.lock",
-                        [Shared].Configurations.WorkingPath.WorkingPathID,
-                        IO.Path.DirectorySeparatorChar
-                    )
+            IO.Path.GetFullPath(
+                IO.Path.Combine(
+                    [Shared].Configurations.TemporaryRoot,
+                    String.Format(
+                            "{0}{1}vp.lock",
+                            [Shared].Configurations.WorkingPath.WorkingPathID,
+                            IO.Path.DirectorySeparatorChar
+                        )
+                )
             )
 
         Private _RemoteVariablePoolServiceConnection As Runtime.Remoting.Channels.Tcp.TcpClientChannel = Nothing
@@ -72,7 +74,7 @@ Namespace Xeora.Web.Site.Service
                         Me._VariablePoolID, [Shared].Configurations.VariablePoolServicePort, serverProvider)
 
                 ' Register RemoteVariablePoolService to Remoting Service
-                Runtime.Remoting.Channels.ChannelServices.RegisterChannel(Me._RemoteVariablePoolService, True)
+                Runtime.Remoting.Channels.ChannelServices.RegisterChannel(Me._RemoteVariablePoolService, False)
 
                 ' Register VariablePool's Service Name
                 Runtime.Remoting.RemotingServices.Marshal(Me, Me._VariablePoolID, GetType(VariablePool))
@@ -123,7 +125,7 @@ Namespace Xeora.Web.Site.Service
 
                     RemoteVariablePoolServiceConnection =
                         New Runtime.Remoting.Channels.Tcp.TcpClientChannel(Guid.NewGuid().ToString(), clientProvider)
-                    Runtime.Remoting.Channels.ChannelServices.RegisterChannel(RemoteVariablePoolServiceConnection, True)
+                    Runtime.Remoting.Channels.ChannelServices.RegisterChannel(RemoteVariablePoolServiceConnection, False)
 
                     rRemoteVariablePool =
                         CType(
@@ -356,12 +358,10 @@ Namespace Xeora.Web.Site.Service
             Dim vpService As String =
                 IO.Path.Combine(
                     [Shared].Configurations.TemporaryRoot,
-                    String.Format(
-                            "{0}{2}PoolSessions{2}{1}{2}vmap.dat",
-                            [Shared].Configurations.WorkingPath.WorkingPathID,
-                            SessionKeyID,
-                            IO.Path.DirectorySeparatorChar
-                        )
+                    [Shared].Configurations.WorkingPath.WorkingPathID,
+                    "PoolSessions",
+                    SessionKeyID,
+                    "vmap.dat"
                 )
 
             If IO.File.Exists(vpService) Then
@@ -443,12 +443,10 @@ Namespace Xeora.Web.Site.Service
             Dim vpService As String =
                 IO.Path.Combine(
                     [Shared].Configurations.TemporaryRoot,
-                    String.Format(
-                            "{0}{2}PoolSessions{2}{1}{2}vmap.dat",
-                            [Shared].Configurations.WorkingPath.WorkingPathID,
-                            SessionKeyID,
-                            IO.Path.DirectorySeparatorChar
-                        )
+                    [Shared].Configurations.WorkingPath.WorkingPathID,
+                    "PoolSessions",
+                    SessionKeyID,
+                    "vmap.dat"
                 )
 
             If Not IO.Directory.Exists(IO.Path.GetDirectoryName(vpService)) Then _
@@ -782,11 +780,8 @@ Namespace Xeora.Web.Site.Service
                     Dim vpLocation As String =
                         IO.Path.Combine(
                             [Shared].Configurations.TemporaryRoot,
-                            String.Format(
-                                "{0}{1}PoolSessions{1}",
-                                [Shared].Configurations.WorkingPath.WorkingPathID,
-                                IO.Path.DirectorySeparatorChar
-                            )
+                            [Shared].Configurations.WorkingPath.WorkingPathID,
+                            "PoolSessions"
                         )
 
                     If IO.Directory.Exists(vpLocation) Then
@@ -797,11 +792,8 @@ Namespace Xeora.Web.Site.Service
                             Dim vpService As String =
                                 IO.Path.Combine(
                                     vpLocation,
-                                    String.Format(
-                                        "{0}{1}vmap.dat",
-                                        IO.Path.GetFileName(Path),
-                                        IO.Path.DirectorySeparatorChar
-                                    )
+                                    IO.Path.GetFileName(Path),
+                                    "vmap.dat"
                                 )
 
                             Try

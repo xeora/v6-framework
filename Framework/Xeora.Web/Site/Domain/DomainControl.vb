@@ -255,9 +255,12 @@ Namespace Xeora.Web.Site
         Public Shared Function GetAvailableDomains() As [Shared].DomainInfo.DomainInfoCollection
             Dim DomainDI As IO.DirectoryInfo =
                 New IO.DirectoryInfo(
-                    IO.Path.Combine(
-                        [Shared].Configurations.PhysicalRoot,
-                        String.Format("{0}Domains", [Shared].Configurations.ApplicationRoot.FileSystemImplementation)
+                    IO.Path.GetFullPath(
+                        IO.Path.Combine(
+                            [Shared].Configurations.PhysicalRoot,
+                            [Shared].Configurations.ApplicationRoot.FileSystemImplementation,
+                            "Domains"
+                        )
                     )
                 )
 
