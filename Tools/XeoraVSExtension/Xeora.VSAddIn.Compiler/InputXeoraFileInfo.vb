@@ -1,29 +1,20 @@
 ﻿Namespace Xeora.VSAddIn.Tools
     Public Class InputXeoraFileInfo
-        Private _RegistrationPath As String
-        Private _FileLocation As String
+        Public Sub New(ByVal DomainPath As String, ByVal FullFilePath As String)
+            Dim FI As New IO.FileInfo(FullFilePath)
 
-        Public Sub New(ByVal RegistrationPath As String, ByVal FileLocation As String)
-            Me._RegistrationPath = RegistrationPath
-            Me._FileLocation = FileLocation
+            Me.RegistrationPath = FI.FullName
+            Me.RegistrationPath = Me.RegistrationPath.Replace(DomainPath, String.Empty)
+            Me.RegistrationPath = Me.RegistrationPath.Replace(FI.Name, String.Empty)
+            Me.FileName = FI.Name
+
+            Me.FullFilePath = FullFilePath
+            Me.FileSize = FI.Length
         End Sub
 
-        Public Property RegistrationPath() As String
-            Get
-                Return Me._RegistrationPath
-            End Get
-            Set(ByVal value As String)
-                Me._RegistrationPath = value
-            End Set
-        End Property
-
-        Public Property FileLocation() As String
-            Get
-                Return Me._FileLocation
-            End Get
-            Set(ByVal value As String)
-                Me._FileLocation = value
-            End Set
-        End Property
+        Public ReadOnly Property RegistrationPath As String
+        Public ReadOnly Property FileName As String
+        Public ReadOnly Property FullFilePath As String
+        Public ReadOnly Property FileSize As Long
     End Class
 End Namespace

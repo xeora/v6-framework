@@ -4,38 +4,53 @@ Namespace Xeora.VSAddIn.Tools
     Public Class Compiler
         Public Event Progress(ByVal current As Integer, ByVal total As Integer)
 
+        Private _DomainPath As String
         Private _XeoraFiles As List(Of InputXeoraFileInfo)
-        Private _PasswordHash As Byte() = Nothing
+        Private _SecuredPasswordHash As Byte() = Nothing
 
-        Public Sub New(ByVal Password As String)
+        Public Sub New(ByVal DomainPath As String)
+            Me._DomainPath = DomainPath
             Me._XeoraFiles = New List(Of InputXeoraFileInfo)
-
-            If Not String.IsNullOrEmpty(Password) Then
-                Dim MD5 As New System.Security.Cryptography.MD5CryptoServiceProvider
-
-                Me._PasswordHash = MD5.ComputeHash(
-                                    System.Text.Encoding.UTF8.GetBytes(Password))
-            End If
         End Sub
 
-        Public Sub AddFile(ByVal RegistrationPath As String, ByVal FileLocation As String)
+        Public ReadOnly Property PasswordHash As Byte()
+            Get
+                Return Me._SecuredPasswordHash
+            End Get
+        End Property
+
+        Public Sub AddFile(ByVal FullFilePath As String)
             Me._XeoraFiles.Add(
-                New InputXeoraFileInfo(RegistrationPath, FileLocation))
+                New InputXeoraFileInfo(Me._DomainPath, FullFilePath))
         End Sub
 
-        Public Sub RemoveFile(ByVal RegistrationPath As String, ByVal FileLocation As String)
-            For fC As Integer = Me._XeoraFiles.Count - 1 To 0 Step -1
-                If String.Compare(Me._XeoraFiles(fC).RegistrationPath, RegistrationPath) = 0 AndAlso
-                    String.Compare(Me._XeoraFiles(fC).FileLocation, FileLocation) = 0 Then
+        Public Sub RemoveFile(ByVal FullFilePath As String)
+            Dim InputXeoraFileInfo As New InputXeoraFileInfo(Me._DomainPath, FullFilePath)
 
-                    Me._XeoraFiles.RemoveAt(fC)
+            For XFC As Integer = Me._XeoraFiles.Count - 1 To 0 Step -1
+                If Me._XeoraFiles.Item(XFC).GetHashCode() = InputXeoraFileInfo.GetHashCode() Then
+                    Me._XeoraFiles.RemoveAt(XFC)
+
+                    Exit For
                 End If
             Next
         End Sub
 
-        Public Sub CreateDomainFile(ByRef OutputStream As IO.Stream)
+        Public Overloads Sub CreateDomainFile(ByRef OutputStream As IO.Stream)
+            Me.CreateDomainFile(Nothing, OutputStream)
+        End Sub
+
+        Public Overloads Sub CreateDomainFile(ByVal Password As String, ByRef OutputStream As IO.Stream)
             If Me._XeoraFiles.Count = 0 Then Throw New Exception("File List must not be empty!")
             If OutputStream Is Nothing Then Throw New Exception("Output Stream must be defined!")
+
+            Dim MD5 As System.Security.Cryptography.MD5CryptoServiceProvider = Nothing
+            Dim PasswordHash As Byte() = Nothing
+
+            If Not String.IsNullOrEmpty(Password) Then
+                MD5 = New System.Security.Cryptography.MD5CryptoServiceProvider
+                PasswordHash = MD5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(Password))
+            End If
 
             ' 1 For File Preperation
             ' 1 For Index Creating
@@ -43,52 +58,48 @@ Namespace Xeora.VSAddIn.Tools
             RaiseEvent Progress(0, Me._XeoraFiles.Count + 2)
 
             ' Compiler Streams
-            Dim IndexStream As New IO.MemoryStream, IndexBinaryWriter As New IO.BinaryWriter(IndexStream, System.Text.Encoding.UTF8)
-            Dim tContentStream As IO.MemoryStream, RealContentStream As New IO.MemoryStream
-            Dim FileStream As IO.FileStream, GZipStream As IO.Compression.GZipStream
+            Dim ContentPartStream As IO.Stream, ContentPartFileStream As IO.FileStream, GZipStream As IO.Compression.GZipStream
+
+            Dim IndexStream As New IO.MemoryStream, IndexBinaryWriter As New IO.BinaryWriter(IndexStream, Text.Encoding.UTF8)
+            Dim ContentStream As New IO.MemoryStream
             ' !--
 
             ' Helper Variables
-            Dim buffer As Byte() = CType(Array.CreateInstance(GetType(Byte), 512), Byte())
-            Dim rC As Integer
-            Dim FI As IO.FileInfo
+            Dim rC As Integer, buffer As Byte() = CType(Array.CreateInstance(GetType(Byte), 512), Byte())
 
             Dim eC As Integer = 1
             ' !--
 
             For Each XFI As InputXeoraFileInfo In Me._XeoraFiles
-                tContentStream = New IO.MemoryStream()
+                ContentPartStream = New IO.MemoryStream()
 
-                FileStream = New IO.FileStream(XFI.FileLocation, IO.FileMode.Open, IO.FileAccess.Read)
-                GZipStream = New IO.Compression.GZipStream(tContentStream, IO.Compression.CompressionMode.Compress, True)
+                ContentPartFileStream = New IO.FileStream(XFI.FullFilePath, IO.FileMode.Open, IO.FileAccess.Read)
+                GZipStream = New IO.Compression.GZipStream(ContentPartStream, IO.Compression.CompressionMode.Compress, True)
 
                 Do
-                    rC = FileStream.Read(buffer, 0, buffer.Length)
+                    rC = ContentPartFileStream.Read(buffer, 0, buffer.Length)
 
                     If rC > 0 Then GZipStream.Write(buffer, 0, rC)
                 Loop Until rC = 0
 
-                GZipStream.Flush()
-                GZipStream.Close() : GC.SuppressFinalize(GZipStream)
-                FileStream.Close() : GC.SuppressFinalize(FileStream)
+                GZipStream.Flush() : GZipStream.Close() : GC.SuppressFinalize(GZipStream)
+                ContentPartFileStream.Close() : GC.SuppressFinalize(ContentPartFileStream)
 
                 ' CREATE INDEX
-                FI = New IO.FileInfo(XFI.FileLocation)
-
                 ' Write Index Info
-                IndexBinaryWriter.Write(RealContentStream.Position)
+                IndexBinaryWriter.Write(ContentStream.Position)
 
                 ' Write RegistrationPath
                 IndexBinaryWriter.Write(XFI.RegistrationPath)
 
                 ' Write FileName
-                IndexBinaryWriter.Write(FI.Name)
+                IndexBinaryWriter.Write(XFI.FileName)
 
                 ' Write Original Size
-                IndexBinaryWriter.Write(FI.Length)
+                IndexBinaryWriter.Write(XFI.FileSize)
 
                 ' Write Compressed Size
-                IndexBinaryWriter.Write(tContentStream.Length)
+                IndexBinaryWriter.Write(ContentPartStream.Length)
 
                 ' Flush to Underlying Stream
                 IndexBinaryWriter.Flush()
@@ -96,35 +107,37 @@ Namespace Xeora.VSAddIn.Tools
                 ' !--
 
                 ' PROTECT FILE
-                If Not Me._PasswordHash Is Nothing Then
-                    tContentStream.Seek(0, IO.SeekOrigin.Begin)
+                If Not PasswordHash Is Nothing Then
+                    ContentPartStream.Seek(0, IO.SeekOrigin.Begin)
 
+                    Dim LastIndex As Integer = 0
                     Do
-                        rC = tContentStream.Read(buffer, 0, buffer.Length)
+                        rC = ContentPartStream.Read(buffer, 0, buffer.Length)
 
                         If rC > 0 Then
-                            tContentStream.Seek(-rC, IO.SeekOrigin.Current)
+                            ContentPartStream.Seek(-rC, IO.SeekOrigin.Current)
 
                             For bC As Integer = 0 To rC - 1
-                                tContentStream.WriteByte(
-                                buffer(bC) Xor Me._PasswordHash(bC Mod Me._PasswordHash.Length))
+                                ContentPartStream.WriteByte(
+                                    buffer(bC) Xor PasswordHash((bC + LastIndex) Mod PasswordHash.Length))
                             Next
+
+                            LastIndex += rC
                         End If
                     Loop Until rC = 0
                 End If
                 ' !--
 
                 ' WRITE CONTENT
-                tContentStream.Seek(0, IO.SeekOrigin.Begin)
-
+                ContentPartStream.Seek(0, IO.SeekOrigin.Begin)
                 Do
-                    rC = tContentStream.Read(buffer, 0, buffer.Length)
+                    rC = ContentPartStream.Read(buffer, 0, buffer.Length)
 
-                    If rC > 0 Then RealContentStream.Write(buffer, 0, rC)
+                    If rC > 0 Then ContentStream.Write(buffer, 0, rC)
                 Loop Until rC = 0
                 ' !--
 
-                tContentStream.Close() : GC.SuppressFinalize(tContentStream)
+                ContentPartStream.Close() : GC.SuppressFinalize(ContentPartStream)
 
                 RaiseEvent Progress(eC, Me._XeoraFiles.Count + 2)
 
@@ -138,7 +151,6 @@ Namespace Xeora.VSAddIn.Tools
 
             ' Write Index Content
             IndexStream.Seek(0, IO.SeekOrigin.Begin)
-
             Do
                 rC = IndexStream.Read(buffer, 0, buffer.Length)
 
@@ -146,22 +158,33 @@ Namespace Xeora.VSAddIn.Tools
             Loop Until rC = 0
             ' !--
 
-            ' Write Content
-            RealContentStream.Seek(0, IO.SeekOrigin.Begin)
+            OutputBinaryWriter.Flush()
 
+            ' Write Content
+            ContentStream.Seek(0, IO.SeekOrigin.Begin)
             Do
-                rC = RealContentStream.Read(buffer, 0, buffer.Length)
+                rC = ContentStream.Read(buffer, 0, buffer.Length)
 
                 If rC > 0 Then OutputStream.Write(buffer, 0, rC)
             Loop Until rC = 0
             ' !--
 
-            OutputBinaryWriter.Flush()
-
             IndexBinaryWriter.Close() : GC.SuppressFinalize(IndexBinaryWriter)
-            RealContentStream.Close() : GC.SuppressFinalize(RealContentStream)
+            ContentStream.Close() : GC.SuppressFinalize(ContentStream)
 
             RaiseEvent Progress(eC + 1, Me._XeoraFiles.Count + 2)
+
+            If Not PasswordHash Is Nothing Then
+                OutputStream.Flush()
+                OutputStream.Seek(0, IO.SeekOrigin.Begin)
+
+                Dim FileHash As Byte() = MD5.ComputeHash(OutputStream)
+                Me._SecuredPasswordHash = New Byte(FileHash.Length - 1) {}
+
+                For hC As Integer = 0 To FileHash.Length - 1
+                    Me._SecuredPasswordHash(hC) = FileHash(hC) Xor PasswordHash(hC)
+                Next
+            End If
         End Sub
     End Class
 End Namespace

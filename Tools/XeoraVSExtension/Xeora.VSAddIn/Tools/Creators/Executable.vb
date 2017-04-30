@@ -75,7 +75,7 @@ Namespace Xeora.VSAddIn.Tools.Creators
                     CType(Project.Object, VSLangProj.VSProject).References.Add("System.dll")
                     CType(Project.Object, VSLangProj.VSProject).References.Add("System.Web.dll")
                     CType(Project.Object, VSLangProj.VSProject).References.Add(
-                        IO.Path.Combine(WorkingFolderDI.FullName, "bin", "Xeora.Web.Shared.dll"))
+                        IO.Path.Combine(WorkingFolderDI.FullName, "bin", "Xeora.Web.Shared.dll")).CopyLocal = False
 
                     Dim ClassItemTemplateLocation As String
                     If Me.rbCSharp.Checked Then

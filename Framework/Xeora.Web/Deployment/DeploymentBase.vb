@@ -562,18 +562,39 @@ Namespace Xeora.Web.Deployment
                     IO.Path.Combine(XeoraDomainRoot, "Content.secure")
 
                 If IO.File.Exists(DomainPasswordFileLocation) Then
-                    Dim PasswordFI As New IO.FileInfo(DomainPasswordFileLocation)
-                    Me._PasswordHash = CType(Array.CreateInstance(GetType(Byte), PasswordFI.Length), Byte())
+                    Me._PasswordHash = Nothing
 
+                    Dim SecuredHash As Byte() = New Byte(15) {}
                     Dim PasswordFS As IO.Stream = Nothing
                     Try
-                        PasswordFS = PasswordFI.OpenRead()
-                        PasswordFS.Read(Me._PasswordHash, 0, Me._PasswordHash.Length)
+                        PasswordFS = New IO.FileStream(DomainPasswordFileLocation, IO.FileMode.Open, IO.FileAccess.Read)
+                        PasswordFS.Read(SecuredHash, 0, SecuredHash.Length)
                     Catch ex As System.Exception
-                        Me._PasswordHash = Nothing
+                        SecuredHash = Nothing
                     Finally
                         If Not PasswordFS Is Nothing Then PasswordFS.Close()
                     End Try
+
+                    Dim FileHash As Byte()
+                    Dim ContentFS As IO.Stream = Nothing
+                    Try
+                        ContentFS = New IO.FileStream(Me._XeoraDomainFileLocation, IO.FileMode.Open, IO.FileAccess.Read)
+
+                        Dim MD5 As New Security.Cryptography.MD5CryptoServiceProvider()
+                        FileHash = MD5.ComputeHash(ContentFS)
+                    Catch ex As System.Exception
+                        FileHash = Nothing
+                    Finally
+                        If Not ContentFS Is Nothing Then ContentFS.Close()
+                    End Try
+
+                    If Not SecuredHash Is Nothing AndAlso Not FileHash Is Nothing Then
+                        Me._PasswordHash = New Byte(15) {}
+
+                        For hC As Integer = 0 To Me._PasswordHash.Length - 1
+                            Me._PasswordHash(hC) = SecuredHash(hC) Xor FileHash(hC)
+                        Next
+                    End If
                 End If
 
                 Dim FI As IO.FileInfo =

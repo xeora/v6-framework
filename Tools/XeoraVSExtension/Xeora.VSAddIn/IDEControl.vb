@@ -818,9 +818,30 @@ RESEARCHPOINT:
             End Sub
 
             Public Sub CompileDomain()
-                Dim CompilerForm As New CompilerForm()
+                Dim Projects As Projects =
+                    CType(Me._Parent.DTE.Solution.Projects, Projects)
 
-                CompilerForm.ShowDialog(Me._Parent)
+                If Projects.Count = 0 Then Exit Sub
+
+                Dim ProjectList As New Tools.PrepareProject.ProjectList()
+
+                For Each Project As Project In Projects
+                    If String.Compare(Project.Kind, "{E24C65DC-7377-472b-9ABA-BC803B73C61A}") = 0 Then _
+                        ProjectList.ProjectList.Add(Project.Name, Project.FullName)
+                Next
+
+                ProjectList.ShowDialog(PackageControl.IDEControl)
+
+                If ProjectList.DialogResult = DialogResult.OK Then
+                    Dim ProjectWorking As Project = Nothing
+                    For Each ProjectWorking In Projects
+                        If String.Compare(ProjectWorking.FullName, ProjectList.SelectedProject.Value) = 0 Then _
+                            Exit For
+                    Next
+
+                    Dim CompilerForm As New Tools.CompilerForm()
+                    CompilerForm.ShowDialog(PackageControl.IDEControl, ProjectWorking)
+                End If
             End Sub
 
             Public Sub RePullRelease()

@@ -267,8 +267,8 @@ Namespace Xeora.Web.Site
             If DomainControl._AvailableDomains Is Nothing Then
                 Dim rDomainInfoCollection As New [Shared].DomainInfo.DomainInfoCollection()
 
-                Try
-                    For Each DI As IO.DirectoryInfo In DomainDI.GetDirectories()
+                For Each DI As IO.DirectoryInfo In DomainDI.GetDirectories()
+                    Try
                         Dim Languages As [Shared].DomainInfo.LanguageInfo() =
                             Deployment.DomainDeployment.AvailableLanguageInfos(New String() {DI.Name})
 
@@ -279,12 +279,12 @@ Namespace Xeora.Web.Site
                         DomainInfo.Children.AddRange(DomainDeployment.Children)
 
                         rDomainInfoCollection.Add(DomainInfo)
-                    Next
+                    Catch ex As System.Exception
+                        Helper.EventLogger.LogToSystemEvent(ex.ToString(), EventLogEntryType.Error)
+                    End Try
+                Next
 
-                    DomainControl._AvailableDomains = rDomainInfoCollection
-                Catch ex As System.Exception
-                    Helper.EventLogger.LogToSystemEvent(ex.ToString(), EventLogEntryType.Error)
-                End Try
+                DomainControl._AvailableDomains = rDomainInfoCollection
             Else
                 If DomainControl._AvailableDomains.Count <> DomainDI.GetDirectories().Length Then
                     DomainControl._AvailableDomains = Nothing
