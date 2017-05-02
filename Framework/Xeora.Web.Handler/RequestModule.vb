@@ -483,7 +483,7 @@ Namespace Xeora.Web.Handler
 
             Web.Context.ContextManager.Current.Add(
                 CType(context.Items.Item("RequestID"), String),
-                New Context.ContextContainer(False, New Context.BuildInContext(context))
+                New Context.ContextContainer(New Context.BuildInContext(context))
             )
         End Sub
 

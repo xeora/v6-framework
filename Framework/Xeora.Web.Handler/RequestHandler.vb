@@ -95,7 +95,7 @@ Namespace Xeora.Web.Handler
                         If CType(Me._Context.Content.Item("RedirectLocation"), String).IndexOf("://") = -1 Then
                             Dim RedirectLocation As String =
                                 String.Format("http://{0}{1}",
-                                        Me._Context.Request.Server("HTTP_HOST"),
+                                        Me._Context.Request.Server.Item("HTTP_HOST"),
                                         Me._Context.Content.Item("RedirectLocation")
                                     )
 
@@ -407,8 +407,8 @@ Namespace Xeora.Web.Handler
                 LogResult.AppendLine("-- Request URL & Query String --")
                 LogResult.AppendLine(
                     String.Format("{0}?{1}",
-                        Me._Context.Request.Server.Item("URL"),
-                        Me._Context.Request.Server.Item("QUERY_STRING")
+                        Me._Context.Request.URL.RelativePath,
+                        Me._Context.Request.URL.QueryString
                     )
                 )
                 LogResult.AppendLine()
@@ -448,7 +448,7 @@ Namespace Xeora.Web.Handler
                     If Not Me._DomainControl Is Nothing Then
                         Me._Context.Content.Item("RedirectLocation") =
                             String.Format("http://{0}{1}",
-                                Me._Context.Request.Server("HTTP_HOST"),
+                                Me._Context.Request.Server.Item("HTTP_HOST"),
                                 [Shared].Helpers.GetRedirectURL(
                                     False,
                                     Me._DomainControl.Domain.Settings.Configurations.DefaultPage

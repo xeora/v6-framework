@@ -6,8 +6,8 @@ Namespace Xeora.Web.Shared.ControlResult
         Private _Message As Message
         Private _Objects As Object()
 
-        Private _Count As Integer
-        Private _Total As Integer
+        Private _Count As Long
+        Private _Total As Long
 
         Public Sub New()
             Me.New(Nothing)
@@ -38,24 +38,24 @@ Namespace Xeora.Web.Shared.ControlResult
             End Set
         End Property
 
-        Public Property Count() As Integer
+        Public Property Count() As Long
             Get
                 If Me._Count = 0 Then Me._Count = Me.Objects.Length
 
                 Return Me._Count
             End Get
-            Set(ByVal Value As Integer)
+            Set(ByVal Value As Long)
                 Me._Count = Value
             End Set
         End Property
 
-        Public Property Total() As Integer
+        Public Property Total() As Long
             Get
                 If Me._Total = 0 Then Me._Total = Me.Objects.Length
 
                 Return Me._Total
             End Get
-            Set(ByVal Value As Integer)
+            Set(ByVal Value As Long)
                 Me._Total = Value
             End Set
         End Property

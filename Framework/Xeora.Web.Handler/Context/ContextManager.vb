@@ -47,52 +47,34 @@ Namespace Xeora.Web.Context
 
                 Threading.Monitor.Enter(Me._HttpContextTable.SyncRoot)
                 Try
-                    If Me._HttpContextTable.ContainsKey(RequestID) Then _
-                        Me._HttpContextTable.Remove(RequestID)
+                    If Me._HttpContextTable.ContainsKey(RequestID) Then
+                        If Not CType(Me._HttpContextTable.Item(RequestID), ContextContainer).Marked Then
+                            Me._HttpContextTable.Remove(RequestID)
+                        Else
+                            CType(Me._HttpContextTable.Item(RequestID), ContextContainer).Removable = True
+                        End If
+                    End If
                 Finally
                     Threading.Monitor.Exit(Me._HttpContextTable.SyncRoot)
                 End Try
             End If
         End Sub
 
-        Public Function DuplicateContext(ByVal RequestID As String) As String
-            Dim rNewRequestID As String = String.Empty
-
+        Public Sub Mark(ByVal RequestID As String)
             If Not Me._HttpContextTable Is Nothing AndAlso
                 Not String.IsNullOrEmpty(RequestID) Then
 
                 Threading.Monitor.Enter(Me._HttpContextTable.SyncRoot)
                 Try
-                    If Me._HttpContextTable.ContainsKey(RequestID) Then
-                        Dim tContext As [Shared].IHttpContext =
-                            CType(Me._HttpContextTable.Item(RequestID), ContextContainer).Context
-
-                        Dim NewContext As System.Web.HttpContext =
-                            New System.Web.HttpContext(tContext.UnderlyingContext.Request, tContext.UnderlyingContext.Response)
-
-                        For Each Key As Object In tContext.UnderlyingContext.Items.Keys
-                            NewContext.Items.Add(Key, tContext.UnderlyingContext.Items.Item(Key))
-                        Next
-                        NewContext.Items.Item("RequestID") = Guid.NewGuid().ToString()
-
-                        Handler.Session.SessionManager.Current.InitializeRequest(NewContext)
-
-                        Dim NewBuildInContext As [Shared].IHttpContext =
-                            New BuildInContext(NewContext)
-
-                        rNewRequestID = NewBuildInContext.XeoraRequestID
-
-                        Me._HttpContextTable.Add(rNewRequestID, New ContextContainer(True, NewBuildInContext))
-                    End If
+                    If Me._HttpContextTable.ContainsKey(RequestID) Then _
+                        CType(Me._HttpContextTable.Item(RequestID), ContextContainer).Marked = True
                 Finally
                     Threading.Monitor.Exit(Me._HttpContextTable.SyncRoot)
                 End Try
             End If
+        End Sub
 
-            Return rNewRequestID
-        End Function
-
-        Public Function DisposeContext(ByVal RequestID As String) As Boolean
+        Public Sub UnMark(ByVal RequestID As String)
             If Not Me._HttpContextTable Is Nothing AndAlso
                 Not String.IsNullOrEmpty(RequestID) Then
 
@@ -102,18 +84,16 @@ Namespace Xeora.Web.Context
                         Dim ContextItem As ContextContainer =
                             CType(Me._HttpContextTable.Item(RequestID), ContextContainer)
 
-                        If ContextItem.IsThreadContext Then
+                        If ContextItem.Removable Then
                             Me._HttpContextTable.Remove(RequestID)
-
-                            Return True
+                        Else
+                            CType(Me._HttpContextTable.Item(RequestID), ContextContainer).Marked = False
                         End If
                     End If
                 Finally
                     Threading.Monitor.Exit(Me._HttpContextTable.SyncRoot)
                 End Try
             End If
-
-            Return False
-        End Function
+        End Sub
     End Class
 End Namespace

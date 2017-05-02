@@ -6,7 +6,7 @@ Namespace Xeora.Web.Shared.ControlResult
         Inherits DataTable
 
         Private _Message As Message
-        Private _Total As Integer
+        Private _Total As Long
 
         Public Sub New()
             Me._Message = Nothing
@@ -31,13 +31,13 @@ Namespace Xeora.Web.Shared.ControlResult
                 Me.Merge(Source, False, MissingSchemaAction.Add)
         End Sub
 
-        Public Property Total() As Integer
+        Public Property Total() As Long
             Get
                 If Me._Total = 0 Then Me._Total = Me.Rows.Count
 
                 Return Me._Total
             End Get
-            Set(ByVal Value As Integer)
+            Set(ByVal Value As Long)
                 Me._Total = Value
             End Set
         End Property

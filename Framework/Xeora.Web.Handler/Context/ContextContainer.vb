@@ -2,19 +2,16 @@
 
 Namespace Xeora.Web.Context
     Friend Class ContextContainer
-        Private _IsThreadContext As Boolean
         Private _Context As [Shared].IHttpContext
 
-        Public Sub New(ByVal IsThreadContext As Boolean, ByRef Context As [Shared].IHttpContext)
-            Me._IsThreadContext = IsThreadContext
+        Public Sub New(ByRef Context As [Shared].IHttpContext)
             Me._Context = Context
+            Me.Marked = False
+            Me.Removable = False
         End Sub
 
-        Public ReadOnly Property IsThreadContext As Boolean
-            Get
-                Return Me._IsThreadContext
-            End Get
-        End Property
+        Public Property Marked As Boolean
+        Public Property Removable As Boolean
 
         Public ReadOnly Property Context As [Shared].IHttpContext
             Get

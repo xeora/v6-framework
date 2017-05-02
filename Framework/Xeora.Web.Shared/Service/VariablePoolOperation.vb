@@ -40,6 +40,18 @@ Namespace Xeora.Web.Shared.Service
             Return Me.GetVariableFromPool(Key)
         End Function
 
+        Public Function [Get](Of T)(ByVal Key As String) As T
+            Dim rValue As T = Nothing
+
+            Try
+                rValue = CType(Me.Get(Key), T)
+            Catch ex As Exception
+                rValue = Nothing
+            End Try
+
+            Return rValue
+        End Function
+
         Public Sub Transfer(ByVal FromSessionID As String)
             Me.TransferRegistrations(
                 String.Format("{0}_{1}", FromSessionID, Helpers.Context.Request.HashCode))

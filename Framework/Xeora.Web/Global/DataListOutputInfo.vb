@@ -3,24 +3,24 @@
 Namespace Xeora.Web.Global
     <Serializable()>
     Public Class DataListOutputInfo
-        Private _PartialRecords As Integer
-        Private _TotalRecords As Integer
+        Private _PartialRecords As Long
+        Private _TotalRecords As Long
         Private _Message As [Shared].ControlResult.Message
 
-        Public Sub New(ByVal PartialRecords As Integer, ByVal TotalRecords As Integer)
+        Public Sub New(ByVal PartialRecords As Long, ByVal TotalRecords As Long)
             Me._Message = Nothing
 
             Me._PartialRecords = PartialRecords
             Me._TotalRecords = TotalRecords
         End Sub
 
-        Public ReadOnly Property Count() As Integer
+        Public ReadOnly Property Count() As Long
             Get
                 Return Me._PartialRecords
             End Get
         End Property
 
-        Public ReadOnly Property Total() As Integer
+        Public ReadOnly Property Total() As Long
             Get
                 Return Me._TotalRecords
             End Get

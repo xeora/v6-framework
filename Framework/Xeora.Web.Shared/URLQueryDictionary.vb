@@ -7,7 +7,7 @@ Namespace Xeora.Web.Shared
 
         Public Overloads Shared Function ResolveQueryItems() As URLQueryDictionary
             Return URLQueryDictionary.ResolveQueryItems(
-                Helpers.Context.Request.Server("QUERY_STRING"))
+                Helpers.Context.Request.URL.QueryString)
         End Function
 
         Public Overloads Shared Function ResolveQueryItems(ByVal QueryString As String) As URLQueryDictionary
