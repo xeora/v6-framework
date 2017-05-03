@@ -882,8 +882,17 @@ RESEARCHPOINT:
                                 Exit For
                         Next
 
-                        Dim DomainsProjectItem As ProjectItem = Nothing
-                        For Each ProjectItem As ProjectItem In ProjectWorking.ProjectItems
+                        Dim ApplicationRootPI As ProjectItem =
+                            PackageControl.IDEControl.GetApplicationRootProjectItem(Nothing, ProjectWorking.ProjectItems)
+                        Dim SearchingProjectItems As ProjectItems = ProjectWorking.ProjectItems
+
+                        If Not ApplicationRootPI Is Nothing Then
+                            SearchingProjectItems = ApplicationRootPI.ProjectItems
+
+                            WorkingFolder = CType(ApplicationRootPI.Properties.Item("FullPath").Value, String)
+                        End If
+
+                        For Each ProjectItem As ProjectItem In SearchingProjectItems
                             If String.Compare(ProjectItem.Name, "Bin", True) = 0 Then _
                                 BinProjectItem = ProjectItem
 
@@ -1093,6 +1102,22 @@ RESEARCHPOINT:
             Loop Until DeepCounter > 2 OrElse CheckDI Is Nothing
 
             Return False
+        End Function
+
+        Public Function GetApplicationRootProjectItem(ByVal ParentProjectItem As ProjectItem, ByVal ProjectItems As ProjectItems) As ProjectItem
+            For Each ProjectItem As ProjectItem In ProjectItems
+                If String.Compare(ProjectItem.Name, "xeora.config", True) = 0 Then _
+                    Return ParentProjectItem
+
+                If Not ProjectItem.ProjectItems Is Nothing Then
+                    Dim TempPI As ProjectItem =
+                        Me.GetApplicationRootProjectItem(ProjectItem, ProjectItem.ProjectItems)
+
+                    If Not TempPI Is Nothing Then Return TempPI
+                End If
+            Next
+
+            Return Nothing
         End Function
 
         Public Function GetDomainType(ByVal LookingPath As String) As Globals.ActiveDomainTypes

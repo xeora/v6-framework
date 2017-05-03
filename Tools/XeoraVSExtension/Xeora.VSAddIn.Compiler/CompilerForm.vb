@@ -1,3 +1,5 @@
+Option Strict On
+
 Imports EnvDTE
 
 Namespace Xeora.VSAddIn.Tools
@@ -40,7 +42,7 @@ Namespace Xeora.VSAddIn.Tools
                     For Each SubProjectItem As ProjectItem In ProjectItem.ProjectItems
                         If String.Compare(DomainPath(1), SubProjectItem.Name) = 0 Then
                             If DomainPath.Length - 2 < 1 Then
-                                Return SubProjectItem.Properties.Item("FullPath").Value
+                                Return CType(SubProjectItem.Properties.Item("FullPath").Value, String)
                             End If
 
                             Dim NewDomainPath As String() = CType(Array.CreateInstance(GetType(String), DomainPath.Length - 2), String())
@@ -55,7 +57,7 @@ Namespace Xeora.VSAddIn.Tools
                     For Each SubProjectItem As ProjectItem In ProjectItem.ProjectItems
                         If String.Compare(DomainPath(0), SubProjectItem.Name) = 0 Then
                             If DomainPath.Length - 1 < 1 Then
-                                Return SubProjectItem.Properties.Item("FullPath").Value
+                                Return CType(SubProjectItem.Properties.Item("FullPath").Value, String)
                             End If
 
                             Dim NewDomainPath As String() = CType(Array.CreateInstance(GetType(String), DomainPath.Length - 1), String())
@@ -175,7 +177,7 @@ Namespace Xeora.VSAddIn.Tools
                     Me._DomainCompilerInfos.Item(DomainCompilerInfoID)
                 Dim DI As New IO.DirectoryInfo(DomainCompilerInfo.DomainPath)
 
-                Me.lCurrentProcess.Text = DomainNumber
+                Me.lCurrentProcess.Text = DomainNumber.ToString()
 
                 Dim XeoraCompiler As New Compiler(DomainCompilerInfo.DomainPath)
                 AddHandler XeoraCompiler.Progress, New Compiler.ProgressEventHandler(AddressOf UpdateProgress)

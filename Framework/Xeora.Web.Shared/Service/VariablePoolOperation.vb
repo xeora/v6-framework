@@ -41,15 +41,13 @@ Namespace Xeora.Web.Shared.Service
         End Function
 
         Public Function [Get](Of T)(ByVal Key As String) As T
-            Dim rValue As T = Nothing
+            Dim ObjectValue As Object =
+                Me.Get(Key)
 
-            Try
-                rValue = CType(Me.Get(Key), T)
-            Catch ex As Exception
-                rValue = Nothing
-            End Try
+            If TypeOf ObjectValue Is T Then _
+                Return CType(ObjectValue, T)
 
-            Return rValue
+            Return Nothing
         End Function
 
         Public Sub Transfer(ByVal FromSessionID As String)
