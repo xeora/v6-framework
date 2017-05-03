@@ -883,7 +883,7 @@ RESEARCHPOINT:
                         Next
 
                         Dim ApplicationRootPI As ProjectItem =
-                            PackageControl.IDEControl.GetApplicationRootProjectItem(Nothing, ProjectWorking.ProjectItems)
+                           PackageControl.IDEControl.GetApplicationRootProjectItem(Nothing, ProjectWorking.ProjectItems)
                         Dim SearchingProjectItems As ProjectItems = ProjectWorking.ProjectItems
 
                         If Not ApplicationRootPI Is Nothing Then
@@ -1113,7 +1113,8 @@ RESEARCHPOINT:
                     Dim TempPI As ProjectItem =
                         Me.GetApplicationRootProjectItem(ProjectItem, ProjectItem.ProjectItems)
 
-                    If Not TempPI Is Nothing Then Return TempPI
+                    If Not TempPI Is Nothing Then _
+                        Return TempPI
                 End If
             Next
 
