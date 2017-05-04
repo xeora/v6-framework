@@ -79,6 +79,9 @@ Namespace Xeora.Web.Site.Setting
 
                                         Request = xPathIter_in.Current.Value
 
+                                        ' TODO: Should have tagging
+                                        Request = Request.Replace("~/", [Shared].Configurations.ApplicationRoot.BrowserImplementation)
+
                                         xPathIter_in.Current.MoveToParent()
                                     Case "Reverse"
                                         Reverse_ID = xPathIter_in.Current.GetAttribute("id", xPathIter_in.Current.BaseURI)
