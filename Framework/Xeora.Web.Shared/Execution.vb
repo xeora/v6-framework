@@ -14,18 +14,31 @@ Namespace Xeora.Web.Shared
             WebManagerAsm = Reflection.Assembly.Load("Xeora.Web")
             objAssembly = WebManagerAsm.GetType("Xeora.Web.Manager.Assembly", False, True)
 
-            Dim BindInfo As BindInfo
+            Dim BindInfo As BindInfo, ParametersValueMap As New Generic.Dictionary(Of String, Object)
+
             If ParameterValues Is Nothing OrElse
                 ParameterValues.Length = 0 Then
 
                 BindInfo = BindInfo.Make(String.Format("{0}?{1}.{2}", ExecutableName, ClassName, ProcedureName))
             Else
-                Dim RandomParamNaming As New Generic.List(Of String)
+                Dim ParametersStructure As String() = New String(ParameterValues.Length - 1) {}
+
                 For pC As Integer = 0 To ParameterValues.Length - 1
-                    RandomParamNaming.Add(String.Format("PARAM{0}", pC))
+                    Dim ParamName As String = String.Format("PARAM{0}", pC)
+
+                    ParametersValueMap.Item(ParamName) = ParameterValues(pC)
+                    ParametersStructure(pC) = ParamName
                 Next
-                BindInfo = BindInfo.Make(String.Format("{0}?{1}.{2},{3}", ExecutableName, ClassName, ProcedureName, String.Join("|", RandomParamNaming.ToArray())))
+                BindInfo = BindInfo.Make(String.Format("{0}?{1}.{2},{3}", ExecutableName, ClassName, ProcedureName, String.Join("|", ParametersStructure)))
             End If
+
+            BindInfo.PrepareProcedureParameters(
+                New BindInfo.ProcedureParser(
+                    Sub(ByRef param As BindInfo.ProcedureParameter)
+                        param.Value = ParametersValueMap.Item(param.Key)
+                    End Sub
+                )
+            )
 
             Try
                 rInvokeResult = CType(
@@ -34,7 +47,7 @@ Namespace Xeora.Web.Shared
                                         Reflection.BindingFlags.InvokeMethod,
                                         Nothing,
                                         Nothing,
-                                        New Object() {BindInfo, ParameterValues}
+                                        New Object() {BindInfo}
                                     ),
                                     BindInvokeResult
                                 ).InvokeResult
@@ -297,6 +310,8 @@ Namespace Xeora.Web.Shared
                                     End If
                                 Next
                             End If
+                        Else
+                            Me._Key = Me._Query
                         End If
                     End If
                 End Sub

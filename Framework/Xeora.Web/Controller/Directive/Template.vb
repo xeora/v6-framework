@@ -40,15 +40,19 @@ Namespace Xeora.Web.Controller.Directive
 
             ' Gather Parent Authentication Keys
             Dim AuthenticationKeys As New Generic.List(Of String)
-            Dim ServiceItem As IDomain.ISettings.IServices.IServiceItem =
-                WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(Me.ControlID)
-
-            If ServiceItem Is Nothing Then _
-                Throw New Security.SecurityException(String.Format("Service definition of {0} has not been found!", Me.ControlID))
+            Dim ServiceItem As IDomain.ISettings.IServices.IServiceItem = Nothing
+            Dim TemplateInstance As IDomain = Nothing
 
             Dim CachedServiceItem As IDomain.ISettings.IServices.IServiceItem = ServiceItem
             Do Until WorkingInstance Is Nothing
+                CachedServiceItem = WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(Me.ControlID)
+
                 If Not CachedServiceItem Is Nothing Then
+                    If ServiceItem Is Nothing Then
+                        ServiceItem = CachedServiceItem
+                        TemplateInstance = WorkingInstance
+                    End If
+
                     For Each Key As String In CachedServiceItem.AuthenticationKeys
                         Dim IsExists As Boolean = False
                         For Each Item As String In AuthenticationKeys
@@ -59,14 +63,16 @@ Namespace Xeora.Web.Controller.Directive
                 End If
 
                 WorkingInstance = WorkingInstance.Parent
-
-                If Not WorkingInstance Is Nothing Then _
-                    CachedServiceItem = WorkingInstance.Settings.Services.ServiceItems.GetServiceItem(Me.ControlID)
             Loop
+
+            If ServiceItem Is Nothing Then _
+                Throw New Security.SecurityException(String.Format("Service definition of {0} has not been found!", Me.ControlID))
+
             ServiceItem.AuthenticationKeys = AuthenticationKeys.ToArray()
 
-            WorkingInstance = Instance
+            ' Search for Overriding Children
             CachedServiceItem = ServiceItem
+            WorkingInstance = Instance
 
             Do While CachedServiceItem.Overridable
                 WorkingInstance = Me.SearchChildrenThatOverrides(Instance, WorkingInstance)
@@ -97,6 +103,8 @@ Namespace Xeora.Web.Controller.Directive
                     Exit Do
                 End If
             Loop
+            ' !---
+            If WorkingInstance Is Nothing OrElse WorkingInstance Is Instance Then WorkingInstance = TemplateInstance
 
             If ServiceItem.Authentication Then
                 Dim LocalAuthenticationNotAccepted As Boolean = False
@@ -110,7 +118,7 @@ Namespace Xeora.Web.Controller.Directive
                 Next
 
                 If Not LocalAuthenticationNotAccepted Then
-                    Me.RenderInternal(Instance, SenderController)
+                    Me.RenderInternal(WorkingInstance, SenderController)
                 Else
                     Dim SystemMessage As String = Instance.Language.Get("TEMPLATE_AUTH")
 
@@ -119,7 +127,7 @@ Namespace Xeora.Web.Controller.Directive
                     Me.DefineRenderedValue("<div style='width:100%; font-weight:bolder; color:#CC0000; text-align:center'>" & SystemMessage & "!</div>")
                 End If
             Else
-                Me.RenderInternal(Instance, SenderController)
+                Me.RenderInternal(WorkingInstance, SenderController)
             End If
         End Sub
 

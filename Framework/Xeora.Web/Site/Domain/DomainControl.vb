@@ -554,7 +554,11 @@ Namespace Xeora.Web.Site
 
                 Dim ServicePathInfo As [Shared].ServicePathInfo =
                     Me.TryResolveURL(rDomainInstance, URL)
-                If ServicePathInfo Is Nothing Then Continue For
+                If ServicePathInfo Is Nothing Then
+                    ChildDomainIDAccessTree.RemoveAt(ChildDomainIDAccessTree.Count - 1)
+
+                    Continue For
+                End If
 
                 If rDomainInstance.Settings.Services.ServiceItems.GetServiceItem(ServicePathInfo.FullPath) Is Nothing Then
                     If rDomainInstance.Children.Count > 0 Then
