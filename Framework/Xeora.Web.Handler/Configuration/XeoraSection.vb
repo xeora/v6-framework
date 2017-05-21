@@ -24,5 +24,13 @@ Namespace Xeora.Web.Configuration
                 Return CType(MyBase.Item("servicePort"), ServicePortElement)
             End Get
         End Property
+
+        <ConfigurationProperty("mime", IsDefaultCollection:=True)>
+        <ConfigurationCollection(GetType(MimeElement), AddItemName:="item")>
+        Public ReadOnly Property CustomMimes As MimeElements
+            Get
+                Return CType(MyBase.Item("mime"), MimeElements)
+            End Get
+        End Property
     End Class
 End Namespace

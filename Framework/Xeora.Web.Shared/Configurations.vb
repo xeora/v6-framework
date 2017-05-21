@@ -111,6 +111,29 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
+        Private Shared _CustomMime As Generic.Dictionary(Of String, String) = Nothing
+        Public Shared ReadOnly Property CustomMime() As Generic.Dictionary(Of String, String)
+            Get
+                If Configurations._CustomMime Is Nothing Then
+                    Configurations._CustomMime = New Generic.Dictionary(Of String, String)
+
+                    Dim WorkingObject As Object =
+                        Configurations.XeoraSettingsObject.GetType().InvokeMember("CustomMimes", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
+
+                    For Each ItemObject As Object In CType(WorkingObject, Configuration.ConfigurationElementCollection)
+                        Dim extension As String, type As String
+
+                        extension = CType(ItemObject.GetType().InvokeMember("Extension", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, ItemObject, Nothing), String)
+                        type = CType(ItemObject.GetType().InvokeMember("Type", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, ItemObject, Nothing), String)
+
+                        Configurations._CustomMime.Item(extension) = type
+                    Next
+                End If
+
+                Return Configurations._CustomMime
+            End Get
+        End Property
+
         Public Class ApplicationRootFormat
             Private _FileSystemImplementation As String
             Private _BrowserImplementation As String

@@ -95,6 +95,8 @@
     <Import Include="System.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\MimeElements.vb" />
+    <Compile Include="Configuration\MimeElement.vb" />
     <Compile Include="Context\ContextContainer.vb" />
     <Compile Include="RemoteInvoke.vb" />
     <Compile Include="Session\SessionItem.vb" />

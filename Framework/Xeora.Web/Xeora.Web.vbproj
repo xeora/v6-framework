@@ -193,7 +193,6 @@
     <Compile Include="Helper\DateTime.vb" />
     <Compile Include="Helper\EventLogger.vb" />
     <Compile Include="Helper\OverrideBinder.vb" />
-    <Compile Include="Helper\Registry.vb" />
     <Compile Include="Manager\Assembly.vb">
       <SubType>Code</SubType>
     </Compile>
