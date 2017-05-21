@@ -58,19 +58,21 @@ Namespace Xeora.Web.Shared
                     Dim WorkingObject As Object =
                         Configurations.XeoraSettingsObject.GetType().InvokeMember("Main", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
 
-                    Configurations._VirtualRoot = CType(WorkingObject.GetType().InvokeMember("VirtualRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
+                    Dim virtualRootValue As String =
+                        CType(WorkingObject.GetType().InvokeMember("VirtualRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
 
-                    If String.IsNullOrEmpty(Configurations._VirtualRoot) Then
-                        Configurations._VirtualRoot = "/"
-                    Else
-                        Configurations._VirtualRoot = Configurations._VirtualRoot.Replace("\"c, "/"c)
+                    If String.IsNullOrEmpty(virtualRootValue) Then _
+                        virtualRootValue = "/"
 
-                        If Configurations._VirtualRoot.IndexOf("/"c) <> 0 Then _
-                            Configurations._VirtualRoot = String.Format("/{0}", Configurations._VirtualRoot)
+                    virtualRootValue = virtualRootValue.Replace("\"c, "/"c)
 
-                        If String.Compare(Configurations._VirtualRoot.Substring(Configurations._VirtualRoot.Length - 1), "/") <> 0 Then _
-                            Configurations._VirtualRoot = String.Format("{0}/", Configurations._VirtualRoot)
-                    End If
+                    If virtualRootValue.IndexOf("/"c) <> 0 Then _
+                        virtualRootValue = String.Format("/{0}", virtualRootValue)
+
+                    If virtualRootValue.Chars(virtualRootValue.Length - 1) <> "/"c Then _
+                        virtualRootValue = String.Format("{0}/", virtualRootValue)
+
+                    Configurations._VirtualRoot = virtualRootValue
                 End If
 
                 Return Configurations._VirtualRoot
@@ -174,24 +176,21 @@ Namespace Xeora.Web.Shared
                     Dim appRootValue As String =
                         CType(WorkingObject.GetType().InvokeMember("ApplicationRoot", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, WorkingObject, Nothing), String)
 
-                    If String.IsNullOrEmpty(appRootValue) Then
-                        Configurations._ApplicationRootFormat.FileSystemImplementation =
-                            String.Format(".{0}", IO.Path.DirectorySeparatorChar)
-                        Configurations._ApplicationRootFormat.BrowserImplementation = Configurations.VirtualRoot
-                    Else
-                        If appRootValue.IndexOf(IO.Path.DirectorySeparatorChar) = 0 Then _
-                            appRootValue = String.Format(".{0}", appRootValue)
+                    If String.IsNullOrEmpty(appRootValue) Then _
+                        appRootValue = String.Format(".{0}", IO.Path.DirectorySeparatorChar)
 
-                        If appRootValue.IndexOf(String.Format(".{0}", IO.Path.DirectorySeparatorChar)) <> 0 Then _
-                            appRootValue = String.Format(".{0}{1}", IO.Path.DirectorySeparatorChar, appRootValue)
+                    If appRootValue.IndexOf(IO.Path.DirectorySeparatorChar) = 0 Then _
+                        appRootValue = String.Format(".{0}", appRootValue)
 
-                        If String.Compare(appRootValue.Substring(appRootValue.Length - 1), IO.Path.DirectorySeparatorChar) <> 0 Then _
-                            appRootValue = String.Format("{0}{1}", appRootValue, IO.Path.DirectorySeparatorChar)
+                    If appRootValue.IndexOf(String.Format(".{0}", IO.Path.DirectorySeparatorChar)) <> 0 Then _
+                        appRootValue = String.Format(".{0}{1}", IO.Path.DirectorySeparatorChar, appRootValue)
 
-                        Configurations._ApplicationRootFormat.FileSystemImplementation = appRootValue
-                        Configurations._ApplicationRootFormat.BrowserImplementation =
-                            String.Format("{0}{1}", Configurations.VirtualRoot, appRootValue.Substring(2).Replace("\"c, "/"c))
-                    End If
+                    If appRootValue.Chars(appRootValue.Length - 1) <> IO.Path.DirectorySeparatorChar Then _
+                        appRootValue = String.Format("{0}{1}", appRootValue, IO.Path.DirectorySeparatorChar)
+
+                    Configurations._ApplicationRootFormat.FileSystemImplementation = appRootValue
+                    Configurations._ApplicationRootFormat.BrowserImplementation =
+                        String.Format("{0}{1}", Configurations.VirtualRoot, appRootValue.Substring(2).Replace("\"c, "/"c))
                 End If
 
                 Return Configurations._ApplicationRootFormat

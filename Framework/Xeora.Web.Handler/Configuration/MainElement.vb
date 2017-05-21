@@ -46,7 +46,7 @@ Namespace Xeora.Web.Configuration
             End Get
         End Property
 
-        <ConfigurationProperty("applicationRoot", DefaultValue:=".\")>
+        <ConfigurationProperty("applicationRoot")>
         Public ReadOnly Property ApplicationRoot As String
             Get
                 Return CType(MyBase.Item("applicationRoot"), String)
