@@ -73,6 +73,8 @@ Namespace Xeora.Web.Handler
 
         Private Sub LoadApplication()
             Try
+                If RequestModule._UnixPlatform Then Console.Write("Loading Application             ")
+
                 Me.CleanUp()
 
                 Me._ApplicationID = Guid.NewGuid().ToString()
@@ -90,12 +92,15 @@ Namespace Xeora.Web.Handler
                         )
                     )
                 Me.LoadDomainExecutables(DefaultDomainRootLocation)
+
+                If RequestModule._UnixPlatform Then Console.Write("DONE") : Console.WriteLine()
             Catch ex As System.Exception
+                If RequestModule._UnixPlatform Then Console.Write("FAILED") : Console.WriteLine()
+
                 Throw New System.Exception(String.Format("{0}!", [Global].SystemMessages.SYSTEM_APPLICATIONLOADINGERROR), ex)
             End Try
 
-            ' Sleep to Prevent to run LoadApplication again.
-            Threading.Thread.Sleep(10000) : Me._LoaderThread = Nothing
+            Me._LoaderThread = Nothing
         End Sub
 
         Private Sub LoadDomainExecutables(ByVal DomainRootPath As String)

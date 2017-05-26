@@ -4,10 +4,28 @@ Namespace Xeora.Web.Handler
     Public NotInheritable Class RequestModule
         Implements System.Web.IHttpModule
 
-        Private Shared _UnixPlatform As Boolean = False
+        Friend Shared _UnixPlatform As Boolean = False
 
         Private Shared _Instance As New Concurrent.ConcurrentDictionary(Of Integer, RequestModule)
         Private Shared _Initialized As Boolean = False
+
+        Private Function GetVersionText() As String
+            Dim vI As Version = Reflection.Assembly.GetExecutingAssembly().GetName().Version
+
+            Return String.Format("{0}.{1}.{2}", vI.Major, vI.Minor, vI.Build)
+        End Function
+
+        Private Sub PrintLogo()
+            Console.WriteLine("____  ____                               ")
+            Console.WriteLine("|_  _||_  _|                              ")
+            Console.WriteLine("  \ \  / /  .---.   .--.   _ .--.  ,--.   ")
+            Console.WriteLine("   > `' <  / /__\\/ .'`\ \[ `/'`\]`'_\ :  ")
+            Console.WriteLine(" _/ /'`\ \_| \__.,| \__. | | |    // | |, ")
+            Console.WriteLine("|____||____|'.__.' '.__.' [___]   \'-;__/ ")
+            Console.WriteLine()
+            Console.WriteLine(String.Format("Web Development Framework, v{0}", Me.GetVersionText()))
+            Console.WriteLine()
+        End Sub
 
         Private Sub New()
             RequestModule._Instance.TryAdd(Me.GetHashCode(), Me)
@@ -30,6 +48,8 @@ Namespace Xeora.Web.Handler
                 ' Take care framework defaults
                 Dim IsModified As Boolean = Me.Configure(cfg)
 
+                If RequestModule._UnixPlatform Then Console.Write("Framework Configuration         ")
+
                 If IsModified Then
                     cfg = System.Web.Configuration.WebConfigurationManager.OpenWebConfiguration(
                             System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath)
@@ -49,7 +69,12 @@ Namespace Xeora.Web.Handler
                 Threading.Monitor.Exit(Me)
             End Try
 
+            If RequestModule._UnixPlatform Then Console.Write("DONE") : Console.WriteLine()
+
             ApplicationLoader.Current.Initialize()
+
+            Console.WriteLine()
+            Console.WriteLine("Domain is ready to go...")
         End Sub
 
         Private Sub Init(ByVal app As System.Web.HttpApplication) Implements System.Web.IHttpModule.Init
@@ -194,6 +219,8 @@ Namespace Xeora.Web.Handler
             Select Case Environment.OSVersion.Platform
                 Case PlatformID.MacOSX, PlatformID.Unix
                     RequestModule._UnixPlatform = True
+
+                    Me.PrintLogo()
                 Case Else
                     ' take care framework headers
                     xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol")
@@ -332,9 +359,6 @@ Namespace Xeora.Web.Handler
 
                             xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders/add[@name='X-Framework-Version']")
 
-                            Dim vI As Version = Reflection.Assembly.GetExecutingAssembly().GetName().Version
-                            Dim vIS As String = String.Format("{0}.{1}.{2}", vI.Major, vI.Minor, vI.Build)
-
                             If xmlNodes.Count <> 1 Then
                                 If xmlNodes.Count > 1 Then
                                     For Each xmlNode As Xml.XmlNode In xmlNodes
@@ -344,6 +368,7 @@ Namespace Xeora.Web.Handler
 
                                 xmlNodes = xmlDocument.SelectNodes("/configuration/system.webServer/httpProtocol/customHeaders")
 
+
                                 Dim addNode As Xml.XmlNode =
                                     xmlDocument.CreateElement("add")
                                 Dim addNameAttribute As Xml.XmlAttribute =
@@ -351,7 +376,7 @@ Namespace Xeora.Web.Handler
                                 addNameAttribute.Value = "X-Framework-Version"
                                 Dim addValueAttribute As Xml.XmlAttribute =
                                     xmlDocument.CreateAttribute("value")
-                                addValueAttribute.Value = vIS
+                                addValueAttribute.Value = Me.GetVersionText()
 
                                 addNode.Attributes.Append(addNameAttribute)
                                 addNode.Attributes.Append(addValueAttribute)
@@ -360,6 +385,8 @@ Namespace Xeora.Web.Handler
 
                                 IsModified = True
                             Else
+                                Dim vIS As String = Me.GetVersionText()
+
                                 If String.Compare(xmlNodes.Item(0).Attributes.GetNamedItem("value").Value, vIS) <> 0 Then
                                     xmlNodes.Item(0).Attributes.GetNamedItem("value").Value = vIS
                                     IsModified = True
@@ -417,6 +444,13 @@ Namespace Xeora.Web.Handler
                     String.Format(" --- RequestModule Exception --- {0}{0}{1}", Environment.NewLine, ErrorContent),
                     EventLogEntryType.Error
                 )
+
+                If RequestModule._UnixPlatform Then
+                    Console.WriteLine("----------- !!! --- Unhandled Exception --- !!! ------------")
+                    Console.WriteLine("------------------------------------------------------------")
+                    Console.WriteLine(ErrorContent)
+                    Console.WriteLine("------------------------------------------------------------")
+                End If
             End If
         End Sub
 
@@ -457,11 +491,8 @@ Namespace Xeora.Web.Handler
             app.Context.Items.Add("ApplicationID", ApplicationLoader.Current.ApplicationID)
 
             If RequestModule._UnixPlatform Then
-                Dim vI As Version = Reflection.Assembly.GetExecutingAssembly().GetName().Version
-                Dim vIS As String = String.Format("{0}.{1}.{2}", vI.Major, vI.Minor, vI.Build)
-
                 app.Context.Response.AppendHeader("X-Powered-By", "XeoraCube")
-                app.Context.Response.AppendHeader("X-Framework-Version", vIS)
+                app.Context.Response.AppendHeader("X-Framework-Version", Me.GetVersionText())
             End If
         End Sub
 
