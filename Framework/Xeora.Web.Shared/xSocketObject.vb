@@ -6,6 +6,8 @@ Namespace Xeora.Web.Shared
         Private _InputParameters As EndPoint
         Private _OutputParameters As EndPoint
         Private _Parameters As ParameterCollection
+
+        Private _IsFlushed As Boolean
         Private _FlushHandler As FlushHandler
 
         Public Delegate Sub FlushHandler()
@@ -15,6 +17,7 @@ Namespace Xeora.Web.Shared
             Me._OutputParameters = New EndPoint(OutputHeaders, OutputStream)
             Me._Parameters = New ParameterCollection(Parameters)
 
+            Me._IsFlushed = False
             Me._FlushHandler = FlushHandler
         End Sub
 
@@ -37,6 +40,9 @@ Namespace Xeora.Web.Shared
         End Property
 
         Public Sub Flush()
+            If Me._IsFlushed Then Return
+            Me._IsFlushed = True
+
             If Not Me._FlushHandler Is Nothing Then Me._FlushHandler.Invoke()
         End Sub
 

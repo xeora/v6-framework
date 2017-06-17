@@ -325,7 +325,7 @@ Namespace Xeora.Web.Handler
                                     KeyValueList.ToArray(),
                                     New [Shared].xSocketObject.FlushHandler(
                                         Sub()
-                                            Me._Context.Response.Stream.Flush()
+                                            Me._Context.Response.ReleaseHeader()
                                         End Sub)
                                 )
 
