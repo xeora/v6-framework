@@ -367,6 +367,7 @@ Namespace Xeora.Web.Context
             Public Sub New(ByRef HttpResponse As System.Web.HttpResponse)
                 HttpResponse.Buffer = False
                 HttpResponse.BufferOutput = False
+                HttpResponse.TrySkipIisCustomErrors = True
 
                 Me._Response = HttpResponse
             End Sub
