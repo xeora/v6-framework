@@ -466,7 +466,11 @@ Namespace Xeora.Web.Site
                             For Each medItem As [Shared].URLMapping.ResolveInfos.MappedItem In URLMapItem.ResolveInfo.MappedItems
                                 medItemValue = String.Empty
 
-                                If Not String.IsNullOrEmpty(medItem.ID) Then medItemValue = rqMatch.Groups.Item(medItem.ID).Value
+                                If Not String.IsNullOrEmpty(medItem.ID) Then
+                                    medItemValue = rqMatch.Groups.Item(medItem.ID).Value
+                                Else
+                                    medItemValue = [Shared].Helpers.Context.Request.QueryString.Item(medItem.QueryStringKey)
+                                End If
 
                                 ResolvedMapped.URLQueryDictionary.Item(medItem.QueryStringKey) =
                                     CType(IIf(String.IsNullOrEmpty(medItemValue), medItem.DefaultValue, medItemValue), String)
