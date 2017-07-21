@@ -136,6 +136,32 @@ Namespace Xeora.Web.Shared
             End Get
         End Property
 
+        Private Shared _BannedFiles As Generic.List(Of String) = Nothing
+        Public Shared ReadOnly Property BannedFiles() As String()
+            Get
+                If Configurations._BannedFiles Is Nothing Then
+                    Configurations._BannedFiles = New Generic.List(Of String)
+
+                    Configurations._BannedFiles.Add(String.Format("\{0}bin", IO.Path.DirectorySeparatorChar))
+                    Configurations._BannedFiles.Add(String.Format("\{0}Domains", IO.Path.DirectorySeparatorChar))
+                    Configurations._BannedFiles.Add("\.config")
+
+                    Dim WorkingObject As Object =
+                        Configurations.XeoraSettingsObject.GetType().InvokeMember("BannedItems", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, Configurations.XeoraSettingsObject, Nothing)
+
+                    For Each ItemObject As Object In CType(WorkingObject, Configuration.ConfigurationElementCollection)
+                        Dim value As String
+
+                        value = CType(ItemObject.GetType().InvokeMember("Value", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.Public Or Reflection.BindingFlags.GetProperty, Nothing, ItemObject, Nothing), String)
+
+                        Configurations._BannedFiles.Add(value)
+                    Next
+                End If
+
+                Return Configurations._BannedFiles.ToArray()
+            End Get
+        End Property
+
         Public Class ApplicationRootFormat
             Private _FileSystemImplementation As String
             Private _BrowserImplementation As String

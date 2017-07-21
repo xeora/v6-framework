@@ -470,12 +470,27 @@ Namespace Xeora.Web.Handler
                 End If
             End Sub
 
+            Private Function IsRequestedStaticFileBanned(ByVal RequestFilePath As String) As Boolean
+                RequestFilePath = RequestFilePath.Replace([Shared].Configurations.PhysicalRoot, String.Empty)
+
+                For Each FileRegEx As String In [Shared].Configurations.BannedFiles
+                    If Text.RegularExpressions.Regex.IsMatch(RequestFilePath, FileRegEx, Text.RegularExpressions.RegexOptions.IgnoreCase) Then Return True
+                Next
+
+                Return False
+            End Function
+
             Private Sub PostRequestedStaticFileToClient()
                 ' This is a common file located somewhere in the webserver
                 Dim RequestFilePath As String =
                     Me._Context.Request.PhysicalPath
 
-                If Not IO.File.Exists(RequestFilePath) Then
+                If Not IO.File.Exists(RequestFilePath) OrElse
+                    (
+                        IO.File.Exists(RequestFilePath) AndAlso
+                        Me.IsRequestedStaticFileBanned(RequestFilePath)
+                    ) Then
+
                     Me._Context.Response.StatusCode = 404
                 Else
                     Dim ContentType As String =

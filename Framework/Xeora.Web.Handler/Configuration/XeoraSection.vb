@@ -32,5 +32,13 @@ Namespace Xeora.Web.Configuration
                 Return CType(MyBase.Item("mime"), MimeElements)
             End Get
         End Property
+
+        <ConfigurationProperty("bannedFiles", IsDefaultCollection:=True)>
+        <ConfigurationCollection(GetType(BannedElement), AddItemName:="file")>
+        Public ReadOnly Property BannedItems As BannedElements
+            Get
+                Return CType(MyBase.Item("bannedFiles"), BannedElements)
+            End Get
+        End Property
     End Class
 End Namespace
