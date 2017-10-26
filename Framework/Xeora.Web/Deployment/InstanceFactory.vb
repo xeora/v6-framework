@@ -36,15 +36,18 @@ Namespace Xeora.Web.Deployment
             Return DomainDeployment
         End Function
 
-        Protected Overrides Sub Finalize()
+        Public Sub Reset()
             For Each Key As String In Me._Instances.Keys
                 Dim DomainDeployment As DomainDeployment = Nothing
 
-                Me._Instances.TryGetValue(Key, DomainDeployment)
+                Me._Instances.TryRemove(Key, DomainDeployment)
 
                 If Not DomainDeployment Is Nothing Then DomainDeployment.Dispose()
             Next
+        End Sub
 
+        Protected Overrides Sub Finalize()
+            Me.Reset()
             MyBase.Finalize()
         End Sub
     End Class

@@ -126,7 +126,7 @@ Namespace Xeora.Web.Site
         Public Sub ClearCache() Implements [Shared].IDomain.ClearCache
             Controller.Directive.PartialCache.ClearCache(Me.IDAccessTree)
 
-            Me._Deployment.ClearCache()
+            Deployment.InstanceFactory.Current.Reset()
         End Sub
 
         Public Overloads Function Render(ByVal ServicePathInfo As [Shared].ServicePathInfo, ByVal MessageResult As [Shared].ControlResult.Message, Optional ByVal UpdateBlockControlID As String = Nothing) As String Implements [Shared].IDomain.Render
