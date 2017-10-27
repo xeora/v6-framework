@@ -76,6 +76,8 @@ Namespace Xeora.Web.Controller.Directive
         End Property
 
         Public Shared Sub ClearCache(ByVal DomainIDAccessTree As String())
+            If PartialCache._PartialCaches Is Nothing Then Exit Sub
+
             Threading.Monitor.Enter(PartialCache._PartialCaches.SyncRoot)
             Try
                 If PartialCache._PartialCaches.ContainsKey(DomainIDAccessTree) Then _
