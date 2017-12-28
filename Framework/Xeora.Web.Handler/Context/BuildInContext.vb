@@ -390,7 +390,15 @@ Namespace Xeora.Web.Context
                         Case "Content-Type"
                             Me._Response.ContentType = Me._Response.Headers.Item(Key)
                         Case "Cache-Control"
-                            Me._Response.CacheControl = Me._Response.Headers.Item(Key)
+                            Dim CacheHeader As String =
+                                Me._Response.Headers.Item(Key)
+
+                            ' Only available values for CacheControl Property.
+                            If String.Compare(CacheHeader, "public", True) = 0 OrElse
+                                    String.Compare(CacheHeader, "private", True) = 0 OrElse
+                                    String.Compare(CacheHeader, "no-cache", True) = 0 Then _
+                                Me._Response.CacheControl = Me._Response.Headers.Item(Key)
+
                         Case "Expires"
                             If Not DateTime.TryParse(Me._Response.Headers.Item(Key), Me._Response.ExpiresAbsolute) Then
                                 Integer.TryParse(Me._Response.Headers.Item(Key), Me._Response.Expires)

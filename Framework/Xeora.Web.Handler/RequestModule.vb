@@ -16,6 +16,7 @@ Namespace Xeora.Web.Handler
         End Function
 
         Private Sub PrintLogo()
+            Console.WriteLine()
             Console.WriteLine("____  ____                               ")
             Console.WriteLine("|_  _||_  _|                              ")
             Console.WriteLine("  \ \  / /  .---.   .--.   _ .--.  ,--.   ")
